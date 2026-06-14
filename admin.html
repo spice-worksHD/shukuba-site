@@ -112,13 +112,19 @@
 
 <div id="login-screen">
   <h2>SHUKUBA 管理画面</h2>
-  <input type="password" id="login-key" placeholder="管理パスワード">
-  <button onclick="login()">ログイン</button>
+  <form id="login-form" autocomplete="on" onsubmit="login(event)">
+    <input type="text" name="username" id="login-user" value="admin" autocomplete="username" style="display:none">
+    <input type="password" id="login-key" name="password" placeholder="管理パスワード" autocomplete="current-password">
+    <button type="submit">ログイン</button>
+  </form>
   <div id="login-error"></div>
 </div>
 
 <div id="app">
-  <h1>SHUKUBA 管理画面</h1>
+  <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
+    <h1>SHUKUBA 管理画面</h1>
+    <button onclick="logout()">ログアウト</button>
+  </div>
   <div class="sub">予約管理・料金設定・在庫管理</div>
 
   <div class="tabs">
@@ -173,16 +179,16 @@ const roomLabels = {
   '2': '長浜・元浜町',
 };
 
-let adminKey = localStorage.getItem('shukuba_admin_key') || '';
+let adminKey = '';
 let state = { bookings: [], pricing: {}, blocked: {} };
 
-async function login() {
+async function login(e) {
+  if (e) e.preventDefault();
   const key = document.getElementById('login-key').value.trim();
   if (!key) return;
   const res = await fetch('/.netlify/functions/admin', { headers: { 'x-admin-key': key } });
   if (res.ok) {
     adminKey = key;
-    localStorage.setItem('shukuba_admin_key', key);
     document.getElementById('login-screen').style.display = 'none';
     document.getElementById('app').style.display = 'block';
     state = await res.json();
@@ -192,15 +198,13 @@ async function login() {
   }
 }
 
-async function init() {
-  if (!adminKey) return;
-  const res = await fetch('/.netlify/functions/admin', { headers: { 'x-admin-key': adminKey } });
-  if (res.ok) {
-    document.getElementById('login-screen').style.display = 'none';
-    document.getElementById('app').style.display = 'block';
-    state = await res.json();
-    renderAll();
-  }
+function logout() {
+  adminKey = '';
+  state = { bookings: [], pricing: {}, blocked: {} };
+  document.getElementById('login-key').value = '';
+  document.getElementById('login-error').textContent = '';
+  document.getElementById('app').style.display = 'none';
+  document.getElementById('login-screen').style.display = 'block';
 }
 
 async function apiPost(body) {
@@ -400,7 +404,6 @@ async function toggleBlocked(room, date) {
   if (r.ok) { state.blocked = r.blocked; renderGrid(); flashMsg('在庫状態を更新しました'); }
 }
 
-init();
 </script>
 </body>
 </html>

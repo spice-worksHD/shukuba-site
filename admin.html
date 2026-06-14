@@ -88,6 +88,24 @@
   .badge.future { background: #e2f0ec; color: var(--gold); }
   .badge.past { background: #eee; color: var(--muted); }
   .msg { font-size: 12px; color: var(--gold); margin-top: 8px; min-height: 16px; }
+
+  /* Calendar grid */
+  .cal-toolbar { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
+  .grid-wrap { overflow-x: auto; border: 1px solid var(--border); border-radius: 6px; max-height: 70vh; }
+  .grid-table { border-collapse: collapse; font-size: 12px; white-space: nowrap; }
+  .grid-table th, .grid-table td { border: 1px solid var(--border); padding: 6px 8px; text-align: center; }
+  .grid-table thead th { background: var(--paper); position: sticky; top: 0; z-index: 2; font-weight: normal; color: var(--muted); }
+  .sticky-col { position: sticky; left: 0; background: #fff; z-index: 3; min-width: 170px; text-align: left; vertical-align: middle; }
+  .sticky-col2 { position: sticky; left: 170px; background: #fff; z-index: 3; min-width: 52px; color: var(--muted); font-size: 11px; }
+  thead .sticky-col, thead .sticky-col2 { z-index: 4; }
+  .weekend-col { background: #fdf0ee; }
+  .cell-status { cursor: pointer; font-size: 11px; }
+  .cell-status.open { background: #fff; color: var(--green); }
+  .cell-status.blocked { background: #fbe6e1; color: var(--danger); font-weight: bold; }
+  .cell-status.booked { background: #e9ebed; color: var(--muted); cursor: default; }
+  .price-input { width: 64px; border: 1px solid transparent; background: transparent; text-align: center; font-size: 12px; border-radius: 4px; padding: 4px; }
+  .price-input:hover, .price-input:focus { border-color: var(--gold); background: #fff; outline: none; }
+  .base-input { border: 1px solid var(--border); border-radius: 4px; padding: 2px 4px; font-size: 11px; width: 70px; }
 </style>
 </head>
 <body>
@@ -105,8 +123,7 @@
 
   <div class="tabs">
     <button class="tab-btn active" onclick="showTab('reservations')">予約履歴・サマリー</button>
-    <button class="tab-btn" onclick="showTab('pricing')">料金設定</button>
-    <button class="tab-btn" onclick="showTab('inventory')">在庫管理</button>
+    <button class="tab-btn" onclick="showTab('calendar')">料金・在庫カレンダー</button>
   </div>
 
   <!-- Reservations -->
@@ -126,19 +143,25 @@
     </div>
   </div>
 
-  <!-- Pricing -->
-  <div class="panel" id="panel-pricing">
+  <!-- Calendar (pricing + inventory) -->
+  <div class="panel" id="panel-calendar">
     <div class="card">
-      <h3>基本料金・日別料金設定（ダイナミックプライシング）</h3>
-      <div id="pricing-rooms"></div>
-    </div>
-  </div>
-
-  <!-- Inventory -->
-  <div class="panel" id="panel-inventory">
-    <div class="card">
-      <h3>在庫管理（メンテナンス等で予約不可にする日付）</h3>
-      <div id="inventory-rooms"></div>
+      <h3>料金・在庫カレンダー</h3>
+      <div class="cal-toolbar">
+        <button class="small-btn" onclick="shiftCalRange(-7)">← 前の週</button>
+        <button class="small-btn" onclick="todayCalRange()">今日</button>
+        <button class="small-btn" onclick="shiftCalRange(7)">次の週 →</button>
+        <span id="cal-range-label" style="margin-left:12px;color:var(--muted);font-size:13px"></span>
+        <span id="grid-msg" class="msg" style="margin-left:auto;margin-top:0"></span>
+      </div>
+      <div class="grid-wrap">
+        <table class="grid-table" id="grid-table"></table>
+      </div>
+      <p style="font-size:12px;color:var(--muted);margin-top:10px">
+        ・「販売中」をクリックすると「売止」に切り替わります（再クリックで解除）。<br>
+        ・「予約済」は実際の予約が入っている日で、ここから直接は変更できません（取消は「予約履歴・サマリー」タブから）。<br>
+        ・料金欄に数値を入力するとその日だけの特別料金になります。空欄にすると基本料金に戻ります。
+      </p>
     </div>
   </div>
 </div>
@@ -199,8 +222,7 @@ function showTab(name) {
 function renderAll() {
   renderStats();
   renderBookings();
-  renderPricing();
-  renderInventory();
+  renderGrid();
 }
 
 // ===== RESERVATIONS =====
@@ -246,112 +268,125 @@ function renderBookings() {
 async function cancelBooking(idx) {
   if (!confirm('この予約を取り消しますか？日程は再度予約可能になります。')) return;
   const r = await apiPost({ action: 'cancel-booking', index: idx });
-  if (r.ok) { state.bookings = r.bookings; renderStats(); renderBookings(); }
+  if (r.ok) { state.bookings = r.bookings; renderStats(); renderBookings(); renderGrid(); }
 }
 
-// ===== PRICING =====
-function renderPricing() {
-  const el = document.getElementById('pricing-rooms');
-  el.innerHTML = Object.keys(roomLabels).map(room => {
+// ===== PRICING + INVENTORY CALENDAR GRID =====
+let calRangeStart = (() => { const d = new Date(); d.setHours(0,0,0,0); return d; })();
+const CAL_DAYS = 21;
+
+function fmtDateAdmin(d) {
+  return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+}
+function fmtDisp(d) { return (d.getMonth()+1) + '/' + d.getDate(); }
+
+function shiftCalRange(days) {
+  calRangeStart.setDate(calRangeStart.getDate() + days);
+  renderGrid();
+}
+function todayCalRange() {
+  calRangeStart = new Date(); calRangeStart.setHours(0,0,0,0);
+  renderGrid();
+}
+
+function getBookedSet(room) {
+  const set = new Set();
+  state.bookings.forEach(b => {
+    if (String(b.room) !== String(room)) return;
+    let cur = new Date(b.checkin);
+    const end = new Date(b.checkout);
+    while (cur < end) { set.add(fmtDateAdmin(cur)); cur.setDate(cur.getDate()+1); }
+  });
+  return set;
+}
+
+function renderGrid() {
+  const days = [];
+  for (let i = 0; i < CAL_DAYS; i++) {
+    const d = new Date(calRangeStart);
+    d.setDate(d.getDate() + i);
+    days.push(d);
+  }
+  document.getElementById('cal-range-label').textContent =
+    `${fmtDisp(days[0])} 〜 ${fmtDisp(days[days.length - 1])}`;
+
+  let html = '<thead><tr><th class="sticky-col">物件</th><th class="sticky-col2"></th>';
+  days.forEach(d => {
+    const dow = ['日','月','火','水','木','金','土'][d.getDay()];
+    const cls = (d.getDay() === 0 || d.getDay() === 6) ? 'weekend-col' : '';
+    html += `<th class="${cls}">${d.getMonth()+1}/${d.getDate()}<br><span style="font-size:10px">(${dow})</span></th>`;
+  });
+  html += '</tr></thead><tbody>';
+
+  Object.keys(roomLabels).forEach(room => {
     const p = state.pricing[room] || { base: 0, overrides: {} };
-    const overrides = p.overrides || {};
-    const overrideHtml = Object.keys(overrides).sort().map(date => `
-      <div class="override-item">
-        <span>${date}</span><span>¥${Number(overrides[date]).toLocaleString()}</span>
-        <span class="x" onclick="removeOverride('${room}','${date}')">×</span>
-      </div>`).join('') || '<div style="font-size:12px;color:var(--muted)">日別料金の設定はありません</div>';
+    const bookedSet = getBookedSet(room);
+    const blockedSet = new Set(state.blocked[room] || []);
 
-    return `
-      <div class="room-row">
-        <div>
-          <label>物件</label>
-          <strong>${roomLabels[room]}</strong>
-        </div>
-        <div>
-          <label>基本料金（1泊）</label>
-          <input type="number" id="base-${room}" value="${p.base || 0}" step="500">
-          <button class="small-btn" style="margin-top:6px;width:100%" onclick="saveBase('${room}')">基本料金を保存</button>
-        </div>
-        <div>
-          <label>日別料金（特定日の料金を上書き）</label>
-          <div class="override-list">${overrideHtml}</div>
-          <div class="add-override">
-            <input type="date" id="ov-date-${room}">
-            <input type="number" id="ov-price-${room}" placeholder="価格" step="500">
-            <button class="small-btn" onclick="addOverride('${room}')">追加</button>
-          </div>
-        </div>
-      </div>`;
-  }).join('');
+    html += `<tr>
+      <td class="sticky-col" rowspan="2">
+        <strong>${roomLabels[room]}</strong><br>
+        <span style="font-size:11px;color:var(--muted)">基本料金 ¥
+          <input type="number" class="base-input" value="${p.base || 0}" step="500" onchange="saveBase('${room}', this.value)">
+        </span>
+      </td>
+      <td class="sticky-col2">状態</td>`;
+    days.forEach(d => {
+      const key = fmtDateAdmin(d);
+      const cls = (d.getDay() === 0 || d.getDay() === 6) ? 'weekend-col' : '';
+      if (bookedSet.has(key)) {
+        html += `<td class="cell-status booked ${cls}">予約済</td>`;
+      } else if (blockedSet.has(key)) {
+        html += `<td class="cell-status blocked ${cls}" onclick="toggleBlocked('${room}','${key}')">売止</td>`;
+      } else {
+        html += `<td class="cell-status open ${cls}" onclick="toggleBlocked('${room}','${key}')">販売中</td>`;
+      }
+    });
+    html += '</tr><tr><td class="sticky-col2">料金</td>';
+    days.forEach(d => {
+      const key = fmtDateAdmin(d);
+      const cls = (d.getDay() === 0 || d.getDay() === 6) ? 'weekend-col' : '';
+      const overrides = p.overrides || {};
+      const val = overrides[key] != null ? overrides[key] : '';
+      html += `<td class="${cls}"><input type="number" class="price-input" step="500" placeholder="${p.base || 0}" value="${val}" onchange="savePriceOverride('${room}','${key}', this.value)"></td>`;
+    });
+    html += '</tr>';
+  });
+
+  html += '</tbody>';
+  document.getElementById('grid-table').innerHTML = html;
 }
 
-async function saveBase(room) {
-  const base = Number(document.getElementById('base-' + room).value) || 0;
+function flashMsg(text) {
+  const el = document.getElementById('grid-msg');
+  el.textContent = text;
+  setTimeout(() => { if (el.textContent === text) el.textContent = ''; }, 2000);
+}
+
+async function saveBase(room, value) {
+  const base = Number(value) || 0;
   const overrides = (state.pricing[room] && state.pricing[room].overrides) || {};
   const r = await apiPost({ action: 'set-pricing', room, base, overrides });
-  if (r.ok) { state.pricing = r.pricing; renderPricing(); }
+  if (r.ok) { state.pricing = r.pricing; renderGrid(); flashMsg('基本料金を更新しました'); }
 }
 
-async function addOverride(room) {
-  const date = document.getElementById('ov-date-' + room).value;
-  const price = Number(document.getElementById('ov-price-' + room).value);
-  if (!date || !price) return;
-  const p = state.pricing[room] || { base: 0, overrides: {} };
-  const overrides = { ...(p.overrides || {}), [date]: price };
-  const r = await apiPost({ action: 'set-pricing', room, base: p.base, overrides });
-  if (r.ok) { state.pricing = r.pricing; renderPricing(); }
-}
-
-async function removeOverride(room, date) {
+async function savePriceOverride(room, date, value) {
   const p = state.pricing[room] || { base: 0, overrides: {} };
   const overrides = { ...(p.overrides || {}) };
-  delete overrides[date];
+  if (value === '' || value == null) {
+    delete overrides[date];
+  } else {
+    overrides[date] = Number(value);
+  }
   const r = await apiPost({ action: 'set-pricing', room, base: p.base, overrides });
-  if (r.ok) { state.pricing = r.pricing; renderPricing(); }
+  if (r.ok) { state.pricing = r.pricing; flashMsg('料金を更新しました'); }
 }
 
-// ===== INVENTORY =====
-function renderInventory() {
-  const el = document.getElementById('inventory-rooms');
-  el.innerHTML = Object.keys(roomLabels).map(room => {
-    const dates = (state.blocked[room] || []).slice().sort();
-    const dateHtml = dates.map(d => `
-      <div class="override-item">
-        <span>${d}</span>
-        <span class="x" onclick="removeBlocked('${room}','${d}')">×</span>
-      </div>`).join('') || '<div style="font-size:12px;color:var(--muted)">ブロック中の日付はありません</div>';
-
-    return `
-      <div class="room-row">
-        <div>
-          <label>物件</label>
-          <strong>${roomLabels[room]}</strong>
-        </div>
-        <div></div>
-        <div>
-          <label>予約不可にする日付（メンテナンス等）</label>
-          <div class="override-list">${dateHtml}</div>
-          <div class="add-override">
-            <input type="date" id="blk-date-${room}">
-            <button class="small-btn" onclick="addBlocked('${room}')">追加</button>
-          </div>
-        </div>
-      </div>`;
-  }).join('');
-}
-
-async function addBlocked(room) {
-  const date = document.getElementById('blk-date-' + room).value;
-  if (!date) return;
-  const dates = [...new Set([...(state.blocked[room] || []), date])];
-  const r = await apiPost({ action: 'set-blocked', room, dates });
-  if (r.ok) { state.blocked = r.blocked; renderInventory(); }
-}
-
-async function removeBlocked(room, date) {
-  const dates = (state.blocked[room] || []).filter(d => d !== date);
-  const r = await apiPost({ action: 'set-blocked', room, dates });
-  if (r.ok) { state.blocked = r.blocked; renderInventory(); }
+async function toggleBlocked(room, date) {
+  const set = new Set(state.blocked[room] || []);
+  if (set.has(date)) set.delete(date); else set.add(date);
+  const r = await apiPost({ action: 'set-blocked', room, dates: [...set] });
+  if (r.ok) { state.blocked = r.blocked; renderGrid(); flashMsg('在庫状態を更新しました'); }
 }
 
 init();

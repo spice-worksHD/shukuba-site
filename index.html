@@ -1,0 +1,915 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SHUKUBA | 古民家の宿 滋賀</title>
+<style>
+  :root {
+    --ink: #1d3a3f;       /* 深い湖面の藍緑（本文） */
+    --paper: #eef5f2;     /* 朝靄の薄緑青（背景） */
+    --warm: #5a93a8;      /* 琵琶湖の青（チェックアウト等） */
+    --gold: #4f9a8e;      /* アクセント＝若葉×水のティール */
+    --dark: #143a42;      /* 深い湖の濃藍（ダークセクション） */
+    --muted: #5e767d;     /* 霞んだ青灰（補助テキスト） */
+    --border: #cfe0db;    /* 淡い緑青のボーダー */
+    --green: #7fae8e;     /* 葦の薄緑 */
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body { font-family: 'Hiragino Mincho ProN', 'Yu Mincho', Georgia, serif; background: var(--paper); color: var(--ink); overflow-x: hidden; }
+  img { max-width: 100%; display: block; }
+
+  /* ===== LANG TOGGLE ===== */
+  #lang-toggle {
+    position: fixed; top: 18px; right: 24px; z-index: 1000;
+    display: flex; gap: 0; border: 1px solid rgba(255,255,255,0.4); border-radius: 4px; overflow: hidden;
+  }
+  .lang-btn {
+    padding: 6px 14px; cursor: pointer; font-size: 12px; letter-spacing: 1px;
+    background: rgba(0,0,0,0.5); color: #fff; border: none; transition: background .2s;
+  }
+  .lang-btn.active { background: var(--gold); }
+  .lang-btn:hover:not(.active) { background: rgba(255,255,255,0.15); }
+
+  /* ===== NAV ===== */
+  nav {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 999;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 16px 40px; background: transparent; transition: background .3s;
+  }
+  nav.scrolled { background: rgba(13,11,8,0.92); backdrop-filter: blur(8px); }
+  .nav-logo { font-size: 22px; letter-spacing: 6px; color: #fff; text-decoration: none; font-weight: 300; }
+  .nav-links { display: flex; gap: 28px; }
+  .nav-links a { color: rgba(255,255,255,0.8); text-decoration: none; font-size: 13px; letter-spacing: 2px; transition: color .2s; }
+  .nav-links a:hover { color: var(--gold); }
+
+  /* ===== HERO ===== */
+  #hero {
+    height: 100vh; position: relative; display: flex; align-items: center; justify-content: center;
+    background: linear-gradient(180deg, rgba(15,45,52,0.55) 0%, rgba(20,58,66,0.35) 45%, rgba(20,58,66,0.75) 100%),
+                url('https://upload.wikimedia.org/wikipedia/commons/c/cb/Shirahige_Shrine_%E7%99%BD%E9%AC%9A%E7%A5%9E%E7%A4%BE6_-_panoramio.jpg') center 40% / cover no-repeat;
+    overflow: hidden;
+  }
+  .hero-bg {
+    position: absolute; inset: 0;
+    background: radial-gradient(ellipse at 30% 50%, rgba(127,174,142,0.12) 0%, transparent 60%),
+                radial-gradient(ellipse at 70% 30%, rgba(90,147,168,0.12) 0%, transparent 50%);
+  }
+  /* Decorative mist orbs */
+  .lantern { position: absolute; border-radius: 50%; background: radial-gradient(circle, rgba(255,255,255,0.14) 0%, rgba(160,200,205,0.06) 60%, transparent 100%); }
+  .lantern-1 { width: 300px; height: 300px; top: 5%; left: 5%; }
+  .lantern-2 { width: 200px; height: 200px; top: 15%; right: 15%; }
+  .lantern-3 { width: 150px; height: 150px; top: 45%; right: 5%; }
+  .lantern-4 { width: 250px; height: 250px; bottom: 10%; left: 20%; }
+  .lantern-5 { width: 120px; height: 120px; bottom: 20%; right: 30%; }
+  .hero-content { position: relative; text-align: center; color: #fff; padding: 0 20px; }
+  .hero-sub { font-size: 13px; letter-spacing: 4px; color: var(--gold); margin-bottom: 20px; opacity: 0.9; }
+  .hero-title { font-size: clamp(52px, 10vw, 96px); letter-spacing: 12px; font-weight: 200; line-height: 1; margin-bottom: 24px; }
+  .hero-tagline { font-size: 16px; letter-spacing: 3px; color: rgba(255,255,255,0.7); margin-bottom: 48px; line-height: 2; }
+  .hero-cta {
+    display: inline-block; padding: 14px 44px; border: 1px solid var(--gold);
+    color: var(--gold); text-decoration: none; letter-spacing: 3px; font-size: 13px;
+    transition: all .3s; background: transparent;
+  }
+  .hero-cta:hover { background: var(--gold); color: #fff; }
+  .scroll-hint { position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%); color: rgba(255,255,255,0.4); font-size: 11px; letter-spacing: 3px; text-align: center; }
+  .scroll-hint::after { content: ''; display: block; width: 1px; height: 40px; background: rgba(255,255,255,0.3); margin: 8px auto 0; }
+
+  /* ===== SECTION BASE ===== */
+  section { padding: 96px 40px; max-width: 1100px; margin: 0 auto; }
+  .section-label { font-size: 11px; letter-spacing: 5px; color: var(--gold); text-transform: uppercase; margin-bottom: 12px; }
+  .section-title { font-size: clamp(28px, 4vw, 44px); font-weight: 300; letter-spacing: 4px; line-height: 1.3; margin-bottom: 20px; }
+  .section-body { font-size: 15px; line-height: 2.2; color: var(--muted); max-width: 600px; }
+  hr.divider { border: none; border-top: 1px solid var(--border); margin: 48px 0; }
+
+  /* ===== CONCEPT ===== */
+  #concept { background: #fff; max-width: 100%; padding: 96px 0; }
+  #concept > .inner { max-width: 1100px; margin: 0 auto; padding: 0 40px; display: grid; grid-template-columns: 1fr 1fr; gap: 80px; align-items: center; }
+  .concept-visual {
+    position: relative; height: 440px; overflow: hidden; border-radius: 2px;
+    background: linear-gradient(180deg, rgba(20,58,66,0.15) 0%, rgba(20,58,66,0.55) 100%),
+                url('https://upload.wikimedia.org/wikipedia/commons/thumb/1/19/Omihachiman_Canal_March_2016.jpg/1280px-Omihachiman_Canal_March_2016.jpg') center / cover no-repeat;
+  }
+  .concept-visual::before {
+    content: '宿'; position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+    font-size: 240px; color: rgba(255,255,255,0.12); letter-spacing: 0;
+  }
+  .concept-visual-inner { position: absolute; inset: 0; display: flex; align-items: flex-end; justify-content: center; flex-direction: column; padding: 24px; color: rgba(255,255,255,0.85); gap: 6px; text-shadow: 0 1px 6px rgba(0,0,0,.4); }
+  .concept-visual-inner span { font-size: 13px; letter-spacing: 4px; }
+  .concept-pills { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 32px; }
+  .pill { padding: 6px 18px; border: 1px solid var(--border); font-size: 12px; letter-spacing: 2px; color: var(--muted); border-radius: 40px; }
+
+  /* ===== PROPERTIES ===== */
+  #rooms { background: var(--dark); color: #fff; max-width: 100%; padding: 96px 0; }
+  #rooms > .inner { max-width: 1100px; margin: 0 auto; padding: 0 40px; }
+  #rooms .section-body { color: rgba(255,255,255,0.5); }
+  .rooms-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; margin-top: 48px; }
+  .room-card {
+    background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08);
+    overflow: hidden; cursor: pointer; transition: border-color .3s, transform .3s;
+  }
+  .room-card:hover { border-color: var(--gold); transform: translateY(-4px); }
+  .room-card.selected { border-color: var(--gold); background: rgba(184,150,90,0.08); }
+  .room-img {
+    height: 210px; background: var(--dark) center / cover no-repeat; display: flex; align-items: flex-start; justify-content: flex-start;
+    position: relative; overflow: hidden;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+    transition: transform .6s ease;
+  }
+  .room-card:hover .room-img { transform: scale(1.05); }
+  .room-img::before {
+    content: ''; position: absolute; inset: 0;
+    background: linear-gradient(160deg, rgba(20,58,66,0.05) 0%, rgba(20,58,66,0.45) 100%);
+  }
+  .room-img-char {
+    font-family: 'Hiragino Mincho ProN', serif; font-size: 22px; color: rgba(255,255,255,0.92); z-index: 1;
+    margin: 14px; width: 46px; height: 46px; display: flex; align-items: center; justify-content: center;
+    border: 1px solid rgba(255,255,255,0.6); border-radius: 50%; backdrop-filter: blur(2px); background: rgba(20,58,66,0.25);
+  }
+  .room-info { padding: 24px; }
+  .room-location { font-size: 10px; letter-spacing: 4px; color: var(--gold); margin-bottom: 8px; }
+  .room-name { font-size: 20px; letter-spacing: 4px; font-weight: 300; margin-bottom: 8px; }
+  .room-name-sub { font-size: 12px; color: rgba(255,255,255,0.4); letter-spacing: 1px; margin-bottom: 16px; }
+  .room-desc { font-size: 13px; line-height: 1.9; color: rgba(255,255,255,0.5); margin-bottom: 20px; }
+  .room-price { font-size: 22px; color: var(--gold); letter-spacing: 1px; }
+  .room-price span { font-size: 12px; color: rgba(255,255,255,0.4); }
+  .room-features { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
+  .room-feature { font-size: 11px; letter-spacing: 1px; color: rgba(255,255,255,0.4); padding: 3px 10px; border: 1px solid rgba(255,255,255,0.1); border-radius: 2px; }
+  .select-badge { display: inline-block; font-size: 11px; letter-spacing: 2px; color: var(--gold); border: 1px solid var(--gold); padding: 4px 14px; margin-top: 16px; border-radius: 2px; cursor: pointer; transition: all .2s; }
+  .select-badge:hover, .room-card.selected .select-badge { background: var(--gold); color: #fff; }
+
+  /* ===== BOOKING ===== */
+  #booking {
+    max-width: 100%; padding: 96px 0;
+    background: linear-gradient(rgba(238,245,242,0.93), rgba(238,245,242,0.97)),
+                url('https://upload.wikimedia.org/wikipedia/commons/thumb/b/bb/Landscape_from_Yanagasaki_Lakeside_Park_2.JPG/1280px-Landscape_from_Yanagasaki_Lakeside_Park_2.JPG') center / cover no-repeat fixed;
+  }
+  #booking > .inner { max-width: 900px; margin: 0 auto; padding: 0 40px; }
+  .booking-form { background: #fff; border: 1px solid var(--border); padding: 48px; margin-top: 48px; }
+  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+  .form-group { display: flex; flex-direction: column; gap: 8px; }
+  .form-group.full { grid-column: 1 / -1; }
+  label { font-size: 11px; letter-spacing: 3px; color: var(--muted); text-transform: uppercase; }
+  input, select, textarea {
+    border: 1px solid var(--border); padding: 12px 16px; font-size: 14px; font-family: inherit;
+    background: var(--paper); color: var(--ink); outline: none; transition: border-color .2s;
+    border-radius: 0;
+  }
+  input:focus, select:focus, textarea:focus { border-color: var(--gold); }
+  textarea { resize: vertical; min-height: 100px; line-height: 1.8; }
+  .form-row { display: flex; gap: 16px; margin-top: 24px; align-items: center; }
+
+  /* Prevent grid/flex children from forcing horizontal overflow (default min-width:auto) */
+  .form-grid > * { min-width: 0; }
+
+  /* Calendar */
+  .calendar-wrap { grid-column: 1 / -1; min-width: 0; }
+  #calendar, .cal-grid { min-width: 0; }
+
+  /* ===== SCENERY BAND ===== */
+  .scenery-band {
+    position: relative; height: 380px; max-width: 100%; padding: 0;
+    display: flex; align-items: center; justify-content: center; text-align: center;
+    background: linear-gradient(rgba(20,58,66,0.42), rgba(20,58,66,0.42)),
+                url('https://upload.wikimedia.org/wikipedia/commons/thumb/f/f1/Metasequoia_Road_in_Makino%2C_Takashima_-_Jul_9%2C_2017.jpg/1280px-Metasequoia_Road_in_Makino%2C_Takashima_-_Jul_9%2C_2017.jpg') center 35% / cover no-repeat;
+  }
+  .scenery-band .band-inner { color: #fff; padding: 0 24px; text-shadow: 0 2px 10px rgba(0,0,0,.35); }
+  .scenery-band .band-label { font-size: 11px; letter-spacing: 5px; color: #d8eae3; margin-bottom: 14px; }
+  .scenery-band .band-title { font-size: clamp(22px, 4vw, 38px); font-weight: 300; letter-spacing: 6px; line-height: 1.5; }
+  .cal-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+  .cal-nav { background: none; border: 1px solid var(--border); padding: 6px 14px; cursor: pointer; font-size: 14px; color: var(--muted); transition: all .2s; }
+  .cal-nav:hover { border-color: var(--gold); color: var(--gold); }
+  .cal-month { font-size: 16px; letter-spacing: 3px; color: var(--ink); }
+  .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+  .cal-day-name { text-align: center; font-size: 11px; letter-spacing: 2px; color: var(--muted); padding: 8px 0; }
+  .cal-day {
+    text-align: center; padding: 10px 4px; font-size: 13px; cursor: pointer; border: 1px solid transparent;
+    transition: all .15s; border-radius: 2px; position: relative;
+  }
+  .cal-day:hover:not(.empty):not(.past) { border-color: var(--gold); color: var(--gold); }
+  .cal-day.empty { cursor: default; }
+  .cal-day.past { color: var(--border); cursor: default; }
+  .cal-day.checkin { background: var(--gold); color: #fff; border-color: var(--gold); }
+  .cal-day.checkout { background: #c8956c; color: #fff; border-color: #c8956c; }
+  .cal-day.inrange { background: rgba(79,154,142,0.12); border-color: rgba(79,154,142,0.25); }
+  .cal-day.available::after { content: ''; display: block; width: 4px; height: 4px; border-radius: 50%; background: var(--green); margin: 2px auto 0; }
+  .cal-day.booked { color: var(--border); cursor: not-allowed; text-decoration: line-through; }
+  .cal-legend { display: flex; flex-wrap: wrap; gap: 10px 20px; margin-top: 12px; font-size: 11px; color: var(--muted); }
+  .cal-legend-item { display: flex; align-items: center; gap: 6px; }
+  .cal-legend-dot { width: 10px; height: 10px; border-radius: 50%; }
+
+  .selected-dates { background: rgba(79,154,142,0.08); border: 1px solid rgba(79,154,142,0.22); padding: 16px 20px; margin-top: 16px; display: flex; flex-wrap: wrap; gap: 16px 32px; }
+  .sel-date-item { display: flex; flex-direction: column; gap: 4px; }
+  .sel-date-label { font-size: 10px; letter-spacing: 3px; color: var(--gold); }
+  .sel-date-val { font-size: 16px; letter-spacing: 2px; }
+
+  .submit-btn {
+    display: block; width: 100%; padding: 18px; background: var(--ink); color: #fff;
+    border: none; font-family: inherit; font-size: 14px; letter-spacing: 4px; cursor: pointer;
+    transition: background .3s; margin-top: 32px; text-transform: uppercase;
+  }
+  .submit-btn:hover { background: var(--gold); }
+
+  .form-note { font-size: 12px; color: var(--muted); line-height: 1.8; margin-top: 24px; padding-top: 24px; border-top: 1px solid var(--border); }
+
+  /* ===== MODAL ===== */
+  #modal-overlay {
+    display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 2000; align-items: center; justify-content: center;
+  }
+  #modal-overlay.open { display: flex; }
+  .modal {
+    background: #fff; max-width: 480px; width: 90%; padding: 48px; position: relative;
+    border-top: 3px solid var(--gold);
+  }
+  .modal-close { position: absolute; top: 16px; right: 20px; font-size: 24px; cursor: pointer; color: var(--muted); background: none; border: none; }
+  .modal-icon { font-size: 48px; margin-bottom: 16px; }
+  .modal-title { font-size: 22px; letter-spacing: 4px; margin-bottom: 16px; }
+  .modal-body { font-size: 14px; line-height: 2; color: var(--muted); }
+
+  /* ===== FOOTER ===== */
+  footer { background: var(--dark); color: rgba(255,255,255,0.5); padding: 60px 40px; text-align: center; }
+  .footer-logo { font-size: 28px; letter-spacing: 8px; color: #fff; margin-bottom: 16px; }
+  .footer-sub { font-size: 12px; letter-spacing: 3px; color: var(--gold); margin-bottom: 32px; }
+  .footer-links { display: flex; justify-content: center; gap: 32px; margin-bottom: 40px; flex-wrap: wrap; }
+  .footer-links a { color: rgba(255,255,255,0.5); text-decoration: none; font-size: 12px; letter-spacing: 2px; transition: color .2s; }
+  .footer-links a:hover { color: var(--gold); }
+  .footer-copy { font-size: 11px; letter-spacing: 1px; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 24px; }
+
+  /* ===== RESPONSIVE ===== */
+  @media (max-width: 768px) {
+    nav { padding: 14px 20px; }
+    .nav-links { display: none; }
+    section { padding: 64px 20px; }
+    #concept > .inner { grid-template-columns: 1fr; gap: 40px; padding: 0 20px; }
+    .concept-visual { height: 260px; }
+    .rooms-grid { grid-template-columns: 1fr; }
+    #rooms > .inner, #booking > .inner { padding: 0 20px; }
+    .booking-form { padding: 24px 16px; }
+    .form-grid { grid-template-columns: 1fr; }
+    .footer-links { flex-direction: column; gap: 16px; }
+    footer { padding: 40px 20px; }
+
+    /* Calendar: tighter cells so 7 columns always fit */
+    .cal-grid { gap: 2px; }
+    .cal-day { padding: 9px 0; font-size: 13px; }
+    .cal-day-name { padding: 6px 0; }
+    .cal-nav { padding: 6px 10px; }
+    .cal-month { font-size: 15px; letter-spacing: 1px; }
+
+    /* iOS renders background-attachment:fixed poorly — use scroll on small screens */
+    #booking, .scenery-band { background-attachment: scroll; }
+    .scenery-band { height: 260px; }
+    .concept-visual { background-attachment: scroll; }
+  }
+
+  /* ===== LANG ===== */
+  [data-ja], [data-en] { display: none; }
+  body.lang-ja [data-ja] { display: block; }
+  body.lang-ja span[data-ja] { display: inline; }
+  body.lang-ja [data-en] { display: none; }
+  body.lang-en [data-en] { display: block; }
+  body.lang-en span[data-en] { display: inline; }
+  body.lang-en [data-ja] { display: none; }
+
+  /* Fade in */
+  .fade-in { opacity: 0; transform: translateY(20px); transition: opacity .6s, transform .6s; }
+  .fade-in.visible { opacity: 1; transform: translateY(0); }
+</style>
+</head>
+<body class="lang-ja">
+
+<!-- Lang Toggle -->
+<div id="lang-toggle">
+  <button class="lang-btn active" onclick="setLang('ja')">JP</button>
+  <button class="lang-btn" onclick="setLang('en')">EN</button>
+</div>
+
+<!-- Nav -->
+<nav id="nav">
+  <a class="nav-logo" href="#hero">SHUKUBA</a>
+  <div class="nav-links">
+    <a href="#concept"><span data-ja>コンセプト</span><span data-en>Concept</span></a>
+    <a href="#rooms"><span data-ja>お部屋</span><span data-en>Rooms</span></a>
+    <a href="#booking"><span data-ja>ご予約</span><span data-en>Reserve</span></a>
+  </div>
+</nav>
+
+<!-- Hero -->
+<div id="hero">
+  <div class="hero-bg"></div>
+  <div class="lantern lantern-1"></div>
+  <div class="lantern lantern-2"></div>
+  <div class="lantern lantern-3"></div>
+  <div class="lantern lantern-4"></div>
+  <div class="lantern lantern-5"></div>
+  <div class="hero-content">
+    <div class="hero-sub" data-ja>滋賀県 古民家再生宿泊</div>
+    <div class="hero-sub" data-en>Historic Machiya Inn · Shiga, Japan</div>
+    <div class="hero-title">SHUKUBA</div>
+    <div class="hero-tagline">
+      <span data-ja>古民家を、もう一度この街の誇りへ。</span>
+      <span data-en>Breathing new life into century-old machiya townhouses.</span>
+    </div>
+    <a href="#booking" class="hero-cta">
+      <span data-ja>ご予約はこちら</span>
+      <span data-en>Book Your Stay</span>
+    </a>
+  </div>
+  <div class="scroll-hint">
+    <span data-ja>スクロール</span><span data-en>SCROLL</span>
+  </div>
+</div>
+
+<!-- Concept -->
+<div id="concept">
+  <div class="inner">
+    <div class="concept-visual fade-in">
+      <div class="concept-visual-inner">
+        <span data-ja>泊食分離 ／ B&amp;B</span>
+        <span data-en>Bed &amp; Breakfast</span>
+      </div>
+    </div>
+    <div class="fade-in">
+      <div class="section-label" data-ja>コンセプト</div>
+      <div class="section-label" data-en>Concept</div>
+      <h2 class="section-title">
+        <span data-ja>スローライフを楽しむ、<br>B&amp;Bという選択。</span>
+        <span data-en>A slower pace.<br>The B&amp;B way.</span>
+      </h2>
+      <p class="section-body">
+        <span data-ja>職人の技が刻まれた古民家を、宿として再生。太い梁、漆喰の壁、土間の佇まい——本物の空間が、旅を記憶に変えます。食事は街の飲食店へ。朝食はセルフでゆっくり。宿は「眠り」に特化した、上質な滞在を提供します。</span>
+        <span data-en>Each of our restored machiya townhouses bears the craftsmanship of generations. Thick timber beams, plastered walls, and earthen entryways tell stories that no modern hotel can replicate. Breakfast is a quiet, self-paced ritual. Dinner is the town itself.</span>
+      </p>
+      <div class="concept-pills">
+        <span class="pill" data-ja>京都・大阪から約1時間</span>
+        <span class="pill" data-en>~1hr from Kyoto &amp; Osaka</span>
+        <span class="pill" data-ja>全棟一棟貸し</span>
+        <span class="pill" data-en>Entire house rental</span>
+        <span class="pill" data-ja>セルフ朝食付き</span>
+        <span class="pill" data-en>B&amp;B included</span>
+        <span class="pill" data-ja>英語対応スタッフ</span>
+        <span class="pill" data-en>English-speaking staff</span>
+        <span class="pill" data-ja>通年営業</span>
+        <span class="pill" data-en>Year-round</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Rooms -->
+<div id="rooms">
+  <div class="inner">
+    <div class="section-label" data-ja>お部屋・物件</div>
+    <div class="section-label" data-en>Our Properties</div>
+    <h2 class="section-title" style="color:#fff">
+      <span data-ja>三つの古民家。<br>それぞれの物語。</span>
+      <span data-en>Three houses.<br>Three stories.</span>
+    </h2>
+    <p class="section-body">
+      <span data-ja>近江八幡・長浜の歴史地区に佇む、再生された古民家の宿。料金は1泊あたりの棟貸し価格です。</span>
+      <span data-en>Carefully restored machiya townhouses in the historic districts of Omihachiman and Nagahama. Prices shown are per-house, per-night.</span>
+    </p>
+    <div class="rooms-grid">
+
+      <!-- Room 1 -->
+      <div class="room-card fade-in" id="card-0" onclick="selectRoom(0)">
+        <div class="room-img" style="background-image:url('https://upload.wikimedia.org/wikipedia/commons/thumb/7/7e/Hachimanbori07s3200.jpg/1280px-Hachimanbori07s3200.jpg')"><div class="room-img-char">鍵</div></div>
+        <div class="room-info">
+          <div class="room-location" data-ja>近江八幡市</div>
+          <div class="room-location" data-en>Omihachiman</div>
+          <div class="room-name" data-ja>鍵之手町</div>
+          <div class="room-name" data-en>Kagino-te-machi</div>
+          <div class="room-name-sub" data-ja>城下町の入り口に佇む歴史的町並み</div>
+          <div class="room-name-sub" data-en>Historic gateway to the castle-town district</div>
+          <p class="room-desc">
+            <span data-ja>朝鮮人街道が鍵の字に曲がる要所に位置し、城下町の風情を色濃く残す物件。八幡堀・新町通りへも徒歩圏内。</span>
+            <span data-en>Situated at the historic bend of the old road, just a short walk from Hachiman-bori canal and Shinmachi-dori.</span>
+          </p>
+          <div class="room-price">¥18,000<span data-ja>〜 / 泊（棟）</span><span data-en>〜 / night (whole house)</span></div>
+          <div class="room-features">
+            <span class="room-feature" data-ja>最大6名</span><span class="room-feature" data-en>Up to 6 guests</span>
+            <span class="room-feature" data-ja>朝食付</span><span class="room-feature" data-en>Breakfast incl.</span>
+            <span class="room-feature" data-ja>Wi-Fi</span><span class="room-feature" data-en>Wi-Fi</span>
+          </div>
+          <div class="select-badge" data-ja>この宿を選ぶ</div>
+          <div class="select-badge" data-en>Select</div>
+        </div>
+      </div>
+
+      <!-- Room 2 -->
+      <div class="room-card fade-in" id="card-1" onclick="selectRoom(1)">
+        <div class="room-img" style="background-image:url('https://upload.wikimedia.org/wikipedia/commons/thumb/5/57/Hachiman-bori_Canal_ac_%285%29.jpg/1280px-Hachiman-bori_Canal_ac_%285%29.jpg')"><div class="room-img-char">為</div></div>
+        <div class="room-info">
+          <div class="room-location" data-ja>近江八幡市</div>
+          <div class="room-location" data-en>Omihachiman</div>
+          <div class="room-name" data-ja>為心町</div>
+          <div class="room-name" data-en>Tameshin-cho</div>
+          <div class="room-name-sub" data-ja>映画ロケ地・八幡堀徒歩圏内</div>
+          <div class="room-name-sub" data-en>Walking distance to the famous Hachiman-bori</div>
+          <p class="room-desc">
+            <span data-ja>歴史を感じながら散策できるエリア。映画のロケ地としても知られる八幡堀や、町並み保存地区へも徒歩圏内。</span>
+            <span data-en>Steps from the moat that has starred in countless films. Stroll the preserved townscape of Shinmachi-dori in minutes.</span>
+          </p>
+          <div class="room-price">¥20,000<span data-ja>〜 / 泊（棟）</span><span data-en>〜 / night (whole house)</span></div>
+          <div class="room-features">
+            <span class="room-feature" data-ja>最大8名</span><span class="room-feature" data-en>Up to 8 guests</span>
+            <span class="room-feature" data-ja>朝食付</span><span class="room-feature" data-en>Breakfast incl.</span>
+            <span class="room-feature" data-ja>Wi-Fi</span><span class="room-feature" data-en>Wi-Fi</span>
+          </div>
+          <div class="select-badge" data-ja>この宿を選ぶ</div>
+          <div class="select-badge" data-en>Select</div>
+        </div>
+      </div>
+
+      <!-- Room 3 -->
+      <div class="room-card fade-in" id="card-2" onclick="selectRoom(2)">
+        <div class="room-img" style="background-image:url('https://upload.wikimedia.org/wikipedia/commons/thumb/8/8b/211021_Kurokabe_Square_Nagahama_Shiga_prefecture_Japan01s3.jpg/1280px-211021_Kurokabe_Square_Nagahama_Shiga_prefecture_Japan01s3.jpg')"><div class="room-img-char">浜</div></div>
+        <div class="room-info">
+          <div class="room-location" data-ja>長浜市</div>
+          <div class="room-location" data-en>Nagahama</div>
+          <div class="room-name" data-ja>元浜町</div>
+          <div class="room-name" data-en>Motohama-cho</div>
+          <div class="room-name-sub" data-ja>長浜城下町・黒壁スクエア隣接</div>
+          <div class="room-name-sub" data-en>Adjacent to Kurokabe Square, Nagahama</div>
+          <p class="room-desc">
+            <span data-ja>豊臣秀吉が初めて城を持った長浜城の城下町。琵琶湖の豊かな自然と古き良き街並みが調和する歴史・文化の地。</span>
+            <span data-en>Located in the castle-town of Nagahama, where Toyotomi Hideyoshi built his first castle. Lake Biwa stretches beyond the old merchant streets.</span>
+          </p>
+          <div class="room-price">¥22,000<span data-ja>〜 / 泊（棟）</span><span data-en>〜 / night (whole house)</span></div>
+          <div class="room-features">
+            <span class="room-feature" data-ja>最大10名</span><span class="room-feature" data-en>Up to 10 guests</span>
+            <span class="room-feature" data-ja>朝食付</span><span class="room-feature" data-en>Breakfast incl.</span>
+            <span class="room-feature" data-ja>Wi-Fi</span><span class="room-feature" data-en>Wi-Fi</span>
+          </div>
+          <div class="select-badge" data-ja>この宿を選ぶ</div>
+          <div class="select-badge" data-en>Select</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- Scenery band -->
+<div class="scenery-band">
+  <div class="band-inner">
+    <div class="band-label" data-ja>滋賀・高島 メタセコイア並木</div>
+    <div class="band-label" data-en>METASEQUOIA AVENUE · TAKASHIMA, SHIGA</div>
+    <div class="band-title">
+      <span data-ja>湖国の四季が、旅をやさしく包む。</span>
+      <span data-en>Wrapped in the four seasons of the lake country.</span>
+    </div>
+  </div>
+</div>
+
+<!-- Booking -->
+<div id="booking">
+  <div class="inner">
+    <div class="section-label" data-ja>ご予約</div>
+    <div class="section-label" data-en>Reservation</div>
+    <h2 class="section-title">
+      <span data-ja>空室確認・予約</span>
+      <span data-en>Check Availability &amp; Reserve</span>
+    </h2>
+    <div class="booking-form">
+      <form id="booking-form" name="reservation" method="POST" data-netlify="true" onsubmit="submitForm(event)">
+        <input type="hidden" name="form-name" value="reservation">
+        <input type="hidden" name="room-name" id="room-name-input">
+        <div class="form-grid">
+
+          <!-- Property select -->
+          <div class="form-group full">
+            <label data-ja>物件を選ぶ</label>
+            <label data-en>Property</label>
+            <select id="room-select" required onchange="updateRoomCards()"></select>
+          </div>
+
+          <!-- Calendar -->
+          <div class="form-group full calendar-wrap">
+            <label data-ja>日程を選ぶ（チェックイン → チェックアウト）</label>
+            <label data-en>Select dates (Check-in → Check-out)</label>
+            <div id="calendar"></div>
+            <div id="selected-dates" class="selected-dates" style="display:none">
+              <div class="sel-date-item">
+                <div class="sel-date-label" data-ja>チェックイン</div>
+                <div class="sel-date-label" data-en>Check-in</div>
+                <div class="sel-date-val" id="disp-checkin">—</div>
+              </div>
+              <div class="sel-date-item">
+                <div class="sel-date-label" data-ja>チェックアウト</div>
+                <div class="sel-date-label" data-en>Check-out</div>
+                <div class="sel-date-val" id="disp-checkout">—</div>
+              </div>
+              <div class="sel-date-item">
+                <div class="sel-date-label" data-ja>泊数</div>
+                <div class="sel-date-label" data-en>Nights</div>
+                <div class="sel-date-val" id="disp-nights">—</div>
+              </div>
+            </div>
+            <input type="hidden" id="checkin-input" name="checkin" required>
+            <input type="hidden" id="checkout-input" name="checkout" required>
+          </div>
+
+          <!-- Guests -->
+          <div class="form-group">
+            <label data-ja>宿泊人数</label>
+            <label data-en>Guests</label>
+            <select name="guests" required>
+              <option value="" disabled selected>—</option>
+              <option>1</option><option>2</option><option>3</option><option>4</option>
+              <option>5</option><option>6</option><option>7</option><option>8</option>
+              <option>9</option><option>10</option>
+            </select>
+          </div>
+
+          <!-- Name -->
+          <div class="form-group">
+            <label data-ja>お名前</label>
+            <label data-en>Full Name</label>
+            <input type="text" name="name" placeholder="" required>
+          </div>
+
+          <!-- Email -->
+          <div class="form-group">
+            <label data-ja>メールアドレス</label>
+            <label data-en>Email Address</label>
+            <input type="email" name="email" required>
+          </div>
+
+          <!-- Phone -->
+          <div class="form-group">
+            <label data-ja>電話番号</label>
+            <label data-en>Phone Number</label>
+            <input type="tel" name="phone">
+          </div>
+
+          <!-- Message -->
+          <div class="form-group full">
+            <label data-ja>ご要望・備考</label>
+            <label data-en>Special Requests</label>
+            <textarea name="message" placeholder=""></textarea>
+          </div>
+        </div>
+
+        <button type="submit" class="submit-btn">
+          <span data-ja>予約リクエストを送る</span>
+          <span data-en>Send Reservation Request</span>
+        </button>
+        <p class="form-note">
+          <span data-ja>※ このフォームは予約リクエストです。ご送信後、スタッフより2営業日以内にメールにてご連絡いたします。<br>※ 料金は人数・時期により変動する場合があります。詳細はご確認のメールにてお知らせします。</span>
+          <span data-en>※ This form sends a reservation request. Our staff will contact you within 2 business days to confirm availability and pricing.<br>※ Rates may vary by season and number of guests.</span>
+        </p>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Footer -->
+<footer>
+  <div class="footer-logo">SHUKUBA</div>
+  <div class="footer-sub" data-ja>古民家を、もう一度この街の誇りへ。</div>
+  <div class="footer-sub" data-en>Breathing new life into century-old machiya townhouses.</div>
+  <div class="footer-links">
+    <a href="#concept"><span data-ja>コンセプト</span><span data-en>Concept</span></a>
+    <a href="#rooms"><span data-ja>お部屋</span><span data-en>Rooms</span></a>
+    <a href="#booking"><span data-ja>ご予約</span><span data-en>Reserve</span></a>
+  </div>
+  <div class="footer-copy">
+    <span data-ja>© 2026 SPICEWORKS HD / SHUKUBA. 滋賀県古民家再生宿泊プロジェクト</span>
+    <span data-en>© 2026 SPICEWORKS HD / SHUKUBA. Machiya Revitalization Project, Shiga Prefecture</span>
+    <br><span style="opacity:.7;font-size:10px" data-ja>写真：Wikimedia Commons（白鬚神社・八幡堀・黒壁スクエア・メタセコイア並木 ／ CCライセンス）※サンプル用</span>
+    <span style="opacity:.7;font-size:10px" data-en>Photos: Wikimedia Commons (Shirahige Shrine, Hachiman-bori, Kurokabe Square, Metasequoia Avenue / CC-licensed) — sample use</span>
+  </div>
+</footer>
+
+<!-- Modal -->
+<div id="modal-overlay" onclick="closeModal(event)">
+  <div class="modal">
+    <button class="modal-close" onclick="document.getElementById('modal-overlay').classList.remove('open')">×</button>
+    <div class="modal-icon">✉️</div>
+    <div class="modal-title" data-ja>予約リクエストを受け付けました</div>
+    <div class="modal-title" data-en>Request Received</div>
+    <p class="modal-body">
+      <span data-ja>ご予約リクエストありがとうございます。<br>2営業日以内にご登録のメールアドレスへご連絡いたします。<br><br>しばらくお待ちください。</span>
+      <span data-en>Thank you for your reservation request.<br>We will contact you at the email provided within 2 business days.<br><br>We look forward to welcoming you.</span>
+    </p>
+  </div>
+</div>
+
+<script>
+// ===== SELECT OPTIONS =====
+const selectOpts = {
+  ja: [
+    { v: '', label: '— 物件を選択してください —', disabled: true },
+    { v: '0', label: '近江八幡・鍵之手町（最大6名 / ¥18,000〜）' },
+    { v: '1', label: '近江八幡・為心町（最大8名 / ¥20,000〜）' },
+    { v: '2', label: '長浜・元浜町（最大10名 / ¥22,000〜）' },
+  ],
+  en: [
+    { v: '', label: '— Select a property —', disabled: true },
+    { v: '0', label: 'Omihachiman · Kaginote-machi (up to 6 / ¥18,000~)' },
+    { v: '1', label: 'Omihachiman · Tameshin-cho (up to 8 / ¥20,000~)' },
+    { v: '2', label: 'Nagahama · Motohama-cho (up to 10 / ¥22,000~)' },
+  ]
+};
+function buildSelect(lang) {
+  const sel = document.getElementById('room-select');
+  const cur = sel.value;
+  sel.innerHTML = '';
+  selectOpts[lang].forEach(o => {
+    const opt = document.createElement('option');
+    opt.value = o.v; opt.textContent = o.label;
+    if (o.disabled) { opt.disabled = true; if (!cur) opt.selected = true; }
+    if (o.v && o.v === cur) opt.selected = true;
+    sel.appendChild(opt);
+  });
+  if (!cur) sel.selectedIndex = 0;
+}
+
+// ===== LANG =====
+function setLang(lang) {
+  document.body.className = 'lang-' + lang;
+  document.querySelectorAll('.lang-btn').forEach((b, i) => {
+    b.classList.toggle('active', (i === 0) === (lang === 'ja'));
+  });
+  buildSelect(lang);
+  renderCalendar();
+}
+
+// ===== NAV SCROLL =====
+window.addEventListener('scroll', () => {
+  document.getElementById('nav').classList.toggle('scrolled', scrollY > 60);
+});
+
+// ===== FADE IN =====
+const obs = new IntersectionObserver(entries => {
+  entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); obs.unobserve(e.target); } });
+}, { threshold: 0.15 });
+document.querySelectorAll('.fade-in').forEach(el => obs.observe(el));
+
+// ===== ROOM SELECTION =====
+let selectedRoom = null;
+const roomNames = ['鍵之手町', '為心町', '元浜町'];
+const roomNamesEn = ['Kaginote-machi', 'Tameshin-cho', 'Motohama-cho'];
+
+function selectRoom(idx) {
+  selectedRoom = idx;
+  document.querySelectorAll('.room-card').forEach((c, i) => c.classList.toggle('selected', i === idx));
+  const sel = document.getElementById('room-select');
+  // Find correct option
+  const options = sel.querySelectorAll('option[value="' + idx + '"]');
+  const isJa = document.body.classList.contains('lang-ja');
+  sel.value = idx;
+  updateRoomCards();
+  sel.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  document.getElementById('booking').scrollIntoView({ behavior: 'smooth' });
+}
+
+function updateRoomCards() {
+  const val = document.getElementById('room-select').value;
+  if (val !== '') {
+    document.querySelectorAll('.room-card').forEach((c, i) => c.classList.toggle('selected', String(i) === String(val)));
+  }
+  updateBookedDatesForRoom();
+  checkIn = null; checkOut = null;
+  renderCalendar();
+}
+
+// ===== CALENDAR =====
+const today = new Date();
+today.setHours(0,0,0,0);
+let calYear = today.getFullYear();
+let calMonth = today.getMonth();
+let checkIn = null;
+let checkOut = null;
+let selectingCheckout = false;
+
+// Booked dates per room, loaded from server (Netlify Function + Blobs)
+let bookedByRoom = { '0': new Set(), '1': new Set(), '2': new Set() };
+let bookedDates = new Set(); // booked dates for the currently selected room
+
+async function loadAvailability() {
+  try {
+    const res = await fetch('/.netlify/functions/availability');
+    if (!res.ok) return;
+    const data = await res.json();
+    Object.keys(bookedByRoom).forEach(k => {
+      bookedByRoom[k] = new Set(data[k] || []);
+    });
+    updateBookedDatesForRoom();
+    renderCalendar();
+  } catch (err) {
+    console.warn('availability load failed', err);
+  }
+}
+
+function updateBookedDatesForRoom() {
+  const val = document.getElementById('room-select').value;
+  bookedDates = bookedByRoom[val] || new Set();
+}
+
+function fmtDate(d) {
+  return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+}
+function fmtDisplay(d, lang) {
+  if (!d) return '—';
+  const m = lang === 'en'
+    ? ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][d.getMonth()]
+    : (d.getMonth()+1) + '月';
+  return lang === 'en'
+    ? m + ' ' + d.getDate() + ', ' + d.getFullYear()
+    : d.getFullYear() + '年' + m + d.getDate() + '日';
+}
+
+function renderCalendar() {
+  const lang = document.body.classList.contains('lang-ja') ? 'ja' : 'en';
+  const dayNames = lang === 'ja' ? ['日','月','火','水','木','金','土'] : ['Su','Mo','Tu','We','Th','Fr','Sa'];
+  const monthNames = lang === 'ja'
+    ? ['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月']
+    : ['January','February','March','April','May','June','July','August','September','October','November','December'];
+
+  const first = new Date(calYear, calMonth, 1);
+  const lastDay = new Date(calYear, calMonth + 1, 0).getDate();
+  const startDow = first.getDay();
+
+  let html = `<div class="cal-header">
+    <button type="button" class="cal-nav" onclick="prevMonth()">&#8592;</button>
+    <div class="cal-month">${monthNames[calMonth]} ${calYear}</div>
+    <button type="button" class="cal-nav" onclick="nextMonth()">&#8594;</button>
+  </div><div class="cal-grid">`;
+  dayNames.forEach(d => html += `<div class="cal-day-name">${d}</div>`);
+
+  for (let i = 0; i < startDow; i++) html += `<div class="cal-day empty"></div>`;
+
+  for (let d = 1; d <= lastDay; d++) {
+    const date = new Date(calYear, calMonth, d);
+    const key = fmtDate(date);
+    const isPast = date < today;
+    const isBooked = bookedDates.has(key);
+    let cls = 'cal-day';
+    if (isPast) cls += ' past';
+    else if (isBooked) cls += ' booked';
+    else cls += ' available';
+    if (checkIn && fmtDate(checkIn) === key) cls += ' checkin';
+    else if (checkOut && fmtDate(checkOut) === key) cls += ' checkout';
+    else if (checkIn && checkOut && date > checkIn && date < checkOut) cls += ' inrange';
+    html += `<div class="${cls}" onclick="pickDate(${calYear},${calMonth},${d})">${d}</div>`;
+  }
+  html += `</div>
+  <div class="cal-legend">
+    <div class="cal-legend-item"><div class="cal-legend-dot" style="background:#7fae8e"></div>${lang==='ja'?'空室あり':'Available'}</div>
+    <div class="cal-legend-item"><div class="cal-legend-dot" style="background:#4f9a8e"></div>${lang==='ja'?'選択中':'Selected'}</div>
+    <div class="cal-legend-item"><div class="cal-legend-dot" style="background:#c2cdca"></div>${lang==='ja'?'満室':'Booked'}</div>
+  </div>`;
+  document.getElementById('calendar').innerHTML = html;
+  updateDateDisplay();
+}
+
+function prevMonth() {
+  calMonth--; if (calMonth < 0) { calMonth = 11; calYear--; }
+  renderCalendar();
+}
+function nextMonth() {
+  calMonth++; if (calMonth > 11) { calMonth = 0; calYear++; }
+  renderCalendar();
+}
+
+function pickDate(y, m, d) {
+  const date = new Date(y, m, d);
+  const key = fmtDate(date);
+  if (date < today || bookedDates.has(key)) return;
+  if (!checkIn || (checkIn && checkOut)) {
+    checkIn = date; checkOut = null; selectingCheckout = true;
+  } else {
+    if (date <= checkIn) { checkIn = date; checkOut = null; return; }
+    // Check no booked dates in range
+    let blocked = false;
+    let cur = new Date(checkIn); cur.setDate(cur.getDate()+1);
+    while (cur < date) { if (bookedDates.has(fmtDate(cur))) { blocked = true; break; } cur.setDate(cur.getDate()+1); }
+    if (blocked) { checkIn = date; checkOut = null; renderCalendar(); return; }
+    checkOut = date; selectingCheckout = false;
+    document.getElementById('checkin-input').value = fmtDate(checkIn);
+    document.getElementById('checkout-input').value = fmtDate(checkOut);
+  }
+  renderCalendar();
+}
+
+function updateDateDisplay() {
+  const lang = document.body.classList.contains('lang-ja') ? 'ja' : 'en';
+  const el = document.getElementById('selected-dates');
+  if (checkIn) {
+    el.style.display = 'flex';
+    document.getElementById('disp-checkin').textContent = fmtDisplay(checkIn, lang);
+    document.getElementById('disp-checkout').textContent = checkOut ? fmtDisplay(checkOut, lang) : '—';
+    if (checkIn && checkOut) {
+      const nights = Math.round((checkOut - checkIn) / 86400000);
+      document.getElementById('disp-nights').textContent = lang === 'ja' ? nights + '泊' : nights + (nights===1?' night':' nights');
+    } else {
+      document.getElementById('disp-nights').textContent = '—';
+    }
+  } else {
+    el.style.display = 'none';
+  }
+}
+
+// ===== FORM SUBMIT =====
+async function submitForm(e) {
+  e.preventDefault();
+  const isJa = document.body.classList.contains('lang-ja');
+  const form = e.target;
+  const roomVal = document.getElementById('room-select').value;
+
+  if (roomVal === '') {
+    alert(isJa ? '物件を選択してください' : 'Please select a property.');
+    return;
+  }
+  if (!checkIn || !checkOut) {
+    alert(isJa ? '日程を選択してください' : 'Please select your dates.');
+    return;
+  }
+
+  const checkinStr = fmtDate(checkIn);
+  const checkoutStr = fmtDate(checkOut);
+  const roomLabel = (isJa ? roomNames : roomNamesEn)[Number(roomVal)];
+  document.getElementById('room-name-input').value = roomLabel;
+
+  const fd = new FormData(form);
+  const payload = {
+    room: roomVal,
+    roomName: roomLabel,
+    checkin: checkinStr,
+    checkout: checkoutStr,
+    guests: fd.get('guests'),
+    name: fd.get('name'),
+    email: fd.get('email'),
+    phone: fd.get('phone'),
+    message: fd.get('message'),
+  };
+
+  const submitBtn = form.querySelector('.submit-btn');
+  submitBtn.disabled = true;
+
+  try {
+    // 1. Register the booking + check for date conflicts
+    const reserveRes = await fetch('/.netlify/functions/reserve', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+
+    if (reserveRes.status === 409) {
+      alert(isJa
+        ? 'たいへん申し訳ございません。選択された日程は他のお客様により直前にご予約されました。お手数ですが別の日程をお選びください。'
+        : 'Sorry, those dates were just booked by another guest. Please choose different dates.');
+      await loadAvailability();
+      checkIn = null; checkOut = null;
+      renderCalendar();
+      return;
+    }
+    if (!reserveRes.ok) throw new Error('reserve failed');
+
+    // 2. Send the notification email via Netlify Forms
+    await fetch('/', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams(fd).toString(),
+    });
+
+    // 3. Reflect the new booking locally so the calendar updates immediately
+    let cur = new Date(checkIn);
+    while (cur < checkOut) {
+      bookedByRoom[roomVal].add(fmtDate(cur));
+      cur.setDate(cur.getDate() + 1);
+    }
+    updateBookedDatesForRoom();
+
+    document.getElementById('modal-overlay').classList.add('open');
+    form.reset();
+    checkIn = null; checkOut = null;
+    renderCalendar();
+    document.querySelectorAll('.room-card').forEach(c => c.classList.remove('selected'));
+  } catch (err) {
+    console.error(err);
+    alert(isJa
+      ? '送信中にエラーが発生しました。お手数ですが時間をおいて再度お試しください。'
+      : 'Something went wrong while sending your request. Please try again in a moment.');
+  } finally {
+    submitBtn.disabled = false;
+  }
+}
+function closeModal(e) {
+  if (e.target === document.getElementById('modal-overlay')) document.getElementById('modal-overlay').classList.remove('open');
+}
+
+// ===== SELECT OPTION LANG FIX =====
+// Rebuild select options on lang change
+const origSetLang = setLang;
+
+// Init
+buildSelect('ja');
+renderCalendar();
+loadAvailability();
+</script>
+</body>
+</html>

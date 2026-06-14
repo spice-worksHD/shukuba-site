@@ -1,0 +1,64 @@
+import { getStore } from '@netlify/blobs';
+
+export default async (req) => {
+  if (req.method !== 'POST') {
+    return new Response(JSON.stringify({ ok: false, error: 'method_not_allowed' }), { status: 405 });
+  }
+
+  let data;
+  try {
+    data = await req.json();
+  } catch {
+    return new Response(JSON.stringify({ ok: false, error: 'invalid_json' }), { status: 400 });
+  }
+
+  const { room, roomName, checkin, checkout, guests, name, email, phone, message } = data;
+  if (!room || !checkin || !checkout || !name || !email) {
+    return new Response(JSON.stringify({ ok: false, error: 'missing_fields' }), { status: 400 });
+  }
+
+  const newStart = new Date(checkin);
+  const newEnd = new Date(checkout);
+  if (!(newStart < newEnd)) {
+    return new Response(JSON.stringify({ ok: false, error: 'invalid_dates' }), { status: 400 });
+  }
+
+  const store = getStore('shukuba-bookings');
+  const existing = await store.get('bookings.json', { type: 'json' });
+  const bookings = existing || [];
+
+  const conflict = bookings.some((b) => {
+    if (String(b.room) !== String(room)) return false;
+    const s = new Date(b.checkin);
+    const e = new Date(b.checkout);
+    return newStart < e && newEnd > s;
+  });
+
+  if (conflict) {
+    return new Response(JSON.stringify({ ok: false, error: 'conflict' }), { status: 409 });
+  }
+
+  bookings.push({
+    room,
+    roomName: roomName || '',
+    checkin,
+    checkout,
+    guests: guests || '',
+    name,
+    email,
+    phone: phone || '',
+    message: message || '',
+    createdAt: new Date().toISOString(),
+  });
+
+  await store.setJSON('bookings.json', bookings);
+
+  return new Response(JSON.stringify({ ok: true }), {
+    status: 200,
+    headers: { 'Content-Type': 'application/json' },
+  });
+};
+
+export const config = {
+  path: '/.netlify/functions/reserve',
+};

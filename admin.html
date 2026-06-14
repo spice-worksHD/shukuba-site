@@ -95,8 +95,8 @@
   .grid-table { border-collapse: collapse; font-size: 12px; white-space: nowrap; }
   .grid-table th, .grid-table td { border: 1px solid var(--border); padding: 6px 8px; text-align: center; }
   .grid-table thead th { background: var(--paper); position: sticky; top: 0; z-index: 2; font-weight: normal; color: var(--muted); }
-  .sticky-col { position: sticky; left: 0; background: #fff; z-index: 3; min-width: 170px; text-align: left; vertical-align: middle; }
-  .sticky-col2 { position: sticky; left: 170px; background: #fff; z-index: 3; min-width: 52px; color: var(--muted); font-size: 11px; }
+  .sticky-col { position: sticky; left: 0; background: #fff; z-index: 3; min-width: 210px; text-align: left; vertical-align: middle; }
+  .sticky-col2 { position: sticky; left: 210px; background: #fff; z-index: 3; min-width: 52px; color: var(--muted); font-size: 11px; }
   thead .sticky-col, thead .sticky-col2 { z-index: 4; }
   .weekend-col { background: #fdf0ee; }
   .cell-status { cursor: pointer; font-size: 11px; }
@@ -325,10 +325,13 @@ function renderGrid() {
 
     html += `<tr>
       <td class="sticky-col" rowspan="2">
-        <strong>${roomLabels[room]}</strong><br>
-        <span style="font-size:11px;color:var(--muted)">基本料金 ¥
-          <input type="number" class="base-input" value="${p.base || 0}" step="500" onchange="saveBase('${room}', this.value)">
-        </span>
+        <strong>${roomLabels[room]}</strong>
+        <div style="font-size:11px;color:var(--muted);margin-top:4px;line-height:1.8">
+          基本料金 ¥<input type="number" class="base-input" value="${p.base || 0}" step="500" onchange="savePricingField('${room}','base',this.value)"><br>
+          人数 <input type="number" class="base-input" style="width:40px" min="1" value="${p.minGuests ?? 1}" onchange="savePricingField('${room}','minGuests',this.value)">
+          〜<input type="number" class="base-input" style="width:40px" min="1" value="${p.maxGuests ?? 10}" onchange="savePricingField('${room}','maxGuests',this.value)">名<br>
+          超過1名+¥<input type="number" class="base-input" step="500" value="${p.extraGuestFee ?? 0}" onchange="savePricingField('${room}','extraGuestFee',this.value)">
+        </div>
       </td>
       <td class="sticky-col2">状態</td>`;
     days.forEach(d => {
@@ -363,11 +366,19 @@ function flashMsg(text) {
   setTimeout(() => { if (el.textContent === text) el.textContent = ''; }, 2000);
 }
 
-async function saveBase(room, value) {
-  const base = Number(value) || 0;
-  const overrides = (state.pricing[room] && state.pricing[room].overrides) || {};
-  const r = await apiPost({ action: 'set-pricing', room, base, overrides });
-  if (r.ok) { state.pricing = r.pricing; renderGrid(); flashMsg('基本料金を更新しました'); }
+async function savePricingField(room, field, value) {
+  const p = state.pricing[room] || {};
+  const payload = {
+    action: 'set-pricing',
+    room,
+    base: field === 'base' ? Number(value) || 0 : (p.base || 0),
+    overrides: p.overrides || {},
+    minGuests: field === 'minGuests' ? Number(value) || 1 : (p.minGuests ?? 1),
+    maxGuests: field === 'maxGuests' ? Number(value) || 1 : (p.maxGuests ?? 10),
+    extraGuestFee: field === 'extraGuestFee' ? Number(value) || 0 : (p.extraGuestFee ?? 0),
+  };
+  const r = await apiPost(payload);
+  if (r.ok) { state.pricing = r.pricing; renderGrid(); flashMsg('設定を更新しました'); }
 }
 
 async function savePriceOverride(room, date, value) {

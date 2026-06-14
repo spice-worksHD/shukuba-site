@@ -1,9 +1,9 @@
 import { getStore } from '@netlify/blobs';
 
 const DEFAULT_PRICING = {
-  '0': { base: 18000, overrides: {} },
-  '1': { base: 20000, overrides: {} },
-  '2': { base: 22000, overrides: {} },
+  '0': { base: 18000, overrides: {}, minGuests: 2, maxGuests: 6, extraGuestFee: 2000 },
+  '1': { base: 20000, overrides: {}, minGuests: 2, maxGuests: 8, extraGuestFee: 2000 },
+  '2': { base: 22000, overrides: {}, minGuests: 2, maxGuests: 10, extraGuestFee: 2000 },
 };
 
 const DEFAULT_BLOCKED = { '0': [], '1': [], '2': [] };
@@ -43,9 +43,13 @@ export default async (req) => {
 
     if (data.action === 'set-pricing') {
       const pricing = (await store.get('pricing.json', { type: 'json' })) || DEFAULT_PRICING;
+      const existing = pricing[String(data.room)] || DEFAULT_PRICING[String(data.room)] || {};
       pricing[String(data.room)] = {
         base: Number(data.base) || 0,
         overrides: data.overrides || {},
+        minGuests: data.minGuests != null ? Number(data.minGuests) : (existing.minGuests ?? 1),
+        maxGuests: data.maxGuests != null ? Number(data.maxGuests) : (existing.maxGuests ?? 10),
+        extraGuestFee: data.extraGuestFee != null ? Number(data.extraGuestFee) : (existing.extraGuestFee ?? 0),
       };
       await store.setJSON('pricing.json', pricing);
       return new Response(JSON.stringify({ ok: true, pricing }), {

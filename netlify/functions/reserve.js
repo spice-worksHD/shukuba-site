@@ -1,20 +1,24 @@
 import { getStore } from '@netlify/blobs';
 
 const DEFAULT_PRICING = {
-  '0': { base: 18000, overrides: {} },
-  '1': { base: 20000, overrides: {} },
-  '2': { base: 22000, overrides: {} },
+  '0': { base: 18000, overrides: {}, minGuests: 2, maxGuests: 6, extraGuestFee: 2000 },
+  '1': { base: 20000, overrides: {}, minGuests: 2, maxGuests: 8, extraGuestFee: 2000 },
+  '2': { base: 22000, overrides: {}, minGuests: 2, maxGuests: 10, extraGuestFee: 2000 },
 };
 
-function calcTotal(pricingForRoom, checkin, checkout) {
+function calcTotal(pricingForRoom, checkin, checkout, guests) {
   const base = pricingForRoom?.base ?? 0;
   const overrides = pricingForRoom?.overrides ?? {};
+  const minGuests = pricingForRoom?.minGuests ?? 1;
+  const extraFee = pricingForRoom?.extraGuestFee ?? 0;
+  const extraPeople = Math.max(0, (Number(guests) || 0) - minGuests);
   let total = 0;
   const cur = new Date(checkin);
   const end = new Date(checkout);
   while (cur < end) {
     const key = cur.toISOString().slice(0, 10);
-    total += overrides[key] ?? base;
+    const night = overrides[key] ?? base;
+    total += night + extraPeople * extraFee;
     cur.setDate(cur.getDate() + 1);
   }
   return total;
@@ -66,7 +70,14 @@ export default async (req) => {
   }
 
   const pricing = (await store.get('pricing.json', { type: 'json' })) || DEFAULT_PRICING;
-  const total = calcTotal(pricing[String(room)], checkin, checkout);
+  const roomPricing = pricing[String(room)] || DEFAULT_PRICING[String(room)];
+
+  const maxGuests = roomPricing?.maxGuests;
+  if (maxGuests && Number(guests) > maxGuests) {
+    return new Response(JSON.stringify({ ok: false, error: 'guests_over_capacity' }), { status: 400 });
+  }
+
+  const total = calcTotal(roomPricing, checkin, checkout, guests);
 
   bookings.push({
     room,

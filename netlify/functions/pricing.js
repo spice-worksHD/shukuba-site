@@ -1,9 +1,9 @@
 import { getStore } from '@netlify/blobs';
 
 const DEFAULT_PRICING = {
-  '0': { base: 18000, overrides: {} },
-  '1': { base: 20000, overrides: {} },
-  '2': { base: 22000, overrides: {} },
+  '0': { base: 18000, overrides: {}, minGuests: 2, maxGuests: 6, extraGuestFee: 2000 },
+  '1': { base: 20000, overrides: {}, minGuests: 2, maxGuests: 8, extraGuestFee: 2000 },
+  '2': { base: 22000, overrides: {}, minGuests: 2, maxGuests: 10, extraGuestFee: 2000 },
 };
 
 export default async () => {

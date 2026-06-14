@@ -1,5 +1,25 @@
 import { getStore } from '@netlify/blobs';
 
+const DEFAULT_PRICING = {
+  '0': { base: 18000, overrides: {} },
+  '1': { base: 20000, overrides: {} },
+  '2': { base: 22000, overrides: {} },
+};
+
+function calcTotal(pricingForRoom, checkin, checkout) {
+  const base = pricingForRoom?.base ?? 0;
+  const overrides = pricingForRoom?.overrides ?? {};
+  let total = 0;
+  const cur = new Date(checkin);
+  const end = new Date(checkout);
+  while (cur < end) {
+    const key = cur.toISOString().slice(0, 10);
+    total += overrides[key] ?? base;
+    cur.setDate(cur.getDate() + 1);
+  }
+  return total;
+}
+
 export default async (req) => {
   if (req.method !== 'POST') {
     return new Response(JSON.stringify({ ok: false, error: 'method_not_allowed' }), { status: 405 });
@@ -26,6 +46,7 @@ export default async (req) => {
   const store = getStore('shukuba-bookings');
   const existing = await store.get('bookings.json', { type: 'json' });
   const bookings = existing || [];
+  const blocked = (await store.get('blocked.json', { type: 'json' })) || {};
 
   const conflict = bookings.some((b) => {
     if (String(b.room) !== String(room)) return false;
@@ -34,9 +55,18 @@ export default async (req) => {
     return newStart < e && newEnd > s;
   });
 
-  if (conflict) {
+  const blockedDates = blocked[String(room)] || [];
+  const blockedConflict = blockedDates.some((d) => {
+    const dt = new Date(d);
+    return dt >= newStart && dt < newEnd;
+  });
+
+  if (conflict || blockedConflict) {
     return new Response(JSON.stringify({ ok: false, error: 'conflict' }), { status: 409 });
   }
+
+  const pricing = (await store.get('pricing.json', { type: 'json' })) || DEFAULT_PRICING;
+  const total = calcTotal(pricing[String(room)], checkin, checkout);
 
   bookings.push({
     room,
@@ -48,12 +78,13 @@ export default async (req) => {
     email,
     phone: phone || '',
     message: message || '',
+    total,
     createdAt: new Date().toISOString(),
   });
 
   await store.setJSON('bookings.json', bookings);
 
-  return new Response(JSON.stringify({ ok: true }), {
+  return new Response(JSON.stringify({ ok: true, total }), {
     status: 200,
     headers: { 'Content-Type': 'application/json' },
   });

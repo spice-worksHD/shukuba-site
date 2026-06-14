@@ -3,6 +3,7 @@ import { getStore } from '@netlify/blobs';
 export default async () => {
   const store = getStore('shukuba-bookings');
   const bookings = (await store.get('bookings.json', { type: 'json' })) || [];
+  const blocked = (await store.get('blocked.json', { type: 'json' })) || {};
 
   const result = { '0': [], '1': [], '2': [] };
 
@@ -18,6 +19,15 @@ export default async () => {
     }
     result[key].push(...dates);
   }
+
+  Object.keys(blocked).forEach((key) => {
+    if (!result[key]) result[key] = [];
+    result[key].push(...(blocked[key] || []));
+  });
+
+  Object.keys(result).forEach((key) => {
+    result[key] = [...new Set(result[key])];
+  });
 
   return new Response(JSON.stringify(result), {
     status: 200,

@@ -506,6 +506,11 @@
                 <div class="sel-date-label" data-en>Nights</div>
                 <div class="sel-date-val" id="disp-nights">—</div>
               </div>
+              <div class="sel-date-item">
+                <div class="sel-date-label" data-ja>合計金額</div>
+                <div class="sel-date-label" data-en>Total Price</div>
+                <div class="sel-date-val" id="disp-total">—</div>
+              </div>
             </div>
             <input type="hidden" id="checkin-input" name="checkin" required>
             <input type="hidden" id="checkout-input" name="checkout" required>
@@ -689,6 +694,14 @@ let selectingCheckout = false;
 let bookedByRoom = { '0': new Set(), '1': new Set(), '2': new Set() };
 let bookedDates = new Set(); // booked dates for the currently selected room
 
+// Pricing per room, loaded from server (Netlify Function + Blobs)
+const DEFAULT_PRICING = {
+  '0': { base: 18000, overrides: {} },
+  '1': { base: 20000, overrides: {} },
+  '2': { base: 22000, overrides: {} },
+};
+let pricingData = DEFAULT_PRICING;
+
 async function loadAvailability() {
   try {
     const res = await fetch('/.netlify/functions/availability');
@@ -702,6 +715,32 @@ async function loadAvailability() {
   } catch (err) {
     console.warn('availability load failed', err);
   }
+}
+
+async function loadPricing() {
+  try {
+    const res = await fetch('/.netlify/functions/pricing');
+    if (!res.ok) return;
+    pricingData = await res.json();
+    updateDateDisplay();
+  } catch (err) {
+    console.warn('pricing load failed', err);
+  }
+}
+
+function calcTotalPrice(roomVal, checkin, checkout) {
+  const p = pricingData[String(roomVal)] || DEFAULT_PRICING[String(roomVal)];
+  if (!p) return 0;
+  const overrides = p.overrides || {};
+  let total = 0;
+  const cur = new Date(checkin);
+  const end = new Date(checkout);
+  while (cur < end) {
+    const key = fmtDate(cur);
+    total += overrides[key] ?? p.base;
+    cur.setDate(cur.getDate() + 1);
+  }
+  return total;
 }
 
 function updateBookedDatesForRoom() {
@@ -805,8 +844,12 @@ function updateDateDisplay() {
     if (checkIn && checkOut) {
       const nights = Math.round((checkOut - checkIn) / 86400000);
       document.getElementById('disp-nights').textContent = lang === 'ja' ? nights + '泊' : nights + (nights===1?' night':' nights');
+      const roomVal = document.getElementById('room-select').value;
+      const total = calcTotalPrice(roomVal, checkIn, checkOut);
+      document.getElementById('disp-total').textContent = '¥' + total.toLocaleString();
     } else {
       document.getElementById('disp-nights').textContent = '—';
+      document.getElementById('disp-total').textContent = '—';
     }
   } else {
     el.style.display = 'none';
@@ -910,6 +953,7 @@ const origSetLang = setLang;
 buildSelect('ja');
 renderCalendar();
 loadAvailability();
+loadPricing();
 </script>
 </body>
 </html>

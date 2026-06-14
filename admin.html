@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SHUKUBA | 管理画面</title>
+<style>
+  :root {
+    --ink: #1d3a3f;
+    --paper: #eef5f2;
+    --warm: #5a93a8;
+    --gold: #4f9a8e;
+    --dark: #143a42;
+    --muted: #5e767d;
+    --border: #cfe0db;
+    --green: #7fae8e;
+    --danger: #c0594a;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Hiragino Sans', 'Yu Gothic', sans-serif;
+    background: var(--paper); color: var(--ink);
+    padding: 24px; min-height: 100vh;
+  }
+  h1 { font-size: 22px; letter-spacing: 2px; margin-bottom: 4px; }
+  .sub { color: var(--muted); font-size: 13px; margin-bottom: 24px; }
+
+  /* Login gate */
+  #login-screen {
+    max-width: 360px; margin: 80px auto; background: #fff; border: 1px solid var(--border);
+    border-radius: 8px; padding: 32px; text-align: center;
+  }
+  #login-screen h2 { font-size: 18px; margin-bottom: 16px; }
+  #login-screen input {
+    width: 100%; padding: 10px 12px; border: 1px solid var(--border); border-radius: 4px;
+    font-size: 14px; margin-bottom: 12px;
+  }
+  #login-screen button, .btn {
+    background: var(--gold); color: #fff; border: none; border-radius: 4px;
+    padding: 10px 18px; font-size: 14px; cursor: pointer; transition: background .2s;
+  }
+  #login-screen button:hover, .btn:hover { background: var(--dark); }
+  #login-error { color: var(--danger); font-size: 12px; margin-top: 8px; min-height: 16px; }
+
+  /* App */
+  #app { display: none; max-width: 1000px; margin: 0 auto; }
+  .tabs { display: flex; gap: 8px; margin-bottom: 20px; border-bottom: 1px solid var(--border); }
+  .tab-btn {
+    padding: 10px 18px; cursor: pointer; border: none; background: none; font-size: 14px;
+    color: var(--muted); border-bottom: 2px solid transparent; transition: all .2s;
+  }
+  .tab-btn.active { color: var(--gold); border-bottom-color: var(--gold); font-weight: bold; }
+  .panel { display: none; }
+  .panel.active { display: block; }
+
+  .card { background: #fff; border: 1px solid var(--border); border-radius: 8px; padding: 20px; margin-bottom: 16px; }
+  .card h3 { font-size: 15px; margin-bottom: 14px; letter-spacing: 1px; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  th { color: var(--muted); font-weight: normal; font-size: 12px; }
+  tr:last-child td { border-bottom: none; }
+
+  .stats-grid { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 16px; }
+  .stat-box { flex: 1; min-width: 140px; background: #fff; border: 1px solid var(--border); border-radius: 8px; padding: 16px; }
+  .stat-box .label { font-size: 12px; color: var(--muted); }
+  .stat-box .value { font-size: 22px; font-weight: bold; margin-top: 4px; color: var(--dark); }
+
+  .room-row { display: grid; grid-template-columns: 220px 140px 1fr; gap: 12px; align-items: start; margin-bottom: 16px; padding-bottom: 16px; border-bottom: 1px solid var(--border); }
+  .room-row:last-child { border-bottom: none; padding-bottom: 0; margin-bottom: 0; }
+  .room-row label { display: block; font-size: 12px; color: var(--muted); margin-bottom: 4px; }
+  .room-row input[type=number], .room-row input[type=date] {
+    width: 100%; padding: 8px; border: 1px solid var(--border); border-radius: 4px; font-size: 13px;
+  }
+  .override-list { display: flex; flex-direction: column; gap: 6px; }
+  .override-item { display: flex; align-items: center; gap: 8px; font-size: 12px; background: var(--paper); padding: 4px 8px; border-radius: 4px; }
+  .override-item .x { cursor: pointer; color: var(--danger); font-weight: bold; margin-left: auto; }
+  .add-override { display: flex; gap: 6px; margin-top: 8px; }
+  .add-override input { padding: 6px; border: 1px solid var(--border); border-radius: 4px; font-size: 12px; }
+  .add-override input[type=date] { flex: 1; }
+  .add-override input[type=number] { width: 100px; }
+  .small-btn { background: var(--green); color: #fff; border: none; border-radius: 4px; padding: 6px 10px; font-size: 12px; cursor: pointer; }
+  .small-btn:hover { background: var(--gold); }
+  .danger-btn { background: var(--danger); }
+  .danger-btn:hover { background: #a3463a; }
+  .save-row { text-align: right; }
+  .badge { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 11px; }
+  .badge.future { background: #e2f0ec; color: var(--gold); }
+  .badge.past { background: #eee; color: var(--muted); }
+  .msg { font-size: 12px; color: var(--gold); margin-top: 8px; min-height: 16px; }
+</style>
+</head>
+<body>
+
+<div id="login-screen">
+  <h2>SHUKUBA 管理画面</h2>
+  <input type="password" id="login-key" placeholder="管理パスワード">
+  <button onclick="login()">ログイン</button>
+  <div id="login-error"></div>
+</div>
+
+<div id="app">
+  <h1>SHUKUBA 管理画面</h1>
+  <div class="sub">予約管理・料金設定・在庫管理</div>
+
+  <div class="tabs">
+    <button class="tab-btn active" onclick="showTab('reservations')">予約履歴・サマリー</button>
+    <button class="tab-btn" onclick="showTab('pricing')">料金設定</button>
+    <button class="tab-btn" onclick="showTab('inventory')">在庫管理</button>
+  </div>
+
+  <!-- Reservations -->
+  <div class="panel active" id="panel-reservations">
+    <div class="stats-grid" id="stats-grid"></div>
+    <div class="card">
+      <h3>予約一覧</h3>
+      <table id="bookings-table">
+        <thead>
+          <tr>
+            <th>予約日時</th><th>物件</th><th>チェックイン</th><th>チェックアウト</th>
+            <th>人数</th><th>氏名</th><th>連絡先</th><th>金額</th><th>状態</th><th></th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Pricing -->
+  <div class="panel" id="panel-pricing">
+    <div class="card">
+      <h3>基本料金・日別料金設定（ダイナミックプライシング）</h3>
+      <div id="pricing-rooms"></div>
+    </div>
+  </div>
+
+  <!-- Inventory -->
+  <div class="panel" id="panel-inventory">
+    <div class="card">
+      <h3>在庫管理（メンテナンス等で予約不可にする日付）</h3>
+      <div id="inventory-rooms"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+const roomLabels = {
+  '0': '近江八幡・鍵之手町',
+  '1': '近江八幡・為心町',
+  '2': '長浜・元浜町',
+};
+
+let adminKey = localStorage.getItem('shukuba_admin_key') || '';
+let state = { bookings: [], pricing: {}, blocked: {} };
+
+async function login() {
+  const key = document.getElementById('login-key').value.trim();
+  if (!key) return;
+  const res = await fetch('/.netlify/functions/admin', { headers: { 'x-admin-key': key } });
+  if (res.ok) {
+    adminKey = key;
+    localStorage.setItem('shukuba_admin_key', key);
+    document.getElementById('login-screen').style.display = 'none';
+    document.getElementById('app').style.display = 'block';
+    state = await res.json();
+    renderAll();
+  } else {
+    document.getElementById('login-error').textContent = 'パスワードが正しくありません。';
+  }
+}
+
+async function init() {
+  if (!adminKey) return;
+  const res = await fetch('/.netlify/functions/admin', { headers: { 'x-admin-key': adminKey } });
+  if (res.ok) {
+    document.getElementById('login-screen').style.display = 'none';
+    document.getElementById('app').style.display = 'block';
+    state = await res.json();
+    renderAll();
+  }
+}
+
+async function apiPost(body) {
+  const res = await fetch('/.netlify/functions/admin', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'x-admin-key': adminKey },
+    body: JSON.stringify(body),
+  });
+  return res.json();
+}
+
+function showTab(name) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelector(`.tab-btn[onclick="showTab('${name}')"]`).classList.add('active');
+  document.getElementById('panel-' + name).classList.add('active');
+}
+
+function renderAll() {
+  renderStats();
+  renderBookings();
+  renderPricing();
+  renderInventory();
+}
+
+// ===== RESERVATIONS =====
+function renderStats() {
+  const today = new Date(); today.setHours(0,0,0,0);
+  const total = state.bookings.length;
+  const upcoming = state.bookings.filter(b => new Date(b.checkin) >= today).length;
+  const revenue = state.bookings.reduce((sum, b) => sum + (b.total || 0), 0);
+  const upcomingRevenue = state.bookings.filter(b => new Date(b.checkin) >= today)
+    .reduce((sum, b) => sum + (b.total || 0), 0);
+
+  document.getElementById('stats-grid').innerHTML = `
+    <div class="stat-box"><div class="label">総予約数</div><div class="value">${total}件</div></div>
+    <div class="stat-box"><div class="label">今後の予約</div><div class="value">${upcoming}件</div></div>
+    <div class="stat-box"><div class="label">合計売上（全期間）</div><div class="value">¥${revenue.toLocaleString()}</div></div>
+    <div class="stat-box"><div class="label">今後の売上予定</div><div class="value">¥${upcomingRevenue.toLocaleString()}</div></div>
+  `;
+}
+
+function renderBookings() {
+  const today = new Date(); today.setHours(0,0,0,0);
+  const tbody = document.querySelector('#bookings-table tbody');
+  const sorted = state.bookings.map((b, i) => ({...b, _idx: i}))
+    .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+  tbody.innerHTML = sorted.map(b => {
+    const isFuture = new Date(b.checkin) >= today;
+    return `<tr>
+      <td>${new Date(b.createdAt).toLocaleString('ja-JP')}</td>
+      <td>${roomLabels[String(b.room)] || b.roomName || b.room}</td>
+      <td>${b.checkin}</td>
+      <td>${b.checkout}</td>
+      <td>${b.guests || '-'}</td>
+      <td>${b.name}</td>
+      <td>${b.email}<br>${b.phone || ''}</td>
+      <td>¥${(b.total || 0).toLocaleString()}</td>
+      <td><span class="badge ${isFuture ? 'future' : 'past'}">${isFuture ? '予定' : '完了'}</span></td>
+      <td><button class="small-btn danger-btn" onclick="cancelBooking(${b._idx})">取消</button></td>
+    </tr>`;
+  }).join('') || '<tr><td colspan="10" style="color:var(--muted)">予約はまだありません</td></tr>';
+}
+
+async function cancelBooking(idx) {
+  if (!confirm('この予約を取り消しますか？日程は再度予約可能になります。')) return;
+  const r = await apiPost({ action: 'cancel-booking', index: idx });
+  if (r.ok) { state.bookings = r.bookings; renderStats(); renderBookings(); }
+}
+
+// ===== PRICING =====
+function renderPricing() {
+  const el = document.getElementById('pricing-rooms');
+  el.innerHTML = Object.keys(roomLabels).map(room => {
+    const p = state.pricing[room] || { base: 0, overrides: {} };
+    const overrides = p.overrides || {};
+    const overrideHtml = Object.keys(overrides).sort().map(date => `
+      <div class="override-item">
+        <span>${date}</span><span>¥${Number(overrides[date]).toLocaleString()}</span>
+        <span class="x" onclick="removeOverride('${room}','${date}')">×</span>
+      </div>`).join('') || '<div style="font-size:12px;color:var(--muted)">日別料金の設定はありません</div>';
+
+    return `
+      <div class="room-row">
+        <div>
+          <label>物件</label>
+          <strong>${roomLabels[room]}</strong>
+        </div>
+        <div>
+          <label>基本料金（1泊）</label>
+          <input type="number" id="base-${room}" value="${p.base || 0}" step="500">
+          <button class="small-btn" style="margin-top:6px;width:100%" onclick="saveBase('${room}')">基本料金を保存</button>
+        </div>
+        <div>
+          <label>日別料金（特定日の料金を上書き）</label>
+          <div class="override-list">${overrideHtml}</div>
+          <div class="add-override">
+            <input type="date" id="ov-date-${room}">
+            <input type="number" id="ov-price-${room}" placeholder="価格" step="500">
+            <button class="small-btn" onclick="addOverride('${room}')">追加</button>
+          </div>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+async function saveBase(room) {
+  const base = Number(document.getElementById('base-' + room).value) || 0;
+  const overrides = (state.pricing[room] && state.pricing[room].overrides) || {};
+  const r = await apiPost({ action: 'set-pricing', room, base, overrides });
+  if (r.ok) { state.pricing = r.pricing; renderPricing(); }
+}
+
+async function addOverride(room) {
+  const date = document.getElementById('ov-date-' + room).value;
+  const price = Number(document.getElementById('ov-price-' + room).value);
+  if (!date || !price) return;
+  const p = state.pricing[room] || { base: 0, overrides: {} };
+  const overrides = { ...(p.overrides || {}), [date]: price };
+  const r = await apiPost({ action: 'set-pricing', room, base: p.base, overrides });
+  if (r.ok) { state.pricing = r.pricing; renderPricing(); }
+}
+
+async function removeOverride(room, date) {
+  const p = state.pricing[room] || { base: 0, overrides: {} };
+  const overrides = { ...(p.overrides || {}) };
+  delete overrides[date];
+  const r = await apiPost({ action: 'set-pricing', room, base: p.base, overrides });
+  if (r.ok) { state.pricing = r.pricing; renderPricing(); }
+}
+
+// ===== INVENTORY =====
+function renderInventory() {
+  const el = document.getElementById('inventory-rooms');
+  el.innerHTML = Object.keys(roomLabels).map(room => {
+    const dates = (state.blocked[room] || []).slice().sort();
+    const dateHtml = dates.map(d => `
+      <div class="override-item">
+        <span>${d}</span>
+        <span class="x" onclick="removeBlocked('${room}','${d}')">×</span>
+      </div>`).join('') || '<div style="font-size:12px;color:var(--muted)">ブロック中の日付はありません</div>';
+
+    return `
+      <div class="room-row">
+        <div>
+          <label>物件</label>
+          <strong>${roomLabels[room]}</strong>
+        </div>
+        <div></div>
+        <div>
+          <label>予約不可にする日付（メンテナンス等）</label>
+          <div class="override-list">${dateHtml}</div>
+          <div class="add-override">
+            <input type="date" id="blk-date-${room}">
+            <button class="small-btn" onclick="addBlocked('${room}')">追加</button>
+          </div>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+async function addBlocked(room) {
+  const date = document.getElementById('blk-date-' + room).value;
+  if (!date) return;
+  const dates = [...new Set([...(state.blocked[room] || []), date])];
+  const r = await apiPost({ action: 'set-blocked', room, dates });
+  if (r.ok) { state.blocked = r.blocked; renderInventory(); }
+}
+
+async function removeBlocked(room, date) {
+  const dates = (state.blocked[room] || []).filter(d => d !== date);
+  const r = await apiPost({ action: 'set-blocked', room, dates });
+  if (r.ok) { state.blocked = r.blocked; renderInventory(); }
+}
+
+init();
+</script>
+</body>
+</html>

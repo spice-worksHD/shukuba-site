@@ -1,9 +1,7 @@
 import { getStore } from '@netlify/blobs';
 
 const DEFAULT_PAYMENT = {
-  methods: { credit: true, paypay: true, onsite: true },
-  depositType: 'percent', // 'percent' | 'fixed'
-  depositValue: 30,
+  methods: { credit: true, paypay: true },
 };
 
 export default async () => {

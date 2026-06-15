@@ -9,9 +9,7 @@ const DEFAULT_PRICING = {
 const DEFAULT_BLOCKED = { '0': [], '1': [], '2': [] };
 
 const DEFAULT_PAYMENT = {
-  methods: { credit: true, paypay: true, onsite: true },
-  depositType: 'percent', // 'percent' | 'fixed'
-  depositValue: 30,
+  methods: { credit: true, paypay: true },
 };
 
 function checkAuth(req) {
@@ -90,10 +88,7 @@ export default async (req) => {
         methods: {
           credit: !!data.methods?.credit,
           paypay: !!data.methods?.paypay,
-          onsite: !!data.methods?.onsite,
         },
-        depositType: data.depositType === 'fixed' ? 'fixed' : 'percent',
-        depositValue: Math.max(0, Number(data.depositValue) || 0),
       };
       await store.setJSON('payment.json', payment);
       return new Response(JSON.stringify({ ok: true, payment }), {

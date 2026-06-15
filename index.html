@@ -207,6 +207,7 @@
         <input type="hidden" name="form-name" value="reservation">
         <input type="hidden" name="room-name" id="room-name-input">
         <input type="hidden" name="paymentMethod" id="payment-method-input">
+        <div id="booking-step-1">
         <div class="form-grid">
 
           <!-- Property select -->
@@ -242,13 +243,6 @@
                 <div class="sel-date-label" data-en>Total Price</div>
                 <div class="sel-date-val" id="disp-total">—</div>
                 <div class="sel-date-note" id="disp-total-note" style="font-size:11px;color:var(--muted)"></div>
-              </div>
-              <div class="sel-date-item" id="deposit-row" style="display:none">
-                <div class="sel-date-label" data-ja>事前デポジット</div>
-                <div class="sel-date-label" data-en>Deposit (Paid Now)</div>
-                <div class="sel-date-val" id="disp-deposit">—</div>
-                <div class="sel-date-note deposit-note" data-ja>※ご予約確定のため、上記デポジットを事前にお支払いいただきます。残額は現地でのお支払いとなります。</div>
-                <div class="sel-date-note deposit-note" data-en>※ This deposit is paid in advance to confirm your booking. The remaining balance is paid on site.</div>
               </div>
             </div>
             <input type="hidden" id="checkin-input" name="checkin" required>
@@ -303,14 +297,87 @@
           </div>
         </div>
 
-        <button type="submit" class="submit-btn">
-          <span data-ja>予約する</span>
-          <span data-en>Book Now</span>
+        <button type="button" class="submit-btn" onclick="goToCheckinInfo()">
+          <span data-ja>次に進む</span>
+          <span data-en>Next</span>
         </button>
         <p class="form-note">
-          <span data-ja>※ ご送信いただいた時点でご予約が確定します。事前決済をご選択の場合は、デポジットのお支払いが必要です。<br>※ 料金は人数・時期により変動する場合があります。</span>
-          <span data-en>※ Your booking is confirmed as soon as you submit this form. If you choose a prepayment method, a deposit is required.<br>※ Rates may vary by season and number of guests.</span>
+          <span data-ja>※ 次のページで無人チェックインのご案内をご確認のうえ、ご予約を確定してください。<br>※ 料金は人数・時期により変動する場合があります。</span>
+          <span data-en>※ On the next page, please review how our unattended check-in works before confirming your booking.<br>※ Rates may vary by season and number of guests.</span>
         </p>
+        </div>
+
+        <!-- Step 2: Unattended check-in guide -->
+        <div id="booking-step-2" style="display:none">
+          <div class="checkin-info">
+            <div class="section-label" data-ja>ご予約の前に</div>
+            <div class="section-label" data-en>Before You Book</div>
+            <h3 class="checkin-info-title">
+              <span data-ja>無人チェックインのご案内</span>
+              <span data-en>How Unattended Check-in Works</span>
+            </h3>
+            <p class="section-body" style="font-size:13px">
+              <span data-ja>SHUKUBAは完全無人運営の宿です。スタッフが現地にいない代わりに、以下の流れでスムーズにご入館いただけます。</span>
+              <span data-en>SHUKUBA is a fully unattended property — there is no staff on site. Instead, your check-in works as follows.</span>
+            </p>
+            <div class="checkin-timeline">
+              <div class="checkin-step">
+                <div class="checkin-step-icon-wrap">
+                  <svg class="checkin-icon" viewBox="0 0 48 48"><rect x="6" y="10" width="36" height="28" rx="2"/><path d="M6 12l18 15 18-15"/></svg>
+                </div>
+                <div class="checkin-step-text">
+                  <strong data-ja>ご予約完了</strong>
+                  <strong data-en>Booking Confirmed</strong>
+                  <span data-ja>「同意して予約」を押すと、その場でご予約が確定します。</span>
+                  <span data-en>Your booking is confirmed instantly when you press "Agree &amp; Book".</span>
+                </div>
+              </div>
+              <div class="checkin-step">
+                <div class="checkin-step-icon-wrap">
+                  <svg class="checkin-icon" viewBox="0 0 48 48"><rect x="8" y="4" width="32" height="40" rx="2"/><line x1="14" y1="14" x2="34" y2="14"/><line x1="14" y1="22" x2="34" y2="22"/><line x1="14" y1="30" x2="26" y2="30"/></svg>
+                </div>
+                <div class="checkin-step-text">
+                  <strong data-ja>前日：チェックイン案内メール</strong>
+                  <strong data-en>Day Before: Check-in Email</strong>
+                  <span data-ja>チェックイン前日、ご登録のメールアドレスに宿泊者情報の入力フォームをお送りします。メールアドレスは必ずご確認ください。</span>
+                  <span data-en>The day before your stay, we'll email a guest-information form to the address you provide. Please make sure your email address is correct.</span>
+                </div>
+              </div>
+              <div class="checkin-step">
+                <div class="checkin-step-icon-wrap">
+                  <svg class="checkin-icon" viewBox="0 0 48 48"><rect x="14" y="4" width="20" height="40" rx="3"/><circle cx="24" cy="32" r="2"/><path d="M20 12h8M20 17h8M20 22h8"/></svg>
+                </div>
+                <div class="checkin-step-text">
+                  <strong data-ja>確認後：セキュリティ番号をお送り</strong>
+                  <strong data-en>After Confirmation: Security Code Sent</strong>
+                  <span data-ja>ご入力いただいた宿泊者情報を確認後、当日ご利用いただく玄関のセキュリティ番号をメールでお知らせします。</span>
+                  <span data-en>After we confirm your details, we'll email you the entrance security code to use on the day of your stay.</span>
+                </div>
+              </div>
+              <div class="checkin-step">
+                <div class="checkin-step-icon-wrap">
+                  <svg class="checkin-icon" viewBox="0 0 48 48"><rect x="10" y="4" width="22" height="40" rx="1"/><circle cx="27" cy="24" r="1.5"/><rect x="32" y="14" width="8" height="20" rx="1"/><circle cx="36" cy="20" r="1"/><circle cx="36" cy="24" r="1"/><circle cx="36" cy="28" r="1"/></svg>
+                </div>
+                <div class="checkin-step-text">
+                  <strong data-ja>ご到着：キーロックで入館</strong>
+                  <strong data-en>Arrival: Unlock with the Key Lock</strong>
+                  <span data-ja>宿泊棟の玄関にあるキーロックにセキュリティ番号を入力し、解錠してご入館ください。</span>
+                  <span data-en>Enter the security code on the key lock at the entrance to unlock the door and check in.</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="checkin-actions">
+            <button type="button" class="back-btn" onclick="backToForm()">
+              <span data-ja>戻る</span>
+              <span data-en>Back</span>
+            </button>
+            <button type="submit" class="submit-btn">
+              <span data-ja>同意して予約</span>
+              <span data-en>Agree &amp; Book</span>
+            </button>
+          </div>
+        </div>
       </form>
     </div>
   </div>
@@ -488,15 +555,12 @@ function applyPricingToUI() {
 
 // ===== PAYMENT METHODS =====
 const DEFAULT_PAYMENT = {
-  methods: { credit: true, paypay: true, onsite: true },
-  depositType: 'percent',
-  depositValue: 30,
+  methods: { credit: true, paypay: true },
 };
 let paymentData = DEFAULT_PAYMENT;
 const paymentLabels = {
   credit: { ja: 'クレジットカード（事前決済）', en: 'Credit Card (prepay)' },
   paypay: { ja: 'PayPay（事前決済）', en: 'PayPay (prepay)' },
-  onsite: { ja: '現地決済', en: 'Pay on site' },
 };
 
 async function loadPayment() {
@@ -540,21 +604,39 @@ function renderPaymentOptions() {
       wrap.querySelectorAll('.payment-option').forEach(opt => {
         opt.classList.toggle('selected', opt.querySelector('input').checked);
       });
-      updateDateDisplay();
     });
   });
-  updateDateDisplay();
-}
-
-function calcDeposit(total, method) {
-  if (!method || method === 'onsite') return 0;
-  if (paymentData.depositType === 'fixed') return Math.min(paymentData.depositValue, total);
-  return Math.round(total * (paymentData.depositValue / 100));
 }
 
 function getSelectedPaymentMethod() {
   const checked = document.querySelector('input[name="paymentMethodChoice"]:checked');
   return checked ? checked.value : null;
+}
+
+function goToCheckinInfo() {
+  const isJa = document.body.classList.contains('lang-ja');
+  const roomVal = document.getElementById('room-select').value;
+  if (roomVal === '') {
+    alert(isJa ? '物件を選択してください' : 'Please select a property.');
+    return;
+  }
+  if (!checkIn || !checkOut) {
+    alert(isJa ? '日程を選択してください' : 'Please select your dates.');
+    return;
+  }
+  if (!getSelectedPaymentMethod()) {
+    alert(isJa ? 'お支払い方法を選択してください' : 'Please select a payment method.');
+    return;
+  }
+  document.getElementById('booking-step-1').style.display = 'none';
+  document.getElementById('booking-step-2').style.display = 'block';
+  document.getElementById('booking-step-2').scrollIntoView({ behavior: 'smooth' });
+}
+
+function backToForm() {
+  document.getElementById('booking-step-2').style.display = 'none';
+  document.getElementById('booking-step-1').style.display = 'block';
+  document.getElementById('booking-step-1').scrollIntoView({ behavior: 'smooth' });
 }
 
 function calcTotalPrice(roomVal, checkin, checkout, guests) {
@@ -698,15 +780,6 @@ function updateDateDisplay() {
       const total = calcTotalPrice(roomVal, checkIn, checkOut, guests);
       document.getElementById('disp-total').textContent = '¥' + total.toLocaleString();
 
-      const method = getSelectedPaymentMethod();
-      const depositRow = document.getElementById('deposit-row');
-      if (method && method !== 'onsite') {
-        depositRow.style.display = 'flex';
-        document.getElementById('disp-deposit').textContent = '¥' + calcDeposit(total, method).toLocaleString();
-      } else {
-        depositRow.style.display = 'none';
-      }
-
       const p = pricingData[String(roomVal)] || DEFAULT_PRICING[String(roomVal)];
       const noteEl = document.getElementById('disp-total-note');
       if (p && guests) {
@@ -791,6 +864,7 @@ async function submitForm(e) {
       await loadAvailability();
       checkIn = null; checkOut = null;
       renderCalendar();
+      backToForm();
       return;
     }
     if (!reserveRes.ok) throw new Error('reserve failed');
@@ -815,6 +889,7 @@ async function submitForm(e) {
     checkIn = null; checkOut = null;
     renderCalendar();
     document.querySelectorAll('.room-card').forEach(c => c.classList.remove('selected'));
+    backToForm();
   } catch (err) {
     console.error(err);
     alert(isJa

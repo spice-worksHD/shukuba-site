@@ -7,15 +7,8 @@ const DEFAULT_PRICING = {
 };
 
 const DEFAULT_PAYMENT = {
-  methods: { credit: true, paypay: true, onsite: true },
-  depositType: 'percent', // 'percent' | 'fixed'
-  depositValue: 30,
+  methods: { credit: true, paypay: true },
 };
-
-function calcDeposit(total, payment) {
-  if (payment.depositType === 'fixed') return Math.min(payment.depositValue, total);
-  return Math.round(total * (payment.depositValue / 100));
-}
 
 function calcTotal(pricingForRoom, checkin, checkout, guests) {
   const base = pricingForRoom?.base ?? 0;
@@ -94,7 +87,6 @@ export default async (req) => {
   }
 
   const total = calcTotal(roomPricing, checkin, checkout, guests);
-  const depositAmount = paymentMethod === 'onsite' ? 0 : calcDeposit(total, payment);
 
   bookings.push({
     room,
@@ -107,14 +99,13 @@ export default async (req) => {
     phone: phone || '',
     message: message || '',
     paymentMethod,
-    depositAmount,
     total,
     createdAt: new Date().toISOString(),
   });
 
   await store.setJSON('bookings.json', bookings);
 
-  return new Response(JSON.stringify({ ok: true, total, paymentMethod, depositAmount }), {
+  return new Response(JSON.stringify({ ok: true, total, paymentMethod }), {
     status: 200,
     headers: { 'Content-Type': 'application/json' },
   });

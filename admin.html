@@ -181,7 +181,7 @@
     <div class="card">
       <h3>お支払い方法</h3>
       <p style="font-size:12px;color:var(--muted);margin-bottom:12px">
-        予約画面でお客様に表示する決済方法を選択してください。クレジットカード・PayPayは事前決済（デポジット）の対象になります。
+        予約画面でお客様に表示する決済方法を選択してください。本施設は無人運営のため、いずれも事前決済です。
       </p>
       <label style="display:flex;align-items:center;gap:8px;margin-bottom:10px;font-size:14px">
         <input type="checkbox" id="pay-credit" style="width:auto"> クレジットカード（事前決済）
@@ -189,25 +189,6 @@
       <label style="display:flex;align-items:center;gap:8px;margin-bottom:10px;font-size:14px">
         <input type="checkbox" id="pay-paypay" style="width:auto"> PayPay（事前決済）
       </label>
-      <label style="display:flex;align-items:center;gap:8px;margin-bottom:10px;font-size:14px">
-        <input type="checkbox" id="pay-onsite" style="width:auto"> 現地決済
-      </label>
-    </div>
-    <div class="card">
-      <h3>デポジット設定</h3>
-      <p style="font-size:12px;color:var(--muted);margin-bottom:12px">
-        クレジットカード・PayPayでの事前決済時に、お客様にお支払いいただくデポジット額の算出方法です。
-      </p>
-      <label style="display:flex;align-items:center;gap:8px;margin-bottom:10px;font-size:14px">
-        <input type="radio" name="deposit-type" id="deposit-type-percent" value="percent" style="width:auto"> 宿泊金額の割合（%）
-      </label>
-      <label style="display:flex;align-items:center;gap:8px;margin-bottom:10px;font-size:14px">
-        <input type="radio" name="deposit-type" id="deposit-type-fixed" value="fixed" style="width:auto"> 固定額（円）
-      </label>
-      <div class="room-row" style="grid-template-columns:160px 1fr;align-items:center">
-        <label style="margin:0">デポジット額</label>
-        <input type="number" id="deposit-value" min="0" step="1" style="max-width:140px">
-      </div>
       <div class="save-row" style="margin-top:14px">
         <button class="btn" onclick="savePayment()">保存</button>
       </div>
@@ -225,9 +206,7 @@ const roomLabels = {
 
 let adminKey = '';
 const DEFAULT_PAYMENT = {
-  methods: { credit: true, paypay: true, onsite: true },
-  depositType: 'percent',
-  depositValue: 30,
+  methods: { credit: true, paypay: true },
 };
 let state = { bookings: [], pricing: {}, pricingLive: {}, blocked: {}, payment: DEFAULT_PAYMENT };
 
@@ -482,10 +461,6 @@ function renderPayment() {
   const p = state.payment || DEFAULT_PAYMENT;
   document.getElementById('pay-credit').checked = !!p.methods?.credit;
   document.getElementById('pay-paypay').checked = !!p.methods?.paypay;
-  document.getElementById('pay-onsite').checked = !!p.methods?.onsite;
-  document.getElementById('deposit-type-percent').checked = p.depositType !== 'fixed';
-  document.getElementById('deposit-type-fixed').checked = p.depositType === 'fixed';
-  document.getElementById('deposit-value').value = p.depositValue ?? 30;
 }
 
 async function savePayment() {
@@ -494,10 +469,7 @@ async function savePayment() {
     methods: {
       credit: document.getElementById('pay-credit').checked,
       paypay: document.getElementById('pay-paypay').checked,
-      onsite: document.getElementById('pay-onsite').checked,
     },
-    depositType: document.getElementById('deposit-type-fixed').checked ? 'fixed' : 'percent',
-    depositValue: Number(document.getElementById('deposit-value').value) || 0,
   };
   const r = await apiPost(payload);
   if (r.ok) {

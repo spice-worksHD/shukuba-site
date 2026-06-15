@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>客室紹介 | SHUKUBA</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body class="lang-ja">
+
+<!-- Lang Toggle -->
+<div id="lang-toggle">
+  <button class="lang-btn active" onclick="setLang('ja')">JP</button>
+  <button class="lang-btn" onclick="setLang('en')">EN</button>
+</div>
+
+<!-- Nav -->
+<nav id="nav" class="scrolled">
+  <a class="nav-logo" href="index.html">SHUKUBA</a>
+  <div class="nav-links">
+    <a href="index.html#concept"><span data-ja>コンセプト</span><span data-en>Concept</span></a>
+    <a href="rooms.html" style="color:#fff"><span data-ja>客室紹介</span><span data-en>Rooms</span></a>
+    <a href="area.html"><span data-ja>地域紹介</span><span data-en>The Area</span></a>
+    <a href="index.html#booking"><span data-ja>ご予約</span><span data-en>Reserve</span></a>
+  </div>
+</nav>
+
+<!-- Page Header -->
+<div class="page-header" style="background-image:linear-gradient(180deg, rgba(15,45,52,0.35) 0%, rgba(20,58,66,0.55) 100%), url('https://upload.wikimedia.org/wikipedia/commons/thumb/7/7e/Hachimanbori07s3200.jpg/1280px-Hachimanbori07s3200.jpg')">
+  <div class="page-header-content">
+    <div class="hero-sub" data-ja>客室紹介</div>
+    <div class="hero-sub" data-en>Our Rooms</div>
+    <div class="hero-title">
+      <span data-ja>本物だけが、<br>空間を語る。</span>
+      <span data-en>Only the Real<br>Speaks of the Space.</span>
+    </div>
+  </div>
+</div>
+
+<!-- Intro -->
+<section class="fade-in">
+  <div class="section-label" data-ja>コンセプト</div>
+  <div class="section-label" data-en>Concept</div>
+  <h2 class="section-title">
+    <span data-ja>職人の手仕事と、<br>本物の素材だけで。</span>
+    <span data-en>Crafted by hand,<br>made of the real thing.</span>
+  </h2>
+  <p class="section-body">
+    <span data-ja>SHUKUBAの各棟は、量産品やフェイクの装飾を一切使わず、地元職人の手仕事と、時を経た本物の素材だけでしつらえています。古い梁や土壁を残しながら、暮らしの道具ひとつひとつにも物語を持たせる——それが私たちの空間づくりです。</span>
+    <span data-en>Every SHUKUBA house is furnished without mass-produced or imitation decor — only handcrafted work by local artisans and materials that have truly aged with time. We preserve the original beams and earthen walls, and give every object in the room its own story.</span>
+  </p>
+</section>
+
+<!-- Design details -->
+<section class="fade-in" style="max-width:1100px">
+  <div class="section-label" data-ja>こだわりのしつらえ</div>
+  <div class="section-label" data-en>Design Details</div>
+  <h2 class="section-title">
+    <span data-ja>10の、空間へのこだわり。</span>
+    <span data-en>Ten details that define the space.</span>
+  </h2>
+  <div class="feature-grid">
+    <div class="feature-card">
+      <div class="f-icon">浴</div>
+      <div class="f-title"><span data-ja>懐かしいタイル張りの浴室</span><span data-en>Retro Tiled Bathrooms</span></div>
+      <div class="f-body">
+        <span data-ja>昭和の銭湯を思わせるタイル貼りの浴室は、古い質感をそのまま残しました。</span>
+        <span data-en>Bathrooms keep their original tile-work, evoking the feel of an old-fashioned Showa-era bathhouse.</span>
+      </div>
+    </div>
+    <div class="feature-card">
+      <div class="f-icon">甲</div>
+      <div class="f-title"><span data-ja>床の間に佇む、朱塗りの甲冑</span><span data-en>A Vermillion Suit of Armor</span></div>
+      <div class="f-body">
+        <span data-ja>各棟の床の間には、朱塗りの甲冑をしつらえ、和の空間に静かな存在感を添えています。</span>
+        <span data-en>Each tokonoma alcove holds a lacquered vermillion suit of armor, a quiet but striking presence in the room.</span>
+      </div>
+    </div>
+    <div class="feature-card">
+      <div class="f-icon">炉</div>
+      <div class="f-title"><span data-ja>薪窯・暖炉のある景色</span><span data-en>Wood Stove &amp; Fireplace</span></div>
+      <div class="f-body">
+        <span data-ja>観賞用の薪窯や暖炉を設え、火の温もりを感じる空間を演出しています。</span>
+        <span data-en>Decorative wood-fired stoves and fireplaces bring the warmth of fire into the room.</span>
+      </div>
+    </div>
+    <div class="feature-card">
+      <div class="f-icon">漆</div>
+      <div class="f-title"><span data-ja>地元職人のうるし塗り表札</span><span data-en>Hand-Lacquered Nameplates</span></div>
+      <div class="f-body">
+        <span data-ja>各部屋の看板・表札は、地元の漆職人にうるし塗りで一つひとつ手作りしてもらいました。</span>
+        <span data-en>Every room's signboard is hand-lacquered, one at a time, by a local artisan.</span>
+      </div>
+    </div>
+    <div class="feature-card">
+      <div class="f-icon">椅</div>
+      <div class="f-title"><span data-ja>ウィングチェアと北欧家具</span><span data-en>Wing Chairs &amp; Nordic Furniture</span></div>
+      <div class="f-body">
+        <span data-ja>くつろぎのウィングチェアや北欧系のテーブルを配し、和と北欧の静かな調和を楽しめます。</span>
+        <span data-en>Wing chairs and Scandinavian-style tables create a quiet harmony between Japanese and Nordic design.</span>
+      </div>
+    </div>
+    <div class="feature-card">
+      <div class="f-icon">灯</div>
+      <div class="f-title"><span data-ja>オーダーのベッドヘッドと陶器照明</span><span data-en>Custom Bedheads &amp; Ceramic Lamps</span></div>
+      <div class="f-body">
+        <span data-ja>ベッドヘッドはオリジナルで製作し、照明には陶器の照明器具を採用しています。</span>
+        <span data-en>Bedheads are custom-built, paired with handmade ceramic lighting fixtures.</span>
+      </div>
+    </div>
+    <div class="feature-card">
+      <div class="f-icon">影</div>
+      <div class="f-title"><span data-ja>間接照明でつくる、やわらかな夜</span><span data-en>Soft Indirect Lighting</span></div>
+      <div class="f-body">
+        <span data-ja>ダウンライトはなるべく使わず、間接照明を中心に、落ち着いた灯りの空間を作っています。</span>
+        <span data-en>We avoid harsh downlights wherever possible, relying on indirect lighting for a calm atmosphere.</span>
+      </div>
+    </div>
+    <div class="feature-card">
+      <div class="f-icon">格</div>
+      <div class="f-title"><span data-ja>のれんと千本格子、昔の風景へ</span><span data-en>Noren Curtains &amp; Lattice Windows</span></div>
+      <div class="f-body">
+        <span data-ja>のれんをかけ、サッシには千本格子をしのばせて、町家本来の風景を取り戻しています。</span>
+        <span data-en>Noren curtains and traditional sengo-koshi lattice windows restore the look of an old townhouse.</span>
+      </div>
+    </div>
+    <div class="feature-card">
+      <div class="f-icon">湯</div>
+      <div class="f-title"><span data-ja>上質なバスアメニティ</span><span data-en>Premium Bath Amenities</span></div>
+      <div class="f-body">
+        <span data-ja>シャンプー・コンディショナーを常備し、シャワーヘッドには「ミラブル」を採用しています。</span>
+        <span data-en>Shampoo and conditioner are provided, and showers are fitted with Mirable fine-bubble showerheads.</span>
+      </div>
+    </div>
+    <div class="feature-card">
+      <div class="f-icon">net</div>
+      <div class="f-title"><span data-ja>テレビのない時間、整ったWi-Fi</span><span data-en>No TVs — Just Fast Wi-Fi</span></div>
+      <div class="f-body">
+        <span data-ja>テレビは置かず、その代わりにネット環境を整備。静かな滞在時間をお過ごしいただけます。</span>
+        <span data-en>We leave out televisions and instead provide reliable Wi-Fi, for a quieter kind of stay.</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<hr class="divider" style="max-width:1100px;margin:0 auto">
+
+<!-- Rooms -->
+<section class="fade-in" style="max-width:1100px">
+  <div class="section-label" data-ja>三つの古民家</div>
+  <div class="section-label" data-en>Three Houses</div>
+  <h2 class="section-title">
+    <span data-ja>それぞれの物語を持つ、三棟。</span>
+    <span data-en>Three houses, three stories.</span>
+  </h2>
+</section>
+
+<!-- Room 1 -->
+<section class="fade-in area-card" style="max-width:1100px">
+  <div>
+    <div class="room-img-char" style="background:var(--gold);border:none;margin-bottom:16px">鍵</div>
+    <div class="room-location" style="color:var(--gold)" data-ja>近江八幡市</div>
+    <div class="room-location" style="color:var(--gold)" data-en>Omihachiman</div>
+    <h3 class="section-title" style="font-size:28px;margin-bottom:12px">
+      <span data-ja>鍵之手町</span>
+      <span data-en>Kaginote-machi</span>
+    </h3>
+    <p class="section-body">
+      <span data-ja>朝鮮人街道が鍵の字に曲がる要所に位置し、城下町の風情を色濃く残す一棟貸しの古民家。八幡堀・新町通りへも徒歩圏内で、散策の拠点として最適です。</span>
+      <span data-en>Located at the historic "key-shaped" bend of the old Korean Embassy Road, this whole-house stay retains the deep character of a castle town. Hachiman-bori canal and Shinmachi-dori are both within walking distance.</span>
+    </p>
+    <div class="room-features" style="margin-top:24px">
+      <span class="room-feature" style="color:var(--muted);border-color:var(--border)" data-ja>最大6名</span><span class="room-feature" style="color:var(--muted);border-color:var(--border)" data-en>Up to 6 guests</span>
+      <span class="room-feature" style="color:var(--muted);border-color:var(--border)" data-ja>朝食付</span><span class="room-feature" style="color:var(--muted);border-color:var(--border)" data-en>Breakfast incl.</span>
+      <span class="room-feature" style="color:var(--muted);border-color:var(--border)" data-ja>Wi-Fi</span><span class="room-feature" style="color:var(--muted);border-color:var(--border)" data-en>Wi-Fi</span>
+    </div>
+    <div class="room-price" style="color:var(--gold);margin-top:20px">¥18,000<span style="color:var(--muted)" data-ja>〜 / 泊（棟）</span><span style="color:var(--muted)" data-en>〜 / night (whole house)</span></div>
+    <a href="index.html#booking" class="hero-cta" style="border-color:var(--gold);color:var(--gold);margin-top:24px">
+      <span data-ja>この棟を予約する</span>
+      <span data-en>Reserve This House</span>
+    </a>
+  </div>
+  <div class="gallery-grid cols-2" style="margin-top:0">
+    <div class="gallery-item wide" style="background-image:url('https://upload.wikimedia.org/wikipedia/commons/thumb/7/7e/Hachimanbori07s3200.jpg/1280px-Hachimanbori07s3200.jpg')">
+      <div class="gallery-cap" data-ja>八幡堀沿いの町並み</div>
+      <div class="gallery-cap" data-en>Along the Hachiman-bori canal</div>
+    </div>
+    <div class="gallery-item" style="background-image:url('https://upload.wikimedia.org/wikipedia/commons/thumb/1/19/Omihachiman_Canal_March_2016.jpg/1280px-Omihachiman_Canal_March_2016.jpg')">
+      <div class="gallery-cap" data-ja>近江八幡の水路</div>
+      <div class="gallery-cap" data-en>The canals of Omihachiman</div>
+    </div>
+    <div class="gallery-item" style="background-image:url('https://upload.wikimedia.org/wikipedia/commons/thumb/5/57/Hachiman-bori_Canal_ac_%285%29.jpg/1280px-Hachiman-bori_Canal_ac_%285%29.jpg')">
+      <div class="gallery-cap" data-ja>蔵造りの街並み</div>
+      <div class="gallery-cap" data-en>Storehouse streetscape</div>
+    </div>
+  </div>
+</section>
+
+<!-- Room 2 -->
+<section class="fade-in area-card reverse" style="max-width:1100px">
+  <div>
+    <div class="room-img-char" style="background:var(--gold);border:none;margin-bottom:16px">為</div>
+    <div class="room-location" style="color:var(--gold)" data-ja>近江八幡市</div>
+    <div class="room-location" style="color:var(--gold)" data-en>Omihachiman</div>
+    <h3 class="section-title" style="font-size:28px;margin-bottom:12px">
+      <span data-ja>為心町</span>
+      <span data-en>Tameshin-cho</span>
+    </h3>
+    <p class="section-body">
+      <span data-ja>映画のロケ地としても知られる八幡堀のすぐそば、歴史を感じながら散策できるエリアに佇む一棟貸しの古民家。新町通りの町並み保存地区へも徒歩圏内です。</span>
+      <span data-en>Just steps from the Hachiman-bori canal — a frequent film location — this whole-house stay sits in an area made for unhurried strolls through history, with the preserved Shinmachi-dori district within walking distance.</span>
+    </p>
+    <div class="room-features" style="margin-top:24px">
+      <span class="room-feature" style="color:var(--muted);border-color:var(--border)" data-ja>最大8名</span><span class="room-feature" style="color:var(--muted);border-color:var(--border)" data-en>Up to 8 guests</span>
+      <span class="room-feature" style="color:var(--muted);border-color:var(--border)" data-ja>朝食付</span><span class="room-feature" style="color:var(--muted);border-color:var(--border)" data-en>Breakfast incl.</span>
+      <span class="room-feature" style="color:var(--muted);border-color:var(--border)" data-ja>Wi-Fi</span><span class="room-feature" style="color:var(--muted);border-color:var(--border)" data-en>Wi-Fi</span>
+    </div>
+    <div class="room-price" style="color:var(--gold);margin-top:20px">¥20,000<span style="color:var(--muted)" data-ja>〜 / 泊（棟）</span><span style="color:var(--muted)" data-en>〜 / night (whole house)</span></div>
+    <a href="index.html#booking" class="hero-cta" style="border-color:var(--gold);color:var(--gold);margin-top:24px">
+      <span data-ja>この棟を予約する</span>
+      <span data-en>Reserve This House</span>
+    </a>
+  </div>
+  <div class="gallery-grid cols-2" style="margin-top:0">
+    <div class="gallery-item wide" style="background-image:url('https://upload.wikimedia.org/wikipedia/commons/thumb/5/57/Hachiman-bori_Canal_ac_%285%29.jpg/1280px-Hachiman-bori_Canal_ac_%285%29.jpg')">
+      <div class="gallery-cap" data-ja>八幡堀の四季</div>
+      <div class="gallery-cap" data-en>Hachiman-bori through the seasons</div>
+    </div>
+    <div class="gallery-item" style="background-image:url('https://upload.wikimedia.org/wikipedia/commons/thumb/7/7e/Hachimanbori07s3200.jpg/1280px-Hachimanbori07s3200.jpg')">
+      <div class="gallery-cap" data-ja>町家の小路</div>
+      <div class="gallery-cap" data-en>Machiya backstreets</div>
+    </div>
+    <div class="gallery-item" style="background-image:url('https://upload.wikimedia.org/wikipedia/commons/thumb/1/19/Omihachiman_Canal_March_2016.jpg/1280px-Omihachiman_Canal_March_2016.jpg')">
+      <div class="gallery-cap" data-ja>水辺の散策道</div>
+      <div class="gallery-cap" data-en>Waterside walking paths</div>
+    </div>
+  </div>
+</section>
+
+<!-- Room 3 -->
+<section class="fade-in area-card" style="max-width:1100px">
+  <div>
+    <div class="room-img-char" style="background:var(--gold);border:none;margin-bottom:16px">浜</div>
+    <div class="room-location" style="color:var(--gold)" data-ja>長浜市</div>
+    <div class="room-location" style="color:var(--gold)" data-en>Nagahama</div>
+    <h3 class="section-title" style="font-size:28px;margin-bottom:12px">
+      <span data-ja>元浜町</span>
+      <span data-en>Motohama-cho</span>
+    </h3>
+    <p class="section-body">
+      <span data-ja>豊臣秀吉が初めて城を持った長浜城の城下町に佇む一棟貸しの古民家。黒壁スクエアに隣接し、琵琶湖の豊かな自然と古き良き街並みが調和する歴史・文化の地です。</span>
+      <span data-en>This whole-house stay sits in the castle town of Nagahama, where Toyotomi Hideyoshi built his first castle. Adjacent to Kurokabe Square, it's a place where Lake Biwa's natural beauty meets a historic merchant streetscape.</span>
+    </p>
+    <div class="room-features" style="margin-top:24px">
+      <span class="room-feature" style="color:var(--muted);border-color:var(--border)" data-ja>最大10名</span><span class="room-feature" style="color:var(--muted);border-color:var(--border)" data-en>Up to 10 guests</span>
+      <span class="room-feature" style="color:var(--muted);border-color:var(--border)" data-ja>朝食付</span><span class="room-feature" style="color:var(--muted);border-color:var(--border)" data-en>Breakfast incl.</span>
+      <span class="room-feature" style="color:var(--muted);border-color:var(--border)" data-ja>Wi-Fi</span><span class="room-feature" style="color:var(--muted);border-color:var(--border)" data-en>Wi-Fi</span>
+    </div>
+    <div class="room-price" style="color:var(--gold);margin-top:20px">¥22,000<span style="color:var(--muted)" data-ja>〜 / 泊（棟）</span><span style="color:var(--muted)" data-en>〜 / night (whole house)</span></div>
+    <a href="index.html#booking" class="hero-cta" style="border-color:var(--gold);color:var(--gold);margin-top:24px">
+      <span data-ja>この棟を予約する</span>
+      <span data-en>Reserve This House</span>
+    </a>
+  </div>
+  <div class="gallery-grid cols-2" style="margin-top:0">
+    <div class="gallery-item wide" style="background-image:url('https://upload.wikimedia.org/wikipedia/commons/thumb/8/8b/211021_Kurokabe_Square_Nagahama_Shiga_prefecture_Japan01s3.jpg/1280px-211021_Kurokabe_Square_Nagahama_Shiga_prefecture_Japan01s3.jpg')">
+      <div class="gallery-cap" data-ja>黒壁スクエア</div>
+      <div class="gallery-cap" data-en>Kurokabe Square</div>
+    </div>
+    <div class="gallery-item" style="background-image:url('https://upload.wikimedia.org/wikipedia/commons/thumb/b/bb/Landscape_from_Yanagasaki_Lakeside_Park_2.JPG/1280px-Landscape_from_Yanagasaki_Lakeside_Park_2.JPG')">
+      <div class="gallery-cap" data-ja>琵琶湖畔の風景</div>
+      <div class="gallery-cap" data-en>Lake Biwa shoreline</div>
+    </div>
+    <div class="gallery-item" style="background-image:url('https://upload.wikimedia.org/wikipedia/commons/thumb/8/8b/211021_Kurokabe_Square_Nagahama_Shiga_prefecture_Japan01s3.jpg/1280px-211021_Kurokabe_Square_Nagahama_Shiga_prefecture_Japan01s3.jpg')">
+      <div class="gallery-cap" data-ja>ガラス工芸の街</div>
+      <div class="gallery-cap" data-en>A town known for glasswork</div>
+    </div>
+  </div>
+</section>
+
+<!-- Footer -->
+<footer>
+  <div class="footer-logo">SHUKUBA</div>
+  <div class="footer-sub" data-ja>古民家を、もう一度この街の誇りへ。</div>
+  <div class="footer-sub" data-en>Breathing new life into century-old machiya townhouses.</div>
+  <div class="footer-links">
+    <a href="index.html#concept"><span data-ja>コンセプト</span><span data-en>Concept</span></a>
+    <a href="rooms.html"><span data-ja>客室紹介</span><span data-en>Rooms</span></a>
+    <a href="area.html"><span data-ja>地域紹介</span><span data-en>The Area</span></a>
+    <a href="index.html#booking"><span data-ja>ご予約</span><span data-en>Reserve</span></a>
+  </div>
+  <div class="footer-copy">
+    <span data-ja>© 2026 SPICEWORKS HD / SHUKUBA. 滋賀県古民家再生宿泊プロジェクト</span>
+    <span data-en>© 2026 SPICEWORKS HD / SHUKUBA. Machiya Revitalization Project, Shiga Prefecture</span>
+    <br><span style="opacity:.7;font-size:10px" data-ja>写真：Wikimedia Commons（八幡堀・黒壁スクエア・琵琶湖畔 ／ CCライセンス）※サンプル用</span>
+    <span style="opacity:.7;font-size:10px" data-en>Photos: Wikimedia Commons (Hachiman-bori, Kurokabe Square, Lake Biwa shoreline / CC-licensed) — sample use</span>
+  </div>
+</footer>
+
+<script src="common.js"></script>
+</body>
+</html>

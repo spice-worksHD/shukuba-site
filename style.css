@@ -1,0 +1,311 @@
+:root {
+  --ink: #1d3a3f;       /* 深い湖面の藍緑（本文） */
+  --paper: #eef5f2;     /* 朝靄の薄緑青（背景） */
+  --warm: #5a93a8;      /* 琵琶湖の青（チェックアウト等） */
+  --gold: #4f9a8e;      /* アクセント＝若葉×水のティール */
+  --dark: #143a42;      /* 深い湖の濃藍（ダークセクション） */
+  --muted: #5e767d;     /* 霞んだ青灰（補助テキスト） */
+  --border: #cfe0db;    /* 淡い緑青のボーダー */
+  --green: #7fae8e;     /* 葦の薄緑 */
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body { font-family: 'Hiragino Mincho ProN', 'Yu Mincho', Georgia, serif; background: var(--paper); color: var(--ink); overflow-x: hidden; }
+img { max-width: 100%; display: block; }
+
+/* ===== LANG TOGGLE ===== */
+#lang-toggle {
+  position: fixed; top: 18px; right: 24px; z-index: 1000;
+  display: flex; gap: 0; border: 1px solid rgba(255,255,255,0.4); border-radius: 4px; overflow: hidden;
+}
+.lang-btn {
+  padding: 6px 14px; cursor: pointer; font-size: 12px; letter-spacing: 1px;
+  background: rgba(0,0,0,0.5); color: #fff; border: none; transition: background .2s;
+}
+.lang-btn.active { background: var(--gold); }
+.lang-btn:hover:not(.active) { background: rgba(255,255,255,0.15); }
+
+/* ===== NAV ===== */
+nav {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 999;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 16px 40px; background: transparent; transition: background .3s;
+}
+nav.scrolled { background: rgba(13,11,8,0.92); backdrop-filter: blur(8px); }
+.nav-logo { font-size: 22px; letter-spacing: 6px; color: #fff; text-decoration: none; font-weight: 300; }
+.nav-links { display: flex; gap: 28px; }
+.nav-links a { color: rgba(255,255,255,0.8); text-decoration: none; font-size: 13px; letter-spacing: 2px; transition: color .2s; }
+.nav-links a:hover { color: var(--gold); }
+
+/* ===== HERO ===== */
+#hero {
+  height: 100vh; position: relative; display: flex; align-items: center; justify-content: center;
+  background: linear-gradient(180deg, rgba(15,45,52,0.55) 0%, rgba(20,58,66,0.35) 45%, rgba(20,58,66,0.75) 100%),
+              url('https://upload.wikimedia.org/wikipedia/commons/c/cb/Shirahige_Shrine_%E7%99%BD%E9%AC%9A%E7%A5%9E%E7%A4%BE6_-_panoramio.jpg') center 40% / cover no-repeat;
+  overflow: hidden;
+}
+.hero-bg {
+  position: absolute; inset: 0;
+  background: radial-gradient(ellipse at 30% 50%, rgba(127,174,142,0.12) 0%, transparent 60%),
+              radial-gradient(ellipse at 70% 30%, rgba(90,147,168,0.12) 0%, transparent 50%);
+}
+/* Decorative mist orbs */
+.lantern { position: absolute; border-radius: 50%; background: radial-gradient(circle, rgba(255,255,255,0.14) 0%, rgba(160,200,205,0.06) 60%, transparent 100%); }
+.lantern-1 { width: 300px; height: 300px; top: 5%; left: 5%; }
+.lantern-2 { width: 200px; height: 200px; top: 15%; right: 15%; }
+.lantern-3 { width: 150px; height: 150px; top: 45%; right: 5%; }
+.lantern-4 { width: 250px; height: 250px; bottom: 10%; left: 20%; }
+.lantern-5 { width: 120px; height: 120px; bottom: 20%; right: 30%; }
+.hero-content { position: relative; text-align: center; color: #fff; padding: 0 20px; }
+.hero-sub { font-size: 13px; letter-spacing: 4px; color: var(--gold); margin-bottom: 20px; opacity: 0.9; }
+.hero-title { font-size: clamp(52px, 10vw, 96px); letter-spacing: 12px; font-weight: 200; line-height: 1; margin-bottom: 24px; }
+.hero-tagline { font-size: 16px; letter-spacing: 3px; color: rgba(255,255,255,0.7); margin-bottom: 48px; line-height: 2; }
+.hero-cta {
+  display: inline-block; padding: 14px 44px; border: 1px solid var(--gold);
+  color: var(--gold); text-decoration: none; letter-spacing: 3px; font-size: 13px;
+  transition: all .3s; background: transparent;
+}
+.hero-cta:hover { background: var(--gold); color: #fff; }
+.scroll-hint { position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%); color: rgba(255,255,255,0.4); font-size: 11px; letter-spacing: 3px; text-align: center; }
+.scroll-hint::after { content: ''; display: block; width: 1px; height: 40px; background: rgba(255,255,255,0.3); margin: 8px auto 0; }
+
+/* ===== PAGE HEADER (sub pages) ===== */
+.page-header {
+  height: 48vh; min-height: 320px; position: relative; display: flex; align-items: center; justify-content: center;
+  background-size: cover; background-position: center; overflow: hidden;
+}
+.page-header::before {
+  content: ''; position: absolute; inset: 0;
+  background: linear-gradient(180deg, rgba(15,45,52,0.55) 0%, rgba(20,58,66,0.55) 100%);
+}
+.page-header-content { position: relative; text-align: center; color: #fff; padding: 0 20px; }
+.page-header .hero-sub { color: var(--gold); }
+.page-header .hero-title { font-size: clamp(36px, 7vw, 64px); }
+
+/* ===== SECTION BASE ===== */
+section { padding: 96px 40px; max-width: 1100px; margin: 0 auto; }
+.section-label { font-size: 11px; letter-spacing: 5px; color: var(--gold); text-transform: uppercase; margin-bottom: 12px; }
+.section-title { font-size: clamp(28px, 4vw, 44px); font-weight: 300; letter-spacing: 4px; line-height: 1.3; margin-bottom: 20px; }
+.section-body { font-size: 15px; line-height: 2.2; color: var(--muted); max-width: 600px; }
+hr.divider { border: none; border-top: 1px solid var(--border); margin: 48px 0; }
+
+/* ===== CONCEPT ===== */
+#concept { background: #fff; max-width: 100%; padding: 96px 0; }
+#concept > .inner { max-width: 1100px; margin: 0 auto; padding: 0 40px; display: grid; grid-template-columns: 1fr 1fr; gap: 80px; align-items: center; }
+.concept-visual {
+  position: relative; height: 440px; overflow: hidden; border-radius: 2px;
+  background: linear-gradient(180deg, rgba(20,58,66,0.15) 0%, rgba(20,58,66,0.55) 100%),
+              url('https://upload.wikimedia.org/wikipedia/commons/thumb/1/19/Omihachiman_Canal_March_2016.jpg/1280px-Omihachiman_Canal_March_2016.jpg') center / cover no-repeat;
+}
+.concept-visual::before {
+  content: '宿'; position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+  font-size: 240px; color: rgba(255,255,255,0.12); letter-spacing: 0;
+}
+.concept-visual-inner { position: absolute; inset: 0; display: flex; align-items: flex-end; justify-content: center; flex-direction: column; padding: 24px; color: rgba(255,255,255,0.85); gap: 6px; text-shadow: 0 1px 6px rgba(0,0,0,.4); }
+.concept-visual-inner span { font-size: 13px; letter-spacing: 4px; }
+.concept-pills { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 32px; }
+.pill { padding: 6px 18px; border: 1px solid var(--border); font-size: 12px; letter-spacing: 2px; color: var(--muted); border-radius: 40px; }
+
+/* ===== PROPERTIES ===== */
+#rooms { background: var(--dark); color: #fff; max-width: 100%; padding: 96px 0; }
+#rooms > .inner { max-width: 1100px; margin: 0 auto; padding: 0 40px; }
+#rooms .section-body { color: rgba(255,255,255,0.5); }
+.rooms-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; margin-top: 48px; }
+.room-card {
+  background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08);
+  overflow: hidden; cursor: pointer; transition: border-color .3s, transform .3s;
+}
+.room-card:hover { border-color: var(--gold); transform: translateY(-4px); }
+.room-card.selected { border-color: var(--gold); background: rgba(184,150,90,0.08); }
+.room-img {
+  height: 210px; background: var(--dark) center / cover no-repeat; display: flex; align-items: flex-start; justify-content: flex-start;
+  position: relative; overflow: hidden;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+  transition: transform .6s ease;
+}
+.room-card:hover .room-img { transform: scale(1.05); }
+.room-img::before {
+  content: ''; position: absolute; inset: 0;
+  background: linear-gradient(160deg, rgba(20,58,66,0.05) 0%, rgba(20,58,66,0.45) 100%);
+}
+.room-img-char {
+  font-family: 'Hiragino Mincho ProN', serif; font-size: 22px; color: rgba(255,255,255,0.92); z-index: 1;
+  margin: 14px; width: 46px; height: 46px; display: flex; align-items: center; justify-content: center;
+  border: 1px solid rgba(255,255,255,0.6); border-radius: 50%; backdrop-filter: blur(2px); background: rgba(20,58,66,0.25);
+}
+.room-info { padding: 24px; }
+.room-location { font-size: 10px; letter-spacing: 4px; color: var(--gold); margin-bottom: 8px; }
+.room-name { font-size: 20px; letter-spacing: 4px; font-weight: 300; margin-bottom: 8px; }
+.room-name-sub { font-size: 12px; color: rgba(255,255,255,0.4); letter-spacing: 1px; margin-bottom: 16px; }
+.room-desc { font-size: 13px; line-height: 1.9; color: rgba(255,255,255,0.5); margin-bottom: 20px; }
+.room-price { font-size: 22px; color: var(--gold); letter-spacing: 1px; }
+.room-price span { font-size: 12px; color: rgba(255,255,255,0.4); }
+.room-features { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
+.room-feature { font-size: 11px; letter-spacing: 1px; color: rgba(255,255,255,0.4); padding: 3px 10px; border: 1px solid rgba(255,255,255,0.1); border-radius: 2px; }
+.select-badge { display: inline-block; font-size: 11px; letter-spacing: 2px; color: var(--gold); border: 1px solid var(--gold); padding: 4px 14px; margin-top: 16px; border-radius: 2px; cursor: pointer; transition: all .2s; }
+.select-badge:hover, .room-card.selected .select-badge { background: var(--gold); color: #fff; }
+
+/* ===== BOOKING ===== */
+#booking {
+  max-width: 100%; padding: 96px 0;
+  background: linear-gradient(rgba(238,245,242,0.93), rgba(238,245,242,0.97)),
+              url('https://upload.wikimedia.org/wikipedia/commons/thumb/b/bb/Landscape_from_Yanagasaki_Lakeside_Park_2.JPG/1280px-Landscape_from_Yanagasaki_Lakeside_Park_2.JPG') center / cover no-repeat fixed;
+}
+#booking > .inner { max-width: 900px; margin: 0 auto; padding: 0 40px; }
+.booking-form { background: #fff; border: 1px solid var(--border); padding: 48px; margin-top: 48px; }
+.form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+.form-group { display: flex; flex-direction: column; gap: 8px; }
+.form-group.full { grid-column: 1 / -1; }
+label { font-size: 11px; letter-spacing: 3px; color: var(--muted); text-transform: uppercase; }
+input, select, textarea {
+  border: 1px solid var(--border); padding: 12px 16px; font-size: 14px; font-family: inherit;
+  background: var(--paper); color: var(--ink); outline: none; transition: border-color .2s;
+  border-radius: 0;
+}
+input:focus, select:focus, textarea:focus { border-color: var(--gold); }
+textarea { resize: vertical; min-height: 100px; line-height: 1.8; }
+.form-row { display: flex; gap: 16px; margin-top: 24px; align-items: center; }
+
+/* Prevent grid/flex children from forcing horizontal overflow (default min-width:auto) */
+.form-grid > * { min-width: 0; }
+
+/* Calendar */
+.calendar-wrap { grid-column: 1 / -1; min-width: 0; }
+#calendar, .cal-grid { min-width: 0; }
+
+/* ===== SCENERY BAND ===== */
+.scenery-band {
+  position: relative; height: 380px; max-width: 100%; padding: 0;
+  display: flex; align-items: center; justify-content: center; text-align: center;
+  background: linear-gradient(rgba(20,58,66,0.42), rgba(20,58,66,0.42)),
+              url('https://upload.wikimedia.org/wikipedia/commons/thumb/f/f1/Metasequoia_Road_in_Makino%2C_Takashima_-_Jul_9%2C_2017.jpg/1280px-Metasequoia_Road_in_Makino%2C_Takashima_-_Jul_9%2C_2017.jpg') center 35% / cover no-repeat;
+}
+.scenery-band .band-inner { color: #fff; padding: 0 24px; text-shadow: 0 2px 10px rgba(0,0,0,.35); }
+.scenery-band .band-label { font-size: 11px; letter-spacing: 5px; color: #d8eae3; margin-bottom: 14px; }
+.scenery-band .band-title { font-size: clamp(22px, 4vw, 38px); font-weight: 300; letter-spacing: 6px; line-height: 1.5; }
+.cal-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+.cal-nav { background: none; border: 1px solid var(--border); padding: 6px 14px; cursor: pointer; font-size: 14px; color: var(--muted); transition: all .2s; }
+.cal-nav:hover { border-color: var(--gold); color: var(--gold); }
+.cal-month { font-size: 16px; letter-spacing: 3px; color: var(--ink); }
+.cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+.cal-day-name { text-align: center; font-size: 11px; letter-spacing: 2px; color: var(--muted); padding: 8px 0; }
+.cal-day {
+  text-align: center; padding: 10px 4px; font-size: 13px; cursor: pointer; border: 1px solid transparent;
+  transition: all .15s; border-radius: 2px; position: relative;
+}
+.cal-day:hover:not(.empty):not(.past) { border-color: var(--gold); color: var(--gold); }
+.cal-day.empty { cursor: default; }
+.cal-day.past { color: var(--border); cursor: default; }
+.cal-day.checkin { background: var(--gold); color: #fff; border-color: var(--gold); }
+.cal-day.checkout { background: #c8956c; color: #fff; border-color: #c8956c; }
+.cal-day.inrange { background: rgba(79,154,142,0.12); border-color: rgba(79,154,142,0.25); }
+.cal-day.available::after { content: ''; display: block; width: 4px; height: 4px; border-radius: 50%; background: var(--green); margin: 2px auto 0; }
+.cal-day.booked { color: var(--border); cursor: not-allowed; text-decoration: line-through; }
+.cal-legend { display: flex; flex-wrap: wrap; gap: 10px 20px; margin-top: 12px; font-size: 11px; color: var(--muted); }
+.cal-legend-item { display: flex; align-items: center; gap: 6px; }
+.cal-legend-dot { width: 10px; height: 10px; border-radius: 50%; }
+
+.selected-dates { background: rgba(79,154,142,0.08); border: 1px solid rgba(79,154,142,0.22); padding: 16px 20px; margin-top: 16px; display: flex; flex-wrap: wrap; gap: 16px 32px; }
+.sel-date-item { display: flex; flex-direction: column; gap: 4px; }
+.sel-date-label { font-size: 10px; letter-spacing: 3px; color: var(--gold); }
+.sel-date-val { font-size: 16px; letter-spacing: 2px; }
+
+.submit-btn {
+  display: block; width: 100%; padding: 18px; background: var(--ink); color: #fff;
+  border: none; font-family: inherit; font-size: 14px; letter-spacing: 4px; cursor: pointer;
+  transition: background .3s; margin-top: 32px; text-transform: uppercase;
+}
+.submit-btn:hover { background: var(--gold); }
+
+.form-note { font-size: 12px; color: var(--muted); line-height: 1.8; margin-top: 24px; padding-top: 24px; border-top: 1px solid var(--border); }
+
+/* ===== MODAL ===== */
+#modal-overlay {
+  display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 2000; align-items: center; justify-content: center;
+}
+#modal-overlay.open { display: flex; }
+.modal {
+  background: #fff; max-width: 480px; width: 90%; padding: 48px; position: relative;
+  border-top: 3px solid var(--gold);
+}
+.modal-close { position: absolute; top: 16px; right: 20px; font-size: 24px; cursor: pointer; color: var(--muted); background: none; border: none; }
+.modal-icon { font-size: 48px; margin-bottom: 16px; }
+.modal-title { font-size: 22px; letter-spacing: 4px; margin-bottom: 16px; }
+.modal-body { font-size: 14px; line-height: 2; color: var(--muted); }
+
+/* ===== FOOTER ===== */
+footer { background: var(--dark); color: rgba(255,255,255,0.5); padding: 60px 40px; text-align: center; }
+.footer-logo { font-size: 28px; letter-spacing: 8px; color: #fff; margin-bottom: 16px; }
+.footer-sub { font-size: 12px; letter-spacing: 3px; color: var(--gold); margin-bottom: 32px; }
+.footer-links { display: flex; justify-content: center; gap: 32px; margin-bottom: 40px; flex-wrap: wrap; }
+.footer-links a { color: rgba(255,255,255,0.5); text-decoration: none; font-size: 12px; letter-spacing: 2px; transition: color .2s; }
+.footer-links a:hover { color: var(--gold); }
+.footer-copy { font-size: 11px; letter-spacing: 1px; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 24px; }
+
+/* ===== GALLERY / FEATURE GRIDS (sub pages) ===== */
+.gallery-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-top: 40px; }
+.gallery-grid.cols-2 { grid-template-columns: repeat(2, 1fr); }
+.gallery-item { position: relative; overflow: hidden; border-radius: 2px; aspect-ratio: 4/3; background: var(--dark) center / cover no-repeat; }
+.gallery-item.tall { aspect-ratio: 3/4; }
+.gallery-item.wide { aspect-ratio: 16/9; grid-column: span 2; }
+.gallery-cap {
+  position: absolute; left: 0; right: 0; bottom: 0; padding: 10px 14px; font-size: 11px; letter-spacing: 2px;
+  color: #fff; background: linear-gradient(0deg, rgba(0,0,0,.55), transparent); text-shadow: 0 1px 4px rgba(0,0,0,.4);
+}
+
+.feature-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 24px; margin-top: 48px; }
+.feature-card { background: #fff; border: 1px solid var(--border); padding: 28px 28px; }
+.feature-card .f-icon { font-size: 22px; color: var(--gold); margin-bottom: 12px; letter-spacing: 2px; }
+.feature-card .f-title { font-size: 15px; letter-spacing: 2px; margin-bottom: 8px; font-weight: 600; }
+.feature-card .f-body { font-size: 13px; line-height: 1.9; color: var(--muted); }
+
+.area-card { display: grid; grid-template-columns: 1fr 1fr; gap: 48px; align-items: center; margin-bottom: 96px; }
+.area-card.reverse { direction: rtl; }
+.area-card.reverse > * { direction: ltr; }
+.area-card .area-visual { aspect-ratio: 4/3; background: var(--dark) center / cover no-repeat; border-radius: 2px; }
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 768px) {
+  nav { padding: 14px 20px; }
+  .nav-links { display: none; }
+  section { padding: 64px 20px; }
+  #concept > .inner { grid-template-columns: 1fr; gap: 40px; padding: 0 20px; }
+  .concept-visual { height: 260px; }
+  .rooms-grid { grid-template-columns: 1fr; }
+  #rooms > .inner, #booking > .inner { padding: 0 20px; }
+  .booking-form { padding: 24px 16px; }
+  .form-grid { grid-template-columns: 1fr; }
+  .footer-links { flex-direction: column; gap: 16px; }
+  footer { padding: 40px 20px; }
+
+  /* Calendar: tighter cells so 7 columns always fit */
+  .cal-grid { gap: 2px; }
+  .cal-day { padding: 9px 0; font-size: 13px; }
+  .cal-day-name { padding: 6px 0; }
+  .cal-nav { padding: 6px 10px; }
+  .cal-month { font-size: 15px; letter-spacing: 1px; }
+
+  /* iOS renders background-attachment:fixed poorly — use scroll on small screens */
+  #booking, .scenery-band { background-attachment: scroll; }
+  .scenery-band { height: 260px; }
+  .concept-visual { background-attachment: scroll; }
+
+  .gallery-grid, .gallery-grid.cols-2 { grid-template-columns: 1fr; }
+  .gallery-item.wide { grid-column: span 1; }
+  .feature-grid { grid-template-columns: 1fr; }
+  .area-card, .area-card.reverse { grid-template-columns: 1fr; direction: ltr; gap: 24px; margin-bottom: 56px; }
+  .page-header { height: 36vh; }
+}
+
+/* ===== LANG ===== */
+[data-ja], [data-en] { display: none; }
+body.lang-ja [data-ja] { display: block; }
+body.lang-ja span[data-ja] { display: inline; }
+body.lang-ja [data-en] { display: none; }
+body.lang-en [data-en] { display: block; }
+body.lang-en span[data-en] { display: inline; }
+body.lang-en [data-ja] { display: none; }
+
+/* Fade in */
+.fade-in { opacity: 0; transform: translateY(20px); transition: opacity .6s, transform .6s; }
+.fade-in.visible { opacity: 1; transform: translateY(0); }

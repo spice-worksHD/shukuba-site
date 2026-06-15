@@ -8,6 +8,12 @@ const DEFAULT_PRICING = {
 
 const DEFAULT_BLOCKED = { '0': [], '1': [], '2': [] };
 
+const DEFAULT_PAYMENT = {
+  methods: { credit: true, paypay: true, onsite: true },
+  depositType: 'percent', // 'percent' | 'fixed'
+  depositValue: 30,
+};
+
 function checkAuth(req) {
   const key = req.headers.get('x-admin-key');
   return Boolean(process.env.ADMIN_KEY) && key === process.env.ADMIN_KEY;
@@ -27,7 +33,8 @@ export default async (req) => {
     const bookings = (await store.get('bookings.json', { type: 'json' })) || [];
     const pricing = (await store.get('pricing.json', { type: 'json' })) || DEFAULT_PRICING;
     const blocked = (await store.get('blocked.json', { type: 'json' })) || DEFAULT_BLOCKED;
-    return new Response(JSON.stringify({ ok: true, bookings, pricing, blocked }), {
+    const payment = (await store.get('payment.json', { type: 'json' })) || DEFAULT_PAYMENT;
+    return new Response(JSON.stringify({ ok: true, bookings, pricing, blocked, payment }), {
       status: 200,
       headers: { 'Content-Type': 'application/json' },
     });
@@ -63,6 +70,23 @@ export default async (req) => {
       blocked[String(data.room)] = Array.isArray(data.dates) ? data.dates : [];
       await store.setJSON('blocked.json', blocked);
       return new Response(JSON.stringify({ ok: true, blocked }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+
+    if (data.action === 'set-payment') {
+      const payment = {
+        methods: {
+          credit: !!data.methods?.credit,
+          paypay: !!data.methods?.paypay,
+          onsite: !!data.methods?.onsite,
+        },
+        depositType: data.depositType === 'fixed' ? 'fixed' : 'percent',
+        depositValue: Math.max(0, Number(data.depositValue) || 0),
+      };
+      await store.setJSON('payment.json', payment);
+      return new Response(JSON.stringify({ ok: true, payment }), {
         status: 200,
         headers: { 'Content-Type': 'application/json' },
       });

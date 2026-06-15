@@ -130,6 +130,7 @@
   <div class="tabs">
     <button class="tab-btn active" onclick="showTab('reservations')">予約履歴・サマリー</button>
     <button class="tab-btn" onclick="showTab('calendar')">料金・在庫カレンダー</button>
+    <button class="tab-btn" onclick="showTab('payment')">決済設定</button>
   </div>
 
   <!-- Reservations -->
@@ -170,6 +171,45 @@
       </p>
     </div>
   </div>
+
+  <!-- Payment settings -->
+  <div class="panel" id="panel-payment">
+    <div class="card">
+      <h3>お支払い方法</h3>
+      <p style="font-size:12px;color:var(--muted);margin-bottom:12px">
+        予約画面でお客様に表示する決済方法を選択してください。クレジットカード・PayPayは事前決済（デポジット）の対象になります。
+      </p>
+      <label style="display:flex;align-items:center;gap:8px;margin-bottom:10px;font-size:14px">
+        <input type="checkbox" id="pay-credit" style="width:auto"> クレジットカード（事前決済）
+      </label>
+      <label style="display:flex;align-items:center;gap:8px;margin-bottom:10px;font-size:14px">
+        <input type="checkbox" id="pay-paypay" style="width:auto"> PayPay（事前決済）
+      </label>
+      <label style="display:flex;align-items:center;gap:8px;margin-bottom:10px;font-size:14px">
+        <input type="checkbox" id="pay-onsite" style="width:auto"> 現地決済
+      </label>
+    </div>
+    <div class="card">
+      <h3>デポジット設定</h3>
+      <p style="font-size:12px;color:var(--muted);margin-bottom:12px">
+        クレジットカード・PayPayでの事前決済時に、お客様にお支払いいただくデポジット額の算出方法です。
+      </p>
+      <label style="display:flex;align-items:center;gap:8px;margin-bottom:10px;font-size:14px">
+        <input type="radio" name="deposit-type" id="deposit-type-percent" value="percent" style="width:auto"> 宿泊金額の割合（%）
+      </label>
+      <label style="display:flex;align-items:center;gap:8px;margin-bottom:10px;font-size:14px">
+        <input type="radio" name="deposit-type" id="deposit-type-fixed" value="fixed" style="width:auto"> 固定額（円）
+      </label>
+      <div class="room-row" style="grid-template-columns:160px 1fr;align-items:center">
+        <label style="margin:0">デポジット額</label>
+        <input type="number" id="deposit-value" min="0" step="1" style="max-width:140px">
+      </div>
+      <div class="save-row" style="margin-top:14px">
+        <button class="btn" onclick="savePayment()">保存</button>
+      </div>
+      <div class="msg" id="payment-msg"></div>
+    </div>
+  </div>
 </div>
 
 <script>
@@ -180,7 +220,12 @@ const roomLabels = {
 };
 
 let adminKey = '';
-let state = { bookings: [], pricing: {}, blocked: {} };
+const DEFAULT_PAYMENT = {
+  methods: { credit: true, paypay: true, onsite: true },
+  depositType: 'percent',
+  depositValue: 30,
+};
+let state = { bookings: [], pricing: {}, blocked: {}, payment: DEFAULT_PAYMENT };
 
 async function login(e) {
   if (e) e.preventDefault();
@@ -200,7 +245,7 @@ async function login(e) {
 
 function logout() {
   adminKey = '';
-  state = { bookings: [], pricing: {}, blocked: {} };
+  state = { bookings: [], pricing: {}, blocked: {}, payment: DEFAULT_PAYMENT };
   document.getElementById('login-key').value = '';
   document.getElementById('login-error').textContent = '';
   document.getElementById('app').style.display = 'none';
@@ -227,6 +272,7 @@ function renderAll() {
   renderStats();
   renderBookings();
   renderGrid();
+  renderPayment();
 }
 
 // ===== RESERVATIONS =====
@@ -402,6 +448,37 @@ async function toggleBlocked(room, date) {
   if (set.has(date)) set.delete(date); else set.add(date);
   const r = await apiPost({ action: 'set-blocked', room, dates: [...set] });
   if (r.ok) { state.blocked = r.blocked; renderGrid(); flashMsg('在庫状態を更新しました'); }
+}
+
+// ===== PAYMENT SETTINGS =====
+function renderPayment() {
+  const p = state.payment || DEFAULT_PAYMENT;
+  document.getElementById('pay-credit').checked = !!p.methods?.credit;
+  document.getElementById('pay-paypay').checked = !!p.methods?.paypay;
+  document.getElementById('pay-onsite').checked = !!p.methods?.onsite;
+  document.getElementById('deposit-type-percent').checked = p.depositType !== 'fixed';
+  document.getElementById('deposit-type-fixed').checked = p.depositType === 'fixed';
+  document.getElementById('deposit-value').value = p.depositValue ?? 30;
+}
+
+async function savePayment() {
+  const payload = {
+    action: 'set-payment',
+    methods: {
+      credit: document.getElementById('pay-credit').checked,
+      paypay: document.getElementById('pay-paypay').checked,
+      onsite: document.getElementById('pay-onsite').checked,
+    },
+    depositType: document.getElementById('deposit-type-fixed').checked ? 'fixed' : 'percent',
+    depositValue: Number(document.getElementById('deposit-value').value) || 0,
+  };
+  const r = await apiPost(payload);
+  if (r.ok) {
+    state.payment = r.payment;
+    const el = document.getElementById('payment-msg');
+    el.textContent = '決済設定を保存しました';
+    setTimeout(() => { if (el.textContent === '決済設定を保存しました') el.textContent = ''; }, 2000);
+  }
 }
 
 </script>

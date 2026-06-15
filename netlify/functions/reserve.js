@@ -6,6 +6,17 @@ const DEFAULT_PRICING = {
   '2': { base: 22000, overrides: {}, minGuests: 2, maxGuests: 10, extraGuestFee: 2000 },
 };
 
+const DEFAULT_PAYMENT = {
+  methods: { credit: true, paypay: true, onsite: true },
+  depositType: 'percent', // 'percent' | 'fixed'
+  depositValue: 30,
+};
+
+function calcDeposit(total, payment) {
+  if (payment.depositType === 'fixed') return Math.min(payment.depositValue, total);
+  return Math.round(total * (payment.depositValue / 100));
+}
+
 function calcTotal(pricingForRoom, checkin, checkout, guests) {
   const base = pricingForRoom?.base ?? 0;
   const overrides = pricingForRoom?.overrides ?? {};
@@ -36,8 +47,8 @@ export default async (req) => {
     return new Response(JSON.stringify({ ok: false, error: 'invalid_json' }), { status: 400 });
   }
 
-  const { room, roomName, checkin, checkout, guests, name, email, phone, message } = data;
-  if (!room || !checkin || !checkout || !name || !email) {
+  const { room, roomName, checkin, checkout, guests, name, email, phone, message, paymentMethod } = data;
+  if (!room || !checkin || !checkout || !name || !email || !paymentMethod) {
     return new Response(JSON.stringify({ ok: false, error: 'missing_fields' }), { status: 400 });
   }
 
@@ -77,7 +88,13 @@ export default async (req) => {
     return new Response(JSON.stringify({ ok: false, error: 'guests_over_capacity' }), { status: 400 });
   }
 
+  const payment = (await store.get('payment.json', { type: 'json' })) || DEFAULT_PAYMENT;
+  if (!payment.methods?.[paymentMethod]) {
+    return new Response(JSON.stringify({ ok: false, error: 'invalid_payment_method' }), { status: 400 });
+  }
+
   const total = calcTotal(roomPricing, checkin, checkout, guests);
+  const depositAmount = paymentMethod === 'onsite' ? 0 : calcDeposit(total, payment);
 
   bookings.push({
     room,
@@ -89,13 +106,15 @@ export default async (req) => {
     email,
     phone: phone || '',
     message: message || '',
+    paymentMethod,
+    depositAmount,
     total,
     createdAt: new Date().toISOString(),
   });
 
   await store.setJSON('bookings.json', bookings);
 
-  return new Response(JSON.stringify({ ok: true, total }), {
+  return new Response(JSON.stringify({ ok: true, total, paymentMethod, depositAmount }), {
     status: 200,
     headers: { 'Content-Type': 'application/json' },
   });

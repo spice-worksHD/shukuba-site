@@ -206,6 +206,7 @@
       <form id="booking-form" name="reservation" method="POST" data-netlify="true" onsubmit="submitForm(event)">
         <input type="hidden" name="form-name" value="reservation">
         <input type="hidden" name="room-name" id="room-name-input">
+        <input type="hidden" name="paymentMethod" id="payment-method-input">
         <div class="form-grid">
 
           <!-- Property select -->
@@ -242,9 +243,23 @@
                 <div class="sel-date-val" id="disp-total">—</div>
                 <div class="sel-date-note" id="disp-total-note" style="font-size:11px;color:var(--muted)"></div>
               </div>
+              <div class="sel-date-item" id="deposit-row" style="display:none">
+                <div class="sel-date-label" data-ja>事前デポジット</div>
+                <div class="sel-date-label" data-en>Deposit (Paid Now)</div>
+                <div class="sel-date-val" id="disp-deposit">—</div>
+                <div class="sel-date-note deposit-note" data-ja>※ご予約確定のため、上記デポジットを事前にお支払いいただきます。残額は現地でのお支払いとなります。</div>
+                <div class="sel-date-note deposit-note" data-en>※ This deposit is paid in advance to confirm your booking. The remaining balance is paid on site.</div>
+              </div>
             </div>
             <input type="hidden" id="checkin-input" name="checkin" required>
             <input type="hidden" id="checkout-input" name="checkout" required>
+          </div>
+
+          <!-- Payment Method -->
+          <div class="form-group full">
+            <label data-ja>お支払い方法</label>
+            <label data-en>Payment Method</label>
+            <div id="payment-options" class="payment-options"></div>
           </div>
 
           <!-- Guests -->
@@ -289,12 +304,12 @@
         </div>
 
         <button type="submit" class="submit-btn">
-          <span data-ja>予約リクエストを送る</span>
-          <span data-en>Send Reservation Request</span>
+          <span data-ja>予約する</span>
+          <span data-en>Book Now</span>
         </button>
         <p class="form-note">
-          <span data-ja>※ このフォームは予約リクエストです。ご送信後、スタッフより2営業日以内にメールにてご連絡いたします。<br>※ 料金は人数・時期により変動する場合があります。詳細はご確認のメールにてお知らせします。</span>
-          <span data-en>※ This form sends a reservation request. Our staff will contact you within 2 business days to confirm availability and pricing.<br>※ Rates may vary by season and number of guests.</span>
+          <span data-ja>※ ご送信いただいた時点でご予約が確定します。事前決済をご選択の場合は、デポジットのお支払いが必要です。<br>※ 料金は人数・時期により変動する場合があります。</span>
+          <span data-en>※ Your booking is confirmed as soon as you submit this form. If you choose a prepayment method, a deposit is required.<br>※ Rates may vary by season and number of guests.</span>
         </p>
       </form>
     </div>
@@ -325,11 +340,11 @@
   <div class="modal">
     <button class="modal-close" onclick="document.getElementById('modal-overlay').classList.remove('open')">×</button>
     <div class="modal-icon">✉️</div>
-    <div class="modal-title" data-ja>予約リクエストを受け付けました</div>
-    <div class="modal-title" data-en>Request Received</div>
+    <div class="modal-title" data-ja>ご予約が確定しました</div>
+    <div class="modal-title" data-en>Booking Confirmed</div>
     <p class="modal-body">
-      <span data-ja>ご予約リクエストありがとうございます。<br>2営業日以内にご登録のメールアドレスへご連絡いたします。<br><br>しばらくお待ちください。</span>
-      <span data-en>Thank you for your reservation request.<br>We will contact you at the email provided within 2 business days.<br><br>We look forward to welcoming you.</span>
+      <span data-ja>ご予約ありがとうございます。<br>ご登録のメールアドレスに確認メールをお送りしました。<br><br>当日お会いできることを楽しみにしております。</span>
+      <span data-en>Thank you for your booking.<br>A confirmation email has been sent to the address you provided.<br><br>We look forward to welcoming you.</span>
     </p>
   </div>
 </div>
@@ -373,6 +388,7 @@ function setLang(lang) {
   });
   buildSelect(lang);
   renderCalendar();
+  renderPaymentOptions();
 }
 
 // ===== ROOM SELECTION =====
@@ -450,6 +466,77 @@ async function loadPricing() {
   } catch (err) {
     console.warn('pricing load failed', err);
   }
+}
+
+// ===== PAYMENT METHODS =====
+const DEFAULT_PAYMENT = {
+  methods: { credit: true, paypay: true, onsite: true },
+  depositType: 'percent',
+  depositValue: 30,
+};
+let paymentData = DEFAULT_PAYMENT;
+const paymentLabels = {
+  credit: { ja: 'クレジットカード（事前決済）', en: 'Credit Card (prepay)' },
+  paypay: { ja: 'PayPay（事前決済）', en: 'PayPay (prepay)' },
+  onsite: { ja: '現地決済', en: 'Pay on site' },
+};
+
+async function loadPayment() {
+  try {
+    const res = await fetch('/.netlify/functions/payment');
+    if (!res.ok) return;
+    paymentData = await res.json();
+  } catch (err) {
+    console.warn('payment load failed', err);
+    paymentData = DEFAULT_PAYMENT;
+  }
+  renderPaymentOptions();
+}
+
+function renderPaymentOptions() {
+  const lang = document.body.classList.contains('lang-ja') ? 'ja' : 'en';
+  const wrap = document.getElementById('payment-options');
+  const cur = wrap.querySelector('input[name="paymentMethodChoice"]:checked');
+  const curVal = cur ? cur.value : null;
+  wrap.innerHTML = '';
+  Object.keys(paymentData.methods || {}).forEach(key => {
+    if (!paymentData.methods[key]) return;
+    const id = 'pay-' + key;
+    const label = document.createElement('label');
+    label.className = 'payment-option';
+    label.setAttribute('for', id);
+    label.innerHTML = `<input type="radio" name="paymentMethodChoice" id="${id}" value="${key}"><span>${paymentLabels[key][lang]}</span>`;
+    wrap.appendChild(label);
+  });
+  // Restore previous selection, or default to the first available option
+  const radios = wrap.querySelectorAll('input[name="paymentMethodChoice"]');
+  let toCheck = null;
+  if (curVal) toCheck = wrap.querySelector(`input[value="${curVal}"]`);
+  if (!toCheck) toCheck = radios[0];
+  if (toCheck) toCheck.checked = true;
+  wrap.querySelectorAll('.payment-option').forEach(opt => {
+    opt.classList.toggle('selected', opt.querySelector('input').checked);
+  });
+  wrap.querySelectorAll('input[name="paymentMethodChoice"]').forEach(r => {
+    r.addEventListener('change', () => {
+      wrap.querySelectorAll('.payment-option').forEach(opt => {
+        opt.classList.toggle('selected', opt.querySelector('input').checked);
+      });
+      updateDateDisplay();
+    });
+  });
+  updateDateDisplay();
+}
+
+function calcDeposit(total, method) {
+  if (!method || method === 'onsite') return 0;
+  if (paymentData.depositType === 'fixed') return Math.min(paymentData.depositValue, total);
+  return Math.round(total * (paymentData.depositValue / 100));
+}
+
+function getSelectedPaymentMethod() {
+  const checked = document.querySelector('input[name="paymentMethodChoice"]:checked');
+  return checked ? checked.value : null;
 }
 
 function calcTotalPrice(roomVal, checkin, checkout, guests) {
@@ -593,6 +680,15 @@ function updateDateDisplay() {
       const total = calcTotalPrice(roomVal, checkIn, checkOut, guests);
       document.getElementById('disp-total').textContent = '¥' + total.toLocaleString();
 
+      const method = getSelectedPaymentMethod();
+      const depositRow = document.getElementById('deposit-row');
+      if (method && method !== 'onsite') {
+        depositRow.style.display = 'flex';
+        document.getElementById('disp-deposit').textContent = '¥' + calcDeposit(total, method).toLocaleString();
+      } else {
+        depositRow.style.display = 'none';
+      }
+
       const p = pricingData[String(roomVal)] || DEFAULT_PRICING[String(roomVal)];
       const noteEl = document.getElementById('disp-total-note');
       if (p && guests) {
@@ -633,11 +729,17 @@ async function submitForm(e) {
     alert(isJa ? '日程を選択してください' : 'Please select your dates.');
     return;
   }
+  const paymentMethod = getSelectedPaymentMethod();
+  if (!paymentMethod) {
+    alert(isJa ? 'お支払い方法を選択してください' : 'Please select a payment method.');
+    return;
+  }
 
   const checkinStr = fmtDate(checkIn);
   const checkoutStr = fmtDate(checkOut);
   const roomLabel = (isJa ? roomNames : roomNamesEn)[Number(roomVal)];
   document.getElementById('room-name-input').value = roomLabel;
+  document.getElementById('payment-method-input').value = paymentMethod;
 
   const fd = new FormData(form);
   const payload = {
@@ -650,6 +752,7 @@ async function submitForm(e) {
     email: fd.get('email'),
     phone: fd.get('phone'),
     message: fd.get('message'),
+    paymentMethod: fd.get('paymentMethod'),
   };
 
   const submitBtn = form.querySelector('.submit-btn');
@@ -716,6 +819,7 @@ buildSelect('ja');
 renderCalendar();
 loadAvailability();
 loadPricing();
+loadPayment();
 </script>
 </body>
 </html>

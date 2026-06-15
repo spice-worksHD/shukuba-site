@@ -316,7 +316,7 @@
               <span data-ja>無人チェックインのご案内</span>
               <span data-en>How Unattended Check-in Works</span>
             </h3>
-            <p class="section-body" style="font-size:13px">
+            <p class="section-body" style="font-size:13px;line-height:1.9;max-width:none">
               <span data-ja>SHUKUBAは完全無人運営の宿です。スタッフが現地にいない代わりに、以下の流れでスムーズにご入館いただけます。</span>
               <span data-en>SHUKUBA is a fully unattended property — there is no staff on site. Instead, your check-in works as follows.</span>
             </p>
@@ -626,6 +626,12 @@ function goToCheckinInfo() {
   }
   if (!getSelectedPaymentMethod()) {
     alert(isJa ? 'お支払い方法を選択してください' : 'Please select a payment method.');
+    return;
+  }
+  const emailInput = document.querySelector('#booking-step-1 input[name="email"]');
+  if (!emailInput.value || !emailInput.checkValidity()) {
+    alert(isJa ? '有効なメールアドレスを入力してください' : 'Please enter a valid email address.');
+    emailInput.focus();
     return;
   }
   document.getElementById('booking-step-1').style.display = 'none';

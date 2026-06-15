@@ -32,9 +32,10 @@ export default async (req) => {
   if (req.method === 'GET') {
     const bookings = (await store.get('bookings.json', { type: 'json' })) || [];
     const pricing = (await store.get('pricing.json', { type: 'json' })) || DEFAULT_PRICING;
+    const pricingLive = (await store.get('pricing-live.json', { type: 'json' })) || DEFAULT_PRICING;
     const blocked = (await store.get('blocked.json', { type: 'json' })) || DEFAULT_BLOCKED;
     const payment = (await store.get('payment.json', { type: 'json' })) || DEFAULT_PAYMENT;
-    return new Response(JSON.stringify({ ok: true, bookings, pricing, blocked, payment }), {
+    return new Response(JSON.stringify({ ok: true, bookings, pricing, pricingLive, blocked, payment }), {
       status: 200,
       headers: { 'Content-Type': 'application/json' },
     });
@@ -60,6 +61,15 @@ export default async (req) => {
       };
       await store.setJSON('pricing.json', pricing);
       return new Response(JSON.stringify({ ok: true, pricing }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+
+    if (data.action === 'publish-pricing') {
+      const pricing = (await store.get('pricing.json', { type: 'json' })) || DEFAULT_PRICING;
+      await store.setJSON('pricing-live.json', pricing);
+      return new Response(JSON.stringify({ ok: true, pricingLive: pricing }), {
         status: 200,
         headers: { 'Content-Type': 'application/json' },
       });

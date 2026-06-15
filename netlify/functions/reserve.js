@@ -80,7 +80,7 @@ export default async (req) => {
     return new Response(JSON.stringify({ ok: false, error: 'conflict' }), { status: 409 });
   }
 
-  const pricing = (await store.get('pricing.json', { type: 'json' })) || DEFAULT_PRICING;
+  const pricing = (await store.get('pricing-live.json', { type: 'json' })) || DEFAULT_PRICING;
   const roomPricing = pricing[String(room)] || DEFAULT_PRICING[String(room)];
 
   const maxGuests = roomPricing?.maxGuests;

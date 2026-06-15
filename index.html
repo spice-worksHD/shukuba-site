@@ -116,9 +116,9 @@
             <span data-ja>朝鮮人街道が鍵の字に曲がる要所に位置し、城下町の風情を色濃く残す物件。八幡堀・新町通りへも徒歩圏内。</span>
             <span data-en>Situated at the historic bend of the old road, just a short walk from Hachiman-bori canal and Shinmachi-dori.</span>
           </p>
-          <div class="room-price">¥18,000<span data-ja>〜 / 泊（棟）</span><span data-en>〜 / night (whole house)</span></div>
+          <div class="room-price">¥<span id="price-val-0">18,000</span><span data-ja>〜 / 泊（棟）</span><span data-en>〜 / night (whole house)</span></div>
           <div class="room-features">
-            <span class="room-feature" data-ja>最大6名</span><span class="room-feature" data-en>Up to 6 guests</span>
+            <span class="room-feature" data-ja>最大<span id="cap-val-ja-0">6</span>名</span><span class="room-feature" data-en>Up to <span id="cap-val-en-0">6</span> guests</span>
             <span class="room-feature" data-ja>朝食付</span><span class="room-feature" data-en>Breakfast incl.</span>
             <span class="room-feature" data-ja>Wi-Fi</span><span class="room-feature" data-en>Wi-Fi</span>
           </div>
@@ -141,9 +141,9 @@
             <span data-ja>歴史を感じながら散策できるエリア。映画のロケ地としても知られる八幡堀や、町並み保存地区へも徒歩圏内。</span>
             <span data-en>Steps from the moat that has starred in countless films. Stroll the preserved townscape of Shinmachi-dori in minutes.</span>
           </p>
-          <div class="room-price">¥20,000<span data-ja>〜 / 泊（棟）</span><span data-en>〜 / night (whole house)</span></div>
+          <div class="room-price">¥<span id="price-val-1">20,000</span><span data-ja>〜 / 泊（棟）</span><span data-en>〜 / night (whole house)</span></div>
           <div class="room-features">
-            <span class="room-feature" data-ja>最大8名</span><span class="room-feature" data-en>Up to 8 guests</span>
+            <span class="room-feature" data-ja>最大<span id="cap-val-ja-1">8</span>名</span><span class="room-feature" data-en>Up to <span id="cap-val-en-1">8</span> guests</span>
             <span class="room-feature" data-ja>朝食付</span><span class="room-feature" data-en>Breakfast incl.</span>
             <span class="room-feature" data-ja>Wi-Fi</span><span class="room-feature" data-en>Wi-Fi</span>
           </div>
@@ -166,9 +166,9 @@
             <span data-ja>豊臣秀吉が初めて城を持った長浜城の城下町。琵琶湖の豊かな自然と古き良き街並みが調和する歴史・文化の地。</span>
             <span data-en>Located in the castle-town of Nagahama, where Toyotomi Hideyoshi built his first castle. Lake Biwa stretches beyond the old merchant streets.</span>
           </p>
-          <div class="room-price">¥22,000<span data-ja>〜 / 泊（棟）</span><span data-en>〜 / night (whole house)</span></div>
+          <div class="room-price">¥<span id="price-val-2">22,000</span><span data-ja>〜 / 泊（棟）</span><span data-en>〜 / night (whole house)</span></div>
           <div class="room-features">
-            <span class="room-feature" data-ja>最大10名</span><span class="room-feature" data-en>Up to 10 guests</span>
+            <span class="room-feature" data-ja>最大<span id="cap-val-ja-2">10</span>名</span><span class="room-feature" data-en>Up to <span id="cap-val-en-2">10</span> guests</span>
             <span class="room-feature" data-ja>朝食付</span><span class="room-feature" data-en>Breakfast incl.</span>
             <span class="room-feature" data-ja>Wi-Fi</span><span class="room-feature" data-en>Wi-Fi</span>
           </div>
@@ -352,25 +352,28 @@
 <script src="common.js"></script>
 <script>
 // ===== SELECT OPTIONS =====
-const selectOpts = {
-  ja: [
-    { v: '', label: '— 物件を選択してください —', disabled: true },
-    { v: '0', label: '近江八幡・鍵之手町（最大6名 / ¥18,000〜）' },
-    { v: '1', label: '近江八幡・為心町（最大8名 / ¥20,000〜）' },
-    { v: '2', label: '長浜・元浜町（最大10名 / ¥22,000〜）' },
-  ],
-  en: [
-    { v: '', label: '— Select a property —', disabled: true },
-    { v: '0', label: 'Omihachiman · Kaginote-machi (up to 6 / ¥18,000~)' },
-    { v: '1', label: 'Omihachiman · Tameshin-cho (up to 8 / ¥20,000~)' },
-    { v: '2', label: 'Nagahama · Motohama-cho (up to 10 / ¥22,000~)' },
-  ]
+const roomFullNames = {
+  ja: ['近江八幡・鍵之手町', '近江八幡・為心町', '長浜・元浜町'],
+  en: ['Omihachiman · Kaginote-machi', 'Omihachiman · Tameshin-cho', 'Nagahama · Motohama-cho'],
 };
+function selectOptsFor(lang) {
+  const opts = [{ v: '', label: lang === 'ja' ? '— 物件を選択してください —' : '— Select a property —', disabled: true }];
+  ['0', '1', '2'].forEach(v => {
+    const p = pricingData[v] || DEFAULT_PRICING[v];
+    const base = (p?.base ?? 0).toLocaleString();
+    const max = p?.maxGuests ?? 10;
+    const label = lang === 'ja'
+      ? `${roomFullNames.ja[v]}（最大${max}名 / ¥${base}〜）`
+      : `${roomFullNames.en[v]} (up to ${max} / ¥${base}~)`;
+    opts.push({ v, label });
+  });
+  return opts;
+}
 function buildSelect(lang) {
   const sel = document.getElementById('room-select');
   const cur = sel.value;
   sel.innerHTML = '';
-  selectOpts[lang].forEach(o => {
+  selectOptsFor(lang).forEach(o => {
     const opt = document.createElement('option');
     opt.value = o.v; opt.textContent = o.label;
     if (o.disabled) { opt.disabled = true; if (!cur) opt.selected = true; }
@@ -463,9 +466,24 @@ async function loadPricing() {
     pricingData = await res.json();
     updateGuestsOptions();
     updateDateDisplay();
+    applyPricingToUI();
   } catch (err) {
     console.warn('pricing load failed', err);
   }
+}
+
+function applyPricingToUI() {
+  const lang = document.body.classList.contains('lang-ja') ? 'ja' : 'en';
+  ['0', '1', '2'].forEach(v => {
+    const p = pricingData[v] || DEFAULT_PRICING[v];
+    const priceEl = document.getElementById('price-val-' + v);
+    const capJaEl = document.getElementById('cap-val-ja-' + v);
+    const capEnEl = document.getElementById('cap-val-en-' + v);
+    if (priceEl) priceEl.textContent = (p?.base ?? 0).toLocaleString();
+    if (capJaEl) capJaEl.textContent = p?.maxGuests ?? 10;
+    if (capEnEl) capEnEl.textContent = p?.maxGuests ?? 10;
+  });
+  buildSelect(lang);
 }
 
 // ===== PAYMENT METHODS =====

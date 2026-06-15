@@ -161,6 +161,10 @@
         <span id="cal-range-label" style="margin-left:12px;color:var(--muted);font-size:13px"></span>
         <span id="grid-msg" class="msg" style="margin-left:auto;margin-top:0"></span>
       </div>
+      <div class="cal-toolbar" style="margin-top:0">
+        <span id="pricing-status" style="font-size:12px"></span>
+        <button class="btn" style="margin-left:auto" onclick="publishPricing()">本番サイトに反映する</button>
+      </div>
       <div class="grid-wrap">
         <table class="grid-table" id="grid-table"></table>
       </div>
@@ -225,7 +229,7 @@ const DEFAULT_PAYMENT = {
   depositType: 'percent',
   depositValue: 30,
 };
-let state = { bookings: [], pricing: {}, blocked: {}, payment: DEFAULT_PAYMENT };
+let state = { bookings: [], pricing: {}, pricingLive: {}, blocked: {}, payment: DEFAULT_PAYMENT };
 
 async function login(e) {
   if (e) e.preventDefault();
@@ -245,7 +249,7 @@ async function login(e) {
 
 function logout() {
   adminKey = '';
-  state = { bookings: [], pricing: {}, blocked: {}, payment: DEFAULT_PAYMENT };
+  state = { bookings: [], pricing: {}, pricingLive: {}, blocked: {}, payment: DEFAULT_PAYMENT };
   document.getElementById('login-key').value = '';
   document.getElementById('login-error').textContent = '';
   document.getElementById('app').style.display = 'none';
@@ -408,6 +412,29 @@ function renderGrid() {
 
   html += '</tbody>';
   document.getElementById('grid-table').innerHTML = html;
+  renderPricingStatus();
+}
+
+function renderPricingStatus() {
+  const el = document.getElementById('pricing-status');
+  const isSynced = JSON.stringify(state.pricing) === JSON.stringify(state.pricingLive);
+  if (isSynced) {
+    el.textContent = '✓ 本番サイトの内容は最新です';
+    el.style.color = 'var(--green)';
+  } else {
+    el.textContent = '⚠ 未反映の変更があります（「本番サイトに反映する」を押してください）';
+    el.style.color = 'var(--danger)';
+  }
+}
+
+async function publishPricing() {
+  if (!confirm('現在の料金・人数設定を本番サイトに反映します。よろしいですか？')) return;
+  const r = await apiPost({ action: 'publish-pricing' });
+  if (r.ok) {
+    state.pricingLive = r.pricingLive;
+    renderPricingStatus();
+    flashMsg('本番サイトに反映しました');
+  }
 }
 
 function flashMsg(text) {

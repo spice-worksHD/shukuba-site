@@ -8,7 +8,7 @@ const DEFAULT_PRICING = {
 
 export default async () => {
   const store = getStore('shukuba-bookings');
-  const pricing = (await store.get('pricing.json', { type: 'json' })) || DEFAULT_PRICING;
+  const pricing = (await store.get('pricing-live.json', { type: 'json' })) || DEFAULT_PRICING;
 
   return new Response(JSON.stringify(pricing), {
     status: 200,

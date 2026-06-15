@@ -8,6 +8,7 @@ export default async () => {
   const result = { '0': [], '1': [], '2': [] };
 
   for (const b of bookings) {
+    if (b.status === 'cancelled') continue;
     const key = String(b.room);
     if (!result[key]) result[key] = [];
     const dates = [];

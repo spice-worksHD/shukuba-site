@@ -57,6 +57,7 @@ export default async (req) => {
   const blocked = (await store.get('blocked.json', { type: 'json' })) || {};
 
   const conflict = bookings.some((b) => {
+    if (b.status === 'cancelled') return false;
     if (String(b.room) !== String(room)) return false;
     const s = new Date(b.checkin);
     const e = new Date(b.checkout);
@@ -87,8 +88,13 @@ export default async (req) => {
   }
 
   const total = calcTotal(roomPricing, checkin, checkout, guests);
+  const id = crypto.randomUUID();
+  const cancelToken = crypto.randomUUID();
+  const now = new Date().toISOString();
 
   bookings.push({
+    id,
+    cancelToken,
     room,
     roomName: roomName || '',
     checkin,
@@ -100,12 +106,15 @@ export default async (req) => {
     message: message || '',
     paymentMethod,
     total,
-    createdAt: new Date().toISOString(),
+    status: 'confirmed',
+    createdAt: now,
+    cancelledAt: null,
+    history: [{ event: 'created', at: now, by: 'guest' }],
   });
 
   await store.setJSON('bookings.json', bookings);
 
-  return new Response(JSON.stringify({ ok: true, total, paymentMethod }), {
+  return new Response(JSON.stringify({ ok: true, total, paymentMethod, id, cancelToken }), {
     status: 200,
     headers: { 'Content-Type': 'application/json' },
   });

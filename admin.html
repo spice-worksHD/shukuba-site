@@ -87,6 +87,8 @@
   .badge { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 11px; }
   .badge.future { background: #e2f0ec; color: var(--gold); }
   .badge.past { background: #eee; color: var(--muted); }
+  .badge.cancelled { background: #fbe9e7; color: #b8584f; }
+  tr.cancelled-row { opacity: 0.55; }
   .msg { font-size: 12px; color: var(--gold); margin-top: 8px; min-height: 16px; }
 
   /* Calendar grid */
@@ -137,7 +139,10 @@
   <div class="panel active" id="panel-reservations">
     <div class="stats-grid" id="stats-grid"></div>
     <div class="card">
-      <h3>予約一覧</h3>
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
+        <h3>予約一覧</h3>
+        <button class="btn" onclick="exportCSV()">CSVダウンロード</button>
+      </div>
       <table id="bookings-table">
         <thead>
           <tr>
@@ -261,10 +266,11 @@ function renderAll() {
 // ===== RESERVATIONS =====
 function renderStats() {
   const today = new Date(); today.setHours(0,0,0,0);
-  const total = state.bookings.length;
-  const upcoming = state.bookings.filter(b => new Date(b.checkin) >= today).length;
-  const revenue = state.bookings.reduce((sum, b) => sum + (b.total || 0), 0);
-  const upcomingRevenue = state.bookings.filter(b => new Date(b.checkin) >= today)
+  const active = state.bookings.filter(b => b.status !== 'cancelled');
+  const total = active.length;
+  const upcoming = active.filter(b => new Date(b.checkin) >= today).length;
+  const revenue = active.reduce((sum, b) => sum + (b.total || 0), 0);
+  const upcomingRevenue = active.filter(b => new Date(b.checkin) >= today)
     .reduce((sum, b) => sum + (b.total || 0), 0);
 
   document.getElementById('stats-grid').innerHTML = `
@@ -283,7 +289,13 @@ function renderBookings() {
 
   tbody.innerHTML = sorted.map(b => {
     const isFuture = new Date(b.checkin) >= today;
-    return `<tr>
+    const isCancelled = b.status === 'cancelled';
+    const statusLabel = isCancelled ? 'キャンセル' : (isFuture ? '予定' : '完了');
+    const statusClass = isCancelled ? 'cancelled' : (isFuture ? 'future' : 'past');
+    const actionCell = isCancelled
+      ? `<span style="font-size:11px;color:var(--muted)">${b.cancelledAt ? new Date(b.cancelledAt).toLocaleString('ja-JP') : ''}</span>`
+      : `<button class="small-btn danger-btn" onclick="cancelBooking(${b._idx})">取消</button>`;
+    return `<tr class="${isCancelled ? 'cancelled-row' : ''}">
       <td>${new Date(b.createdAt).toLocaleString('ja-JP')}</td>
       <td>${roomLabels[String(b.room)] || b.roomName || b.room}</td>
       <td>${b.checkin}</td>
@@ -292,16 +304,47 @@ function renderBookings() {
       <td>${b.name}</td>
       <td>${b.email}<br>${b.phone || ''}</td>
       <td>¥${(b.total || 0).toLocaleString()}</td>
-      <td><span class="badge ${isFuture ? 'future' : 'past'}">${isFuture ? '予定' : '完了'}</span></td>
-      <td><button class="small-btn danger-btn" onclick="cancelBooking(${b._idx})">取消</button></td>
+      <td><span class="badge ${statusClass}">${statusLabel}</span></td>
+      <td>${actionCell}</td>
     </tr>`;
   }).join('') || '<tr><td colspan="10" style="color:var(--muted)">予約はまだありません</td></tr>';
 }
 
 async function cancelBooking(idx) {
-  if (!confirm('この予約を取り消しますか？日程は再度予約可能になります。')) return;
+  if (!confirm('この予約を取り消しますか？日程は再度予約可能になります。予約履歴には「キャンセル」として残ります。')) return;
   const r = await apiPost({ action: 'cancel-booking', index: idx });
   if (r.ok) { state.bookings = r.bookings; renderStats(); renderBookings(); renderGrid(); }
+}
+
+function exportCSV() {
+  const headers = ['予約ID','予約日時','物件','チェックイン','チェックアウト','人数','氏名','メール','電話','支払方法','金額','状態','キャンセル日時','備考'];
+  const rows = state.bookings.map(b => [
+    b.id || '',
+    b.createdAt ? new Date(b.createdAt).toLocaleString('ja-JP') : '',
+    roomLabels[String(b.room)] || b.roomName || b.room,
+    b.checkin,
+    b.checkout,
+    b.guests || '',
+    b.name,
+    b.email,
+    b.phone || '',
+    b.paymentMethod || '',
+    b.total || 0,
+    b.status === 'cancelled' ? 'キャンセル' : '確定',
+    b.cancelledAt ? new Date(b.cancelledAt).toLocaleString('ja-JP') : '',
+    (b.message || '').replace(/[\r\n]+/g, ' '),
+  ]);
+  const esc = (v) => `"${String(v).replace(/"/g, '""')}"`;
+  const csv = '﻿' + [headers, ...rows].map(r => r.map(esc).join(',')).join('\r\n');
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `shukuba-bookings_${new Date().toISOString().slice(0,10)}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
 }
 
 // ===== PRICING + INVENTORY CALENDAR GRID =====

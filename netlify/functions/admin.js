@@ -103,7 +103,14 @@ export default async (req) => {
       if (!(idx >= 0 && idx < bookings.length)) {
         return new Response(JSON.stringify({ ok: false, error: 'not_found' }), { status: 404 });
       }
-      bookings.splice(idx, 1);
+      if (bookings[idx].status === 'cancelled') {
+        return new Response(JSON.stringify({ ok: false, error: 'already_cancelled' }), { status: 400 });
+      }
+      const now = new Date().toISOString();
+      bookings[idx].status = 'cancelled';
+      bookings[idx].cancelledAt = now;
+      bookings[idx].history = Array.isArray(bookings[idx].history) ? bookings[idx].history : [];
+      bookings[idx].history.push({ event: 'cancelled', at: now, by: 'admin' });
       await store.setJSON('bookings.json', bookings);
       return new Response(JSON.stringify({ ok: true, bookings }), {
         status: 200,

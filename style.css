@@ -29,7 +29,7 @@ img { max-width: 100%; display: block; }
 nav {
   position: fixed; top: 0; left: 0; right: 0; z-index: 999;
   display: flex; align-items: center; justify-content: space-between;
-  padding: 16px 40px; background: transparent; transition: background .3s;
+  padding: 16px 40px; padding-right: 150px; background: transparent; transition: background .3s;
 }
 nav.scrolled { background: rgba(13,11,8,0.92); backdrop-filter: blur(8px); }
 .nav-logo { font-size: 22px; letter-spacing: 6px; color: #fff; text-decoration: none; font-weight: 300; }

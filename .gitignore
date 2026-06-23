@@ -1,1 +1,4 @@
 shukuba-deploy.zip
+
+# Local Netlify folder
+.netlify

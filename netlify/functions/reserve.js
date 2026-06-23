@@ -114,11 +114,94 @@ export default async (req) => {
 
   await store.setJSON('bookings.json', bookings);
 
+  await sendReservationEmails({
+    roomName: roomName || room,
+    checkin,
+    checkout,
+    guests,
+    name,
+    email,
+    phone,
+    total,
+  });
+
   return new Response(JSON.stringify({ ok: true, total, paymentMethod, id, cancelToken }), {
     status: 200,
     headers: { 'Content-Type': 'application/json' },
   });
 };
+
+async function sendResendEmail({ to, subject, html }) {
+  const resendApiKey = process.env.RESEND_API_KEY;
+  if (!resendApiKey) {
+    console.error('RESEND_API_KEY is not set; skipping email send');
+    return;
+  }
+
+  const res = await fetch('https://api.resend.com/emails', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${resendApiKey}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      from: 'onboarding@resend.dev',
+      to: [to],
+      subject,
+      html,
+    }),
+  });
+
+  if (!res.ok) {
+    const text = await res.text();
+    console.error(`Resend API error (${res.status}): ${text}`);
+  }
+}
+
+async function sendReservationEmails({ roomName, checkin, checkout, guests, name, email, phone, total }) {
+  const ownerEmail = process.env.OWNER_EMAIL;
+  const lineQrImageUrl = process.env.LINE_QR_IMAGE_URL || 'https://placehold.co/200x200?text=LINE+QR';
+
+  const detailsHtml = `
+    <p>部屋名: ${roomName}</p>
+    <p>チェックイン: ${checkin}</p>
+    <p>チェックアウト: ${checkout}</p>
+    <p>人数: ${guests || '-'}名</p>
+    <p>ゲスト名: ${name}</p>
+    <p>連絡先: ${email} / ${phone || '-'}</p>
+    <p>金額: ${Number(total).toLocaleString()}円</p>
+  `;
+
+  try {
+    if (ownerEmail) {
+      await sendResendEmail({
+        to: ownerEmail,
+        subject: `【新規予約】${name}`,
+        html: `<h2>新規予約が入りました</h2>${detailsHtml}`,
+      });
+    } else {
+      console.error('OWNER_EMAIL is not set; skipping owner notification email');
+    }
+  } catch (err) {
+    console.error('Failed to send owner notification email:', err);
+  }
+
+  try {
+    await sendResendEmail({
+      to: email,
+      subject: 'ご予約ありがとうございます',
+      html: `
+        <h2>ご予約ありがとうございます</h2>
+        <p>以下の内容でご予約を承りました。</p>
+        ${detailsHtml}
+        <p>当日まで、また滞在中も公式LINEでご案内いたします。下記QRコードからお友だち登録をお願いします。</p>
+        <p><img src="${lineQrImageUrl}" alt="LINE公式アカウント友だち追加QRコード" width="200" height="200" /></p>
+      `,
+    });
+  } catch (err) {
+    console.error('Failed to send guest thank-you email:', err);
+  }
+}
 
 export const config = {
   path: '/.netlify/functions/reserve',

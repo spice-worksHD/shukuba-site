@@ -164,6 +164,7 @@ async function sendResendEmail({ to, subject, html }) {
 async function sendReservationEmails({ roomName, checkin, checkout, guests, name, email, phone, total, cancelUrl }) {
   const ownerEmail = process.env.OWNER_EMAIL;
   const lineQrImageUrl = process.env.LINE_QR_IMAGE_URL || 'https://placehold.co/200x200?text=LINE+QR';
+  const lineOaUrl = process.env.LINE_OA_URL || '';
 
   const detailsHtml = `
     <p>部屋名: ${roomName}</p>
@@ -199,6 +200,7 @@ async function sendReservationEmails({ roomName, checkin, checkout, guests, name
         ${detailsHtml}
         <p>当日まで、また滞在中も公式LINEでご案内いたします。下記QRコードからお友だち登録をお願いします。</p>
         <p><img src="${lineQrImageUrl}" alt="LINE公式アカウント友だち追加QRコード" width="200" height="200" /></p>
+        ${lineOaUrl ? `<p>QRコードが読み込めない場合は<a href="${lineOaUrl}">こちら</a>から友だち追加できます。</p>` : ''}
         <p>ご予約内容の変更・キャンセルは<a href="${cancelUrl}">こちら</a>からお願いします。</p>
       `,
     });

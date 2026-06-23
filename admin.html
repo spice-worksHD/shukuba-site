@@ -147,7 +147,7 @@
         <thead>
           <tr>
             <th>予約日時</th><th>物件</th><th>チェックイン</th><th>チェックアウト</th>
-            <th>人数</th><th>氏名</th><th>連絡先</th><th>金額</th><th>状態</th><th></th>
+            <th>人数</th><th>氏名</th><th>連絡先</th><th>金額</th><th>状態</th><th>LINE連携</th><th></th>
           </tr>
         </thead>
         <tbody></tbody>
@@ -305,9 +305,10 @@ function renderBookings() {
       <td>${b.email}<br>${b.phone || ''}</td>
       <td>¥${(b.total || 0).toLocaleString()}</td>
       <td><span class="badge ${statusClass}">${statusLabel}</span></td>
+      <td>${b.lineUserId ? '<span class="badge future">連携済</span>' : '<span class="badge past">未連携</span>'}</td>
       <td>${actionCell}</td>
     </tr>`;
-  }).join('') || '<tr><td colspan="10" style="color:var(--muted)">予約はまだありません</td></tr>';
+  }).join('') || '<tr><td colspan="11" style="color:var(--muted)">予約はまだありません</td></tr>';
 }
 
 async function cancelBooking(idx) {
@@ -317,7 +318,7 @@ async function cancelBooking(idx) {
 }
 
 function exportCSV() {
-  const headers = ['予約ID','予約日時','物件','チェックイン','チェックアウト','人数','氏名','メール','電話','支払方法','金額','状態','キャンセル日時','備考'];
+  const headers = ['予約ID','予約日時','物件','チェックイン','チェックアウト','人数','氏名','メール','電話','支払方法','金額','状態','LINE連携','キャンセル日時','備考'];
   const rows = state.bookings.map(b => [
     b.id || '',
     b.createdAt ? new Date(b.createdAt).toLocaleString('ja-JP') : '',
@@ -331,6 +332,7 @@ function exportCSV() {
     b.paymentMethod || '',
     b.total || 0,
     b.status === 'cancelled' ? 'キャンセル' : '確定',
+    b.lineUserId ? '連携済' : '未連携',
     b.cancelledAt ? new Date(b.cancelledAt).toLocaleString('ja-JP') : '',
     (b.message || '').replace(/[\r\n]+/g, ' '),
   ]);

@@ -90,11 +90,13 @@ export default async (req) => {
   const total = calcTotal(roomPricing, checkin, checkout, guests);
   const id = crypto.randomUUID();
   const cancelToken = crypto.randomUUID();
+  const checkinToken = crypto.randomUUID();
   const now = new Date().toISOString();
 
   bookings.push({
     id,
     cancelToken,
+    checkinToken,
     room,
     roomName: roomName || '',
     checkin,
@@ -109,6 +111,10 @@ export default async (req) => {
     status: 'confirmed',
     createdAt: now,
     cancelledAt: null,
+    checkedIn: false,
+    checkedInAt: null,
+    reminderSentAt: null,
+    ledger: null,
     history: [{ event: 'created', at: now, by: 'guest' }],
   });
 

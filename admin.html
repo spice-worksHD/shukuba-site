@@ -131,6 +131,7 @@
 
   <div class="tabs">
     <button class="tab-btn active" onclick="showTab('reservations')">予約履歴・サマリー</button>
+    <button class="tab-btn" onclick="showTab('ledger')">宿泊台帳</button>
     <button class="tab-btn" onclick="showTab('calendar')">料金・在庫カレンダー</button>
     <button class="tab-btn" onclick="showTab('payment')">決済設定</button>
   </div>
@@ -148,6 +149,26 @@
           <tr>
             <th>予約日時</th><th>物件</th><th>チェックイン</th><th>チェックアウト</th>
             <th>人数</th><th>氏名</th><th>連絡先</th><th>金額</th><th>状態</th><th>LINE連携</th><th></th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Lodging ledger (宿泊台帳) -->
+  <div class="panel" id="panel-ledger">
+    <div class="stats-grid" id="ledger-stats"></div>
+    <div class="card">
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
+        <h3>宿泊者名簿（旅館業法対応）</h3>
+        <span style="font-size:12px;color:var(--muted)">チェックイン手続き完了分のみ記録されます</span>
+      </div>
+      <table id="ledger-table">
+        <thead>
+          <tr>
+            <th>チェックイン</th><th>物件</th><th>代表者</th><th>住所</th><th>職業</th>
+            <th>国籍</th><th>同行者</th><th>到着予定</th><th>記入時刻</th><th></th>
           </tr>
         </thead>
         <tbody></tbody>
@@ -259,6 +280,7 @@ function showTab(name) {
 function renderAll() {
   renderStats();
   renderBookings();
+  renderLedger();
   renderGrid();
   renderPayment();
 }
@@ -347,6 +369,99 @@ function exportCSV() {
   a.click();
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
+}
+
+// ===== LODGING LEDGER (宿泊台帳) =====
+function renderLedger() {
+  const today = new Date(); today.setHours(0,0,0,0);
+  const active = state.bookings.filter(b => b.status !== 'cancelled');
+  const checkedIn = active.filter(b => b.checkedIn);
+  const pendingSoon = active.filter(b => !b.checkedIn && new Date(b.checkin) >= today &&
+    (new Date(b.checkin) - today) / 86400000 <= 1);
+
+  document.getElementById('ledger-stats').innerHTML = `
+    <div class="stat-box"><div class="label">記入済み台帳件数</div><div class="value">${checkedIn.length}件</div></div>
+    <div class="stat-box"><div class="label">本日・明日チェックインで未記入</div><div class="value" style="color:${pendingSoon.length ? 'var(--danger)' : 'var(--dark)'}">${pendingSoon.length}件</div></div>
+  `;
+
+  const sorted = state.bookings.map((b, i) => ({...b, _idx: i}))
+    .filter(b => b.checkedIn && b.ledger)
+    .sort((a, b) => new Date(b.checkin) - new Date(a.checkin));
+
+  const tbody = document.querySelector('#ledger-table tbody');
+  tbody.innerHTML = sorted.map(b => {
+    const l = b.ledger;
+    const companions = (l.companions || []).map(c => c.name).join('、') || '-';
+    return `<tr>
+      <td>${b.checkin}</td>
+      <td>${roomLabels[String(b.room)] || b.roomName || b.room}</td>
+      <td>${l.name}<br><span style="font-size:11px;color:var(--muted)">${l.nameKana}</span></td>
+      <td>${l.address}</td>
+      <td>${l.occupation}</td>
+      <td>${l.nationality}${l.passportNumber ? `<br><span style="font-size:11px;color:var(--muted)">旅券: ${l.passportNumber}</span>` : ''}</td>
+      <td>${companions}</td>
+      <td>${l.arrivalTime || '-'}</td>
+      <td>${b.checkedInAt ? new Date(b.checkedInAt).toLocaleString('ja-JP') : ''}</td>
+      <td><button class="small-btn" onclick="printLedgerEntry(${b._idx})">印刷</button></td>
+    </tr>`;
+  }).join('') || '<tr><td colspan="10" style="color:var(--muted)">記入済みの宿泊者名簿はまだありません</td></tr>';
+}
+
+function printLedgerEntry(idx) {
+  const b = state.bookings[idx];
+  if (!b || !b.ledger) return;
+  const l = b.ledger;
+  const companionRows = (l.companions || []).map(c =>
+    `<tr><td>${c.name}</td><td></td><td></td></tr>`).join('');
+
+  const docHtml = `<!DOCTYPE html>
+<html lang="ja"><head><meta charset="utf-8"><title>宿泊者名簿 — ${b.name}</title>
+<style>
+  :root { --ink:#2B2118; --paper:#F4EEE2; --susuki:#8A6E4B; --bengara:#C14C32; --border:#DCD0B8; --muted:#6B7770; }
+  * { box-sizing: border-box; }
+  body { font-family: 'Hiragino Mincho ProN', 'Yu Mincho', serif; color: var(--ink); margin: 0; padding: 48px; background: #fff; }
+  .title { text-align: center; font-size: 22px; letter-spacing: 6px; margin-bottom: 4px; }
+  .subtitle { text-align: center; font-size: 11px; color: var(--muted); letter-spacing: 2px; margin-bottom: 32px; }
+  .rule { border: none; border-top: 2px solid var(--susuki); margin-bottom: 28px; }
+  table.fields { width: 100%; border-collapse: collapse; margin-bottom: 24px; }
+  table.fields th, table.fields td { border: 1px solid var(--border); padding: 10px 14px; font-size: 13px; text-align: left; }
+  table.fields th { width: 130px; background: var(--paper); font-weight: normal; color: var(--muted); white-space: nowrap; }
+  table.companions { width: 100%; border-collapse: collapse; }
+  table.companions th, table.companions td { border: 1px solid var(--border); padding: 8px 12px; font-size: 12px; }
+  table.companions th { background: var(--paper); color: var(--muted); font-weight: normal; }
+  h2 { font-size: 13px; letter-spacing: 2px; color: var(--susuki); margin: 24px 0 10px; }
+  .stamp { margin-top: 40px; text-align: right; font-size: 11px; color: var(--muted); }
+  @media print { body { padding: 24px; } }
+</style></head>
+<body>
+  <div class="title">宿泊者名簿</div>
+  <div class="subtitle">SHUKUBA — ${roomLabels[String(b.room)] || b.roomName || ''}</div>
+  <hr class="rule">
+  <table class="fields">
+    <tr><th>宿泊期間</th><td>${b.checkin} 〜 ${b.checkout}</td></tr>
+    <tr><th>代表者氏名</th><td>${l.name}（${l.nameKana}）</td></tr>
+    <tr><th>住所</th><td>${l.address}</td></tr>
+    <tr><th>電話番号</th><td>${l.phone || '-'}</td></tr>
+    <tr><th>職業</th><td>${l.occupation}</td></tr>
+    <tr><th>国籍</th><td>${l.nationality}</td></tr>
+    ${l.passportNumber ? `<tr><th>旅券番号</th><td>${l.passportNumber}</td></tr>` : ''}
+    <tr><th>到着予定時刻</th><td>${l.arrivalTime || '-'}</td></tr>
+    <tr><th>人数</th><td>${b.guests || '-'}名</td></tr>
+  </table>
+  ${(l.companions || []).length ? `
+    <h2>同行者</h2>
+    <table class="companions">
+      <thead><tr><th>氏名</th><th>住所（代表者と同一の場合は空欄）</th><th>備考</th></tr></thead>
+      <tbody>${companionRows}</tbody>
+    </table>
+  ` : ''}
+  <div class="stamp">記入完了: ${b.checkedInAt ? new Date(b.checkedInAt).toLocaleString('ja-JP') : ''}</div>
+  <script>window.onload = () => window.print();</script>
+</body></html>`;
+
+  const win = window.open('', '_blank');
+  win.document.write(docHtml);
+  win.document.close();
 }
 
 // ===== PRICING + INVENTORY CALENDAR GRID =====

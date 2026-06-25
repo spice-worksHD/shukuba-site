@@ -456,7 +456,7 @@ function printLedgerEntry(idx) {
     </table>
   ` : ''}
   <div class="stamp">記入完了: ${b.checkedInAt ? new Date(b.checkedInAt).toLocaleString('ja-JP') : ''}</div>
-  <script>window.onload = () => window.print();</script>
+  <script>window.onload = () => window.print();<\/script>
 </body></html>`;
 
   const win = window.open('', '_blank');

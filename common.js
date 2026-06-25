@@ -12,6 +12,16 @@ window.addEventListener('scroll', () => {
   if (nav) nav.classList.toggle('scrolled', scrollY > 60);
 });
 
+// ===== NAV MOBILE MENU =====
+function toggleNavMenu() {
+  document.getElementById('nav').classList.toggle('menu-open');
+}
+document.addEventListener('DOMContentLoaded', () => {
+  document.querySelectorAll('.nav-links a').forEach(a => {
+    a.addEventListener('click', () => document.getElementById('nav').classList.remove('menu-open'));
+  });
+});
+
 // ===== FADE IN =====
 document.addEventListener('DOMContentLoaded', () => {
   const obs = new IntersectionObserver(entries => {

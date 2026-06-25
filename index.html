@@ -202,12 +202,8 @@
       <span data-en>Check Availability &amp; Reserve</span>
     </h2>
     <div class="booking-form">
-      <form id="booking-form" name="reservation" method="POST" data-netlify="true" onsubmit="submitForm(event)">
-        <input type="hidden" name="form-name" value="reservation">
-        <input type="hidden" name="room-name" id="room-name-input">
+      <form id="booking-form" name="reservation" method="POST" onsubmit="submitForm(event)">
         <input type="hidden" name="paymentMethod" id="payment-method-input">
-        <input type="hidden" name="cancelUrl" id="cancel-url-input">
-        <input type="hidden" name="lineUrl" id="line-url-input">
         <div id="booking-step-1">
         <div class="form-grid">
 
@@ -505,9 +501,6 @@ let selectingCheckout = false;
 // Booked dates per room, loaded from server (Netlify Function + Blobs)
 let bookedByRoom = { '0': new Set(), '1': new Set(), '2': new Set() };
 let bookedDates = new Set(); // booked dates for the currently selected room
-
-// SHUKUBA公式LINEアカウントの「友達追加」リンク。
-const LINE_OA_URL = 'https://page.line.me/817nsacj';
 
 // Pricing per room, loaded from server (Netlify Function + Blobs)
 const DEFAULT_PRICING = {
@@ -870,7 +863,6 @@ async function submitForm(e) {
   const checkinStr = fmtDate(checkIn);
   const checkoutStr = fmtDate(checkOut);
   const roomLabel = (isJa ? roomNames : roomNamesEn)[Number(roomVal)];
-  document.getElementById('room-name-input').value = roomLabel;
   document.getElementById('payment-method-input').value = paymentMethod;
 
   const fd = new FormData(form);
@@ -909,24 +901,8 @@ async function submitForm(e) {
       return;
     }
     if (!reserveRes.ok) throw new Error('reserve failed');
-    const reserveData = await reserveRes.json();
 
-    // 1b. Build the cancellation link & LINE friend-add link for the confirmation email
-    if (reserveData.id && reserveData.cancelToken) {
-      fd.set('cancelUrl', `${location.origin}/.netlify/functions/cancel?id=${encodeURIComponent(reserveData.id)}&token=${encodeURIComponent(reserveData.cancelToken)}`);
-    }
-    if (LINE_OA_URL) {
-      fd.set('lineUrl', LINE_OA_URL);
-    }
-
-    // 2. Send the notification email via Netlify Forms
-    await fetch('/', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: new URLSearchParams(fd).toString(),
-    });
-
-    // 3. Reflect the new booking locally so the calendar updates immediately
+    // 2. Reflect the new booking locally so the calendar updates immediately
     let cur = new Date(checkIn);
     while (cur < checkOut) {
       bookedByRoom[roomVal].add(fmtDate(cur));

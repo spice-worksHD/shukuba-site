@@ -114,7 +114,7 @@
 </head>
 <body>
 
-<div id="login-screen">
+<div id="login-screen" style="display:none">
   <h2>SHUKUBA 管理画面</h2>
   <form id="login-form" autocomplete="on" onsubmit="login(event)">
     <input type="text" name="username" id="login-user" value="admin" autocomplete="username" style="display:none">
@@ -341,9 +341,17 @@ function logout() {
   document.getElementById('login-screen').style.display = 'block';
 }
 
-(function restoreSession() {
+(async function restoreSession() {
   const saved = sessionStorage.getItem('shukuba-admin-key');
-  if (saved) tryLogin(saved);
+  if (saved) {
+    const ok = await tryLogin(saved);
+    if (!ok) {
+      sessionStorage.removeItem('shukuba-admin-key');
+      document.getElementById('login-screen').style.display = 'block';
+    }
+  } else {
+    document.getElementById('login-screen').style.display = 'block';
+  }
 })();
 
 async function apiPost(body) {

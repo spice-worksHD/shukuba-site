@@ -136,6 +136,7 @@
     <button class="tab-btn" onclick="showTab('ledger')">宿泊台帳</button>
     <button class="tab-btn" onclick="showTab('calendar')">料金・在庫カレンダー</button>
     <button class="tab-btn" onclick="showTab('payment')">決済設定</button>
+    <button class="tab-btn" onclick="showTab('testdata')" style="color:var(--danger)">🧪 テストデータ</button>
   </div>
 
   <!-- Reservations -->
@@ -237,6 +238,60 @@
       <div class="msg" id="payment-msg"></div>
     </div>
   </div>
+
+  <!-- TEST/DEMO TOOL — remove this entire panel + tab button before real-world launch -->
+  <div class="panel" id="panel-testdata">
+    <div class="card" style="border-color:var(--danger)">
+      <h3 style="color:var(--danger)">🧪 テスト用予約データの作成（本番公開前に削除すること）</h3>
+      <p style="font-size:12px;color:var(--muted);margin-bottom:14px">
+        デモ・動作確認用に予約データを直接作成します。リマインダー送信のテストなどにお使いください。
+        このタブはお客様向け公開前に削除します。
+      </p>
+      <div class="room-row" style="grid-template-columns: 1fr 1fr 1fr">
+        <div>
+          <label>物件</label>
+          <select id="test-room"></select>
+        </div>
+        <div>
+          <label>チェックイン</label>
+          <input type="date" id="test-checkin">
+        </div>
+        <div>
+          <label>チェックアウト</label>
+          <input type="date" id="test-checkout">
+        </div>
+        <div>
+          <label>人数</label>
+          <input type="number" id="test-guests" value="2" min="1">
+        </div>
+        <div>
+          <label>氏名</label>
+          <input type="text" id="test-name" value="テスト ゲスト">
+        </div>
+        <div>
+          <label>メールアドレス（リマインダー受信先）</label>
+          <input type="email" id="test-email" placeholder="you@example.com">
+        </div>
+        <div>
+          <label>電話番号</label>
+          <input type="tel" id="test-phone" value="090-0000-0000">
+        </div>
+      </div>
+      <div class="save-row" style="margin-top:14px">
+        <button class="btn" onclick="createTestBooking()">テスト予約を作成</button>
+      </div>
+      <div class="msg" id="testdata-msg"></div>
+    </div>
+    <div class="card">
+      <h3>全予約データ（完全削除可）</h3>
+      <table id="testdata-table">
+        <thead>
+          <tr><th>チェックイン</th><th>物件</th><th>氏名</th><th>メール</th><th>状態</th><th></th></tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
 </div>
 
 <script>
@@ -299,6 +354,7 @@ function renderAll() {
   renderLedger();
   renderGrid();
   renderPayment();
+  renderTestPanel();
 }
 
 // ===== RESERVATIONS =====
@@ -699,6 +755,70 @@ async function savePayment() {
     el.textContent = '決済設定を保存しました';
     setTimeout(() => { if (el.textContent === '決済設定を保存しました') el.textContent = ''; }, 2000);
   }
+}
+
+// ===== TEST/DEMO TOOL — remove this whole section before real-world launch =====
+let testPanelInited = false;
+function initTestPanelDefaults() {
+  if (testPanelInited) return;
+  testPanelInited = true;
+  const roomSel = document.getElementById('test-room');
+  roomSel.innerHTML = Object.keys(roomLabels).map(k => `<option value="${k}">${roomLabels[k]}</option>`).join('');
+  const tomorrow = new Date(); tomorrow.setDate(tomorrow.getDate() + 1);
+  const dayAfter = new Date(); dayAfter.setDate(dayAfter.getDate() + 2);
+  const fmt = (d) => d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+  document.getElementById('test-checkin').value = fmt(tomorrow);
+  document.getElementById('test-checkout').value = fmt(dayAfter);
+}
+
+async function createTestBooking() {
+  initTestPanelDefaults();
+  const payload = {
+    action: 'create-test-booking',
+    room: document.getElementById('test-room').value,
+    checkin: document.getElementById('test-checkin').value,
+    checkout: document.getElementById('test-checkout').value,
+    guests: document.getElementById('test-guests').value,
+    name: document.getElementById('test-name').value,
+    email: document.getElementById('test-email').value,
+    phone: document.getElementById('test-phone').value,
+  };
+  if (!payload.email) {
+    document.getElementById('testdata-msg').textContent = 'リマインダーを受信するメールアドレスを入力してください。';
+    return;
+  }
+  const r = await apiPost(payload);
+  const el = document.getElementById('testdata-msg');
+  if (r.ok) {
+    state.bookings = r.bookings;
+    renderAll();
+    el.textContent = `テスト予約を作成しました（チェックイン: ${payload.checkin}）。`;
+  } else {
+    el.textContent = '作成に失敗しました: ' + (r.error || '');
+  }
+}
+
+function renderTestPanel() {
+  initTestPanelDefaults();
+  const tbody = document.querySelector('#testdata-table tbody');
+  const sorted = state.bookings.map((b, i) => ({...b, _idx: i}))
+    .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+  tbody.innerHTML = sorted.map(b => `
+    <tr>
+      <td>${b.checkin}</td>
+      <td>${roomLabels[String(b.room)] || b.roomName || b.room}</td>
+      <td>${b.name}</td>
+      <td>${b.email}</td>
+      <td>${b.status === 'cancelled' ? 'キャンセル' : (b.checkedIn ? '記入済み' : '未記入')}</td>
+      <td><button class="small-btn danger-btn" onclick="deleteBookingHard(${b._idx})">完全削除</button></td>
+    </tr>
+  `).join('') || '<tr><td colspan="6" style="color:var(--muted)">予約データはありません</td></tr>';
+}
+
+async function deleteBookingHard(idx) {
+  if (!confirm('このテストデータを完全に削除します。元に戻せません。よろしいですか？')) return;
+  const r = await apiPost({ action: 'delete-booking', index: idx });
+  if (r.ok) { state.bookings = r.bookings; renderAll(); }
 }
 
 </script>

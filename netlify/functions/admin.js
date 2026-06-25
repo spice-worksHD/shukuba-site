@@ -118,6 +118,65 @@ export default async (req) => {
       });
     }
 
+    // TEST/DEMO TOOL — for creating sample bookings to test reminder emails etc.
+    // Remove this action (and its admin.html UI) before real-world launch.
+    if (data.action === 'create-test-booking') {
+      const { room, checkin, checkout, guests, name, email, phone } = data;
+      if (!room || !checkin || !checkout || !name || !email) {
+        return new Response(JSON.stringify({ ok: false, error: 'missing_fields' }), { status: 400 });
+      }
+      const bookings = (await store.get('bookings.json', { type: 'json' })) || [];
+      const id = crypto.randomUUID();
+      const cancelToken = crypto.randomUUID();
+      const checkinToken = crypto.randomUUID();
+      const now = new Date().toISOString();
+      bookings.push({
+        id,
+        cancelToken,
+        checkinToken,
+        room,
+        roomName: '',
+        checkin,
+        checkout,
+        guests: guests || '',
+        name,
+        email,
+        phone: phone || '',
+        message: '[テストデータ]',
+        paymentMethod: 'credit',
+        total: 0,
+        status: 'confirmed',
+        createdAt: now,
+        cancelledAt: null,
+        checkedIn: false,
+        checkedInAt: null,
+        reminderSentAt: null,
+        ledger: null,
+        history: [{ event: 'created', at: now, by: 'admin-test' }],
+      });
+      await store.setJSON('bookings.json', bookings);
+      return new Response(JSON.stringify({ ok: true, bookings }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+
+    // TEST/DEMO TOOL — hard-deletes a booking record entirely (unlike cancel-booking,
+    // which only marks status). Remove this action before real-world launch.
+    if (data.action === 'delete-booking') {
+      const bookings = (await store.get('bookings.json', { type: 'json' })) || [];
+      const idx = Number(data.index);
+      if (!(idx >= 0 && idx < bookings.length)) {
+        return new Response(JSON.stringify({ ok: false, error: 'not_found' }), { status: 404 });
+      }
+      bookings.splice(idx, 1);
+      await store.setJSON('bookings.json', bookings);
+      return new Response(JSON.stringify({ ok: true, bookings }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+
     return new Response(JSON.stringify({ ok: false, error: 'unknown_action' }), { status: 400 });
   }
 

@@ -282,6 +282,7 @@ textarea { resize: vertical; min-height: 100px; line-height: 1.8; }
 .cal-legend { display: flex; flex-wrap: wrap; gap: 10px 20px; margin-top: 12px; font-size: 11px; color: var(--muted); }
 .cal-legend-item { display: flex; align-items: center; gap: 6px; }
 .cal-legend-dot { width: 10px; height: 10px; border-radius: 50%; }
+.cal-msg { margin-top: 10px; padding: 10px 14px; border-radius: 6px; font-size: 12px; line-height: 1.7; background: #fbe9e7; color: #b8584f; border-left: 3px solid #b8584f; }
 
 .selected-dates { background: rgba(138,110,75,0.08); border: 1px solid rgba(138,110,75,0.22); padding: 16px 20px; margin-top: 16px; display: flex; flex-wrap: wrap; gap: 16px 32px; }
 .sel-date-item { display: flex; flex-direction: column; gap: 4px; }

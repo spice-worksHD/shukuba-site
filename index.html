@@ -227,6 +227,7 @@
             <label data-ja>日程を選ぶ（チェックイン → チェックアウト）</label>
             <label data-en>Select dates (Check-in → Check-out)</label>
             <div id="calendar"></div>
+            <div id="cal-msg" class="cal-msg" style="display:none"></div>
             <div id="selected-dates" class="selected-dates" style="display:none">
               <div class="sel-date-item">
                 <div class="sel-date-label" data-ja>チェックイン</div>
@@ -492,6 +493,7 @@ function updateRoomCards() {
   updateBookedDatesForRoom();
   updateGuestsOptions();
   checkIn = null; checkOut = null;
+  clearCalMsg();
   renderCalendar();
 }
 
@@ -759,10 +761,32 @@ function nextMonth() {
   renderCalendar();
 }
 
+function showCalMsg(text) {
+  const el = document.getElementById('cal-msg');
+  el.textContent = text;
+  el.style.display = 'block';
+}
+function clearCalMsg() {
+  const el = document.getElementById('cal-msg');
+  el.style.display = 'none';
+  el.textContent = '';
+}
+
 function pickDate(y, m, d) {
+  const isJa = document.body.classList.contains('lang-ja');
+  const roomVal = document.getElementById('room-select').value;
+  if (roomVal === '') {
+    showCalMsg(isJa ? '先に宿泊物件を選択してください。' : 'Please select a property first.');
+    return;
+  }
   const date = new Date(y, m, d);
   const key = fmtDate(date);
-  if (date < today || bookedDates.has(key)) return;
+  if (date < today) return;
+  if (bookedDates.has(key)) {
+    showCalMsg(isJa ? 'その日はすでに予約が入っているため選択できません。' : 'That date is already booked and cannot be selected.');
+    return;
+  }
+  clearCalMsg();
   if (!checkIn || (checkIn && checkOut)) {
     checkIn = date; checkOut = null; selectingCheckout = true;
   } else {
@@ -771,7 +795,14 @@ function pickDate(y, m, d) {
     let blocked = false;
     let cur = new Date(checkIn); cur.setDate(cur.getDate()+1);
     while (cur < date) { if (bookedDates.has(fmtDate(cur))) { blocked = true; break; } cur.setDate(cur.getDate()+1); }
-    if (blocked) { checkIn = date; checkOut = null; renderCalendar(); return; }
+    if (blocked) {
+      checkIn = date; checkOut = null;
+      showCalMsg(isJa
+        ? '選択した期間に予約済みの日が含まれているため、その日程は選べません。チェックイン日として選び直しました。'
+        : 'The selected range includes an already booked date, so that check-out date is unavailable. This date has been set as a new check-in instead.');
+      renderCalendar();
+      return;
+    }
     checkOut = date; selectingCheckout = false;
     document.getElementById('checkin-input').value = fmtDate(checkIn);
     document.getElementById('checkout-input').value = fmtDate(checkOut);

@@ -66,7 +66,10 @@ export default async (req) => {
 
     if (event.type === 'message' && event.message?.type === 'text' && event.replyToken) {
       const text = event.message.text.trim().toLowerCase();
-      const match = bookings.find((b) => b.status !== 'cancelled' && b.email?.toLowerCase() === text);
+      const candidates = bookings.filter((b) => b.status !== 'cancelled' && b.email?.toLowerCase() === text);
+      // Prefer a booking that isn't linked yet, so re-sending the email links
+      // the next pending reservation instead of always re-matching the first one.
+      const match = candidates.find((b) => !b.lineUserId) || candidates[0];
 
       if (match) {
         lineUsers[userId] = match.id;

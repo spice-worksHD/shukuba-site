@@ -307,30 +307,44 @@ const DEFAULT_PAYMENT = {
 };
 let state = { bookings: [], pricing: {}, pricingLive: {}, blocked: {}, payment: DEFAULT_PAYMENT };
 
-async function login(e) {
-  if (e) e.preventDefault();
-  const key = document.getElementById('login-key').value.trim();
-  if (!key) return;
+async function tryLogin(key) {
   const res = await fetch('/.netlify/functions/admin', { headers: { 'x-admin-key': key } });
   if (res.ok) {
     adminKey = key;
+    sessionStorage.setItem('shukuba-admin-key', key);
     document.getElementById('login-screen').style.display = 'none';
     document.getElementById('app').style.display = 'block';
     state = await res.json();
     renderAll();
-  } else {
+    return true;
+  }
+  return false;
+}
+
+async function login(e) {
+  if (e) e.preventDefault();
+  const key = document.getElementById('login-key').value.trim();
+  if (!key) return;
+  const ok = await tryLogin(key);
+  if (!ok) {
     document.getElementById('login-error').textContent = 'パスワードが正しくありません。';
   }
 }
 
 function logout() {
   adminKey = '';
+  sessionStorage.removeItem('shukuba-admin-key');
   state = { bookings: [], pricing: {}, pricingLive: {}, blocked: {}, payment: DEFAULT_PAYMENT };
   document.getElementById('login-key').value = '';
   document.getElementById('login-error').textContent = '';
   document.getElementById('app').style.display = 'none';
   document.getElementById('login-screen').style.display = 'block';
 }
+
+(function restoreSession() {
+  const saved = sessionStorage.getItem('shukuba-admin-key');
+  if (saved) tryLogin(saved);
+})();
 
 async function apiPost(body) {
   const res = await fetch('/.netlify/functions/admin', {

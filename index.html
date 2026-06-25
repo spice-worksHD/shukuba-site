@@ -614,23 +614,16 @@ function getSelectedPaymentMethod() {
 
 function goToCheckinInfo() {
   const isJa = document.body.classList.contains('lang-ja');
-  const roomVal = document.getElementById('room-select').value;
-  if (roomVal === '') {
-    alert(isJa ? '物件を選択してください' : 'Please select a property.');
-    return;
-  }
+  const form = document.getElementById('booking-form');
+  // Native required/type validation (room, name, email, guests) — highlights
+  // the first invalid field in the browser's own error UI and scrolls to it.
+  if (!form.reportValidity()) return;
   if (!checkIn || !checkOut) {
     alert(isJa ? '日程を選択してください' : 'Please select your dates.');
     return;
   }
   if (!getSelectedPaymentMethod()) {
     alert(isJa ? 'お支払い方法を選択してください' : 'Please select a payment method.');
-    return;
-  }
-  const emailInput = document.querySelector('#booking-step-1 input[name="email"]');
-  if (!emailInput.value || !emailInput.checkValidity()) {
-    alert(isJa ? '有効なメールアドレスを入力してください' : 'Please enter a valid email address.');
-    emailInput.focus();
     return;
   }
   document.getElementById('booking-step-1').style.display = 'none';

@@ -287,6 +287,22 @@
             <input type="tel" name="phone">
           </div>
 
+          <!-- Arrival time (optional) -->
+          <div class="form-group">
+            <label data-ja>チェックイン予定時間（任意）</label>
+            <label data-en>Expected Arrival Time (optional)</label>
+            <select name="arrivalTime" id="arrival-time-select">
+              <option value="">未定</option>
+              <option value="15:00-16:00">15:00 - 16:00</option>
+              <option value="16:00-17:00">16:00 - 17:00</option>
+              <option value="17:00-18:00">17:00 - 18:00</option>
+              <option value="18:00-19:00">18:00 - 19:00</option>
+              <option value="19:00-20:00">19:00 - 20:00</option>
+              <option value="20:00-21:00">20:00 - 21:00</option>
+              <option value="21:00以降">21:00以降</option>
+            </select>
+          </div>
+
           <!-- Message -->
           <div class="form-group full">
             <label data-ja>ご要望・備考</label>
@@ -457,6 +473,14 @@ function setLang(lang) {
   buildSelect(lang);
   renderCalendar();
   renderPaymentOptions();
+  updateArrivalTimeLabels(lang);
+}
+
+function updateArrivalTimeLabels(lang) {
+  const sel = document.getElementById('arrival-time-select');
+  if (!sel) return;
+  sel.querySelector('option[value=""]').textContent = lang === 'ja' ? '未定' : 'Not sure yet';
+  sel.querySelector('option[value="21:00以降"]').textContent = lang === 'ja' ? '21:00以降' : 'After 21:00';
 }
 
 // ===== ROOM SELECTION =====
@@ -612,6 +636,15 @@ function getSelectedPaymentMethod() {
   return checked ? checked.value : null;
 }
 
+// Scrolls so `el`'s top lands just below the fixed nav bar, instead of the
+// default scrollIntoView() which can leave it tucked under the nav.
+function scrollBelowNav(el) {
+  const nav = document.getElementById('nav');
+  const navHeight = nav ? nav.getBoundingClientRect().height : 0;
+  const top = el.getBoundingClientRect().top + window.scrollY - navHeight - 12;
+  window.scrollTo({ top, behavior: 'smooth' });
+}
+
 function goToCheckinInfo() {
   const isJa = document.body.classList.contains('lang-ja');
   const form = document.getElementById('booking-form');
@@ -628,13 +661,13 @@ function goToCheckinInfo() {
   }
   document.getElementById('booking-step-1').style.display = 'none';
   document.getElementById('booking-step-2').style.display = 'block';
-  document.getElementById('booking-step-2').scrollIntoView({ behavior: 'smooth' });
+  scrollBelowNav(document.getElementById('booking-step-2'));
 }
 
 function backToForm() {
   document.getElementById('booking-step-2').style.display = 'none';
   document.getElementById('booking-step-1').style.display = 'block';
-  document.getElementById('booking-step-1').scrollIntoView({ behavior: 'smooth' });
+  scrollBelowNav(document.getElementById('booking-step-1'));
 }
 
 function calcTotalPrice(roomVal, checkin, checkout, guests) {
@@ -868,12 +901,16 @@ async function submitForm(e) {
     name: fd.get('name'),
     email: fd.get('email'),
     phone: fd.get('phone'),
+    arrivalTime: fd.get('arrivalTime'),
     message: fd.get('message'),
     paymentMethod: fd.get('paymentMethod'),
   };
 
   const submitBtn = form.querySelector('.submit-btn');
+  const submitBtnOriginalHtml = submitBtn.innerHTML;
   submitBtn.disabled = true;
+  submitBtn.classList.add('is-loading');
+  submitBtn.innerHTML = `<span class="btn-spinner"></span>${isJa ? '送信中…' : 'Submitting…'}`;
 
   try {
     // 1. Register the booking + check for date conflicts
@@ -916,6 +953,8 @@ async function submitForm(e) {
       : 'Something went wrong while sending your request. Please try again in a moment.');
   } finally {
     submitBtn.disabled = false;
+    submitBtn.classList.remove('is-loading');
+    submitBtn.innerHTML = submitBtnOriginalHtml;
   }
 }
 function closeModal(e) {

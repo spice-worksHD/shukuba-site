@@ -40,7 +40,7 @@ export default async (req) => {
     return new Response(JSON.stringify({ ok: false, error: 'invalid_json' }), { status: 400 });
   }
 
-  const { room, roomName, checkin, checkout, guests, name, email, phone, message, paymentMethod } = data;
+  const { room, roomName, checkin, checkout, guests, name, email, phone, arrivalTime, message, paymentMethod } = data;
   if (!room || !checkin || !checkout || !name || !email || !paymentMethod) {
     return new Response(JSON.stringify({ ok: false, error: 'missing_fields' }), { status: 400 });
   }
@@ -105,6 +105,7 @@ export default async (req) => {
     name,
     email,
     phone: phone || '',
+    arrivalTime: arrivalTime || '',
     message: message || '',
     paymentMethod,
     total,
@@ -131,6 +132,7 @@ export default async (req) => {
     name,
     email,
     phone,
+    arrivalTime,
     total,
     cancelUrl,
     origin,
@@ -186,7 +188,7 @@ async function getLineQrAttachment(origin) {
   }
 }
 
-async function sendReservationEmails({ roomName, checkin, checkout, guests, name, email, phone, total, cancelUrl, origin }) {
+async function sendReservationEmails({ roomName, checkin, checkout, guests, name, email, phone, arrivalTime, total, cancelUrl, origin }) {
   const ownerEmail = process.env.OWNER_EMAIL;
   const lineOaUrl = process.env.LINE_OA_URL || '';
   const lineQrAttachment = await getLineQrAttachment(origin);
@@ -197,6 +199,7 @@ async function sendReservationEmails({ roomName, checkin, checkout, guests, name
     <p>チェックイン: ${checkin}</p>
     <p>チェックアウト: ${checkout}</p>
     <p>人数: ${guests || '-'}名</p>
+    <p>チェックイン予定時間: ${arrivalTime || '未定'}</p>
     <p>ゲスト名: ${name}</p>
     <p>連絡先: ${email} / ${phone || '-'}</p>
     <p>金額: ${Number(total).toLocaleString()}円</p>
@@ -206,7 +209,7 @@ async function sendReservationEmails({ roomName, checkin, checkout, guests, name
     if (ownerEmail) {
       await sendResendEmail({
         to: ownerEmail,
-        subject: `【新規予約】${name}`,
+        subject: `【新規予約】${roomName} ${checkin}〜${checkout}（${name}様）`,
         html: `<h2>新規予約が入りました</h2>${detailsHtml}`,
       });
     } else {

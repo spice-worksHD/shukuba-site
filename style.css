@@ -275,6 +275,14 @@ textarea { resize: vertical; min-height: 100px; line-height: 1.8; }
   transition: background .3s; margin-top: 32px; text-transform: uppercase;
 }
 .submit-btn:hover { background: var(--bengara); }
+.submit-btn:disabled { cursor: default; opacity: 0.85; }
+.submit-btn.is-loading { display: flex; align-items: center; justify-content: center; gap: 10px; }
+.btn-spinner {
+  display: inline-block; width: 15px; height: 15px; border-radius: 50%;
+  border: 2px solid rgba(244,238,226,0.35); border-top-color: #F4EEE2;
+  animation: btn-spin 0.7s linear infinite;
+}
+@keyframes btn-spin { to { transform: rotate(360deg); } }
 
 .form-note { font-size: 12px; color: var(--muted); line-height: 1.8; margin-top: 24px; padding-top: 24px; border-top: 1px solid var(--border); }
 

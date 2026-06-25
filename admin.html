@@ -81,6 +81,8 @@
   .add-override input[type=number] { width: 100px; }
   .small-btn { background: var(--green); color: #fff; border: none; border-radius: 4px; padding: 6px 10px; font-size: 12px; cursor: pointer; }
   .small-btn:hover { background: var(--gold); }
+  #ledger-filter-group .small-btn { background: #fff; color: var(--muted); border: 1px solid var(--border); }
+  #ledger-filter-group .small-btn.active { background: var(--gold); color: #fff; border-color: var(--gold); }
   .danger-btn { background: var(--danger); }
   .danger-btn:hover { background: #a3463a; }
   .save-row { text-align: right; }
@@ -160,14 +162,28 @@
   <div class="panel" id="panel-ledger">
     <div class="stats-grid" id="ledger-stats"></div>
     <div class="card">
-      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
-        <h3>宿泊者名簿（旅館業法対応）</h3>
-        <span style="font-size:12px;color:var(--muted)">チェックイン手続き完了分のみ記録されます</span>
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:14px">
+        <h3 style="margin:0">チェックインリマインダー一斉送信</h3>
+        <button class="btn" onclick="sendRemindersNow()">明日チェックインの方へ今すぐ送信</button>
+      </div>
+      <p style="font-size:12px;color:var(--muted);margin-bottom:6px">
+        通常は毎日09:00（JST）に自動送信されますが、このボタンで今すぐ送信することもできます。未送信の対象者のみに送られます。
+      </p>
+      <div id="reminder-msg" class="msg"></div>
+    </div>
+    <div class="card">
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:6px">
+        <h3 style="margin:0">宿泊者名簿（旅館業法対応）</h3>
+        <div style="display:flex;gap:6px" id="ledger-filter-group">
+          <button class="small-btn active" data-filter="all" onclick="setLedgerFilter('all')">すべて</button>
+          <button class="small-btn" data-filter="pending" onclick="setLedgerFilter('pending')">未記入</button>
+          <button class="small-btn" data-filter="done" onclick="setLedgerFilter('done')">記入済み</button>
+        </div>
       </div>
       <table id="ledger-table">
         <thead>
           <tr>
-            <th>チェックイン</th><th>物件</th><th>代表者</th><th>住所</th><th>職業</th>
+            <th>チェックイン</th><th>物件</th><th>予約者</th><th>状態</th><th>代表者（記入）</th><th>住所</th><th>職業</th>
             <th>国籍</th><th>同行者</th><th>到着予定</th><th>記入時刻</th><th></th>
           </tr>
         </thead>
@@ -372,6 +388,15 @@ function exportCSV() {
 }
 
 // ===== LODGING LEDGER (宿泊台帳) =====
+let ledgerFilter = 'all';
+function setLedgerFilter(f) {
+  ledgerFilter = f;
+  document.querySelectorAll('#ledger-filter-group .small-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.filter === f);
+  });
+  renderLedger();
+}
+
 function renderLedger() {
   const today = new Date(); today.setHours(0,0,0,0);
   const active = state.bookings.filter(b => b.status !== 'cancelled');
@@ -385,26 +410,62 @@ function renderLedger() {
   `;
 
   const sorted = state.bookings.map((b, i) => ({...b, _idx: i}))
-    .filter(b => b.checkedIn && b.ledger)
-    .sort((a, b) => new Date(b.checkin) - new Date(a.checkin));
+    .filter(b => b.status !== 'cancelled')
+    .filter(b => {
+      if (ledgerFilter === 'done') return !!b.checkedIn;
+      if (ledgerFilter === 'pending') return !b.checkedIn;
+      return true;
+    })
+    .sort((a, b) => new Date(a.checkin) - new Date(b.checkin));
 
   const tbody = document.querySelector('#ledger-table tbody');
   tbody.innerHTML = sorted.map(b => {
     const l = b.ledger;
-    const companions = (l.companions || []).map(c => c.name).join('、') || '-';
+    const isDone = !!b.checkedIn;
+    const companions = l ? ((l.companions || []).map(c => c.name).join('、') || '-') : '-';
     return `<tr>
       <td>${b.checkin}</td>
       <td>${roomLabels[String(b.room)] || b.roomName || b.room}</td>
-      <td>${l.name}<br><span style="font-size:11px;color:var(--muted)">${l.nameKana}</span></td>
-      <td>${l.address}</td>
-      <td>${l.occupation}</td>
-      <td>${l.nationality}${l.passportNumber ? `<br><span style="font-size:11px;color:var(--muted)">旅券: ${l.passportNumber}</span>` : ''}</td>
+      <td>${b.name}</td>
+      <td><span class="badge ${isDone ? 'future' : 'cancelled'}">${isDone ? '済' : '未'}</span></td>
+      <td>${l ? `${l.name}<br><span style="font-size:11px;color:var(--muted)">${l.nameKana}</span>` : '-'}</td>
+      <td>${l ? l.address : '-'}</td>
+      <td>${l ? l.occupation : '-'}</td>
+      <td>${l ? `${l.nationality}${l.passportNumber ? `<br><span style="font-size:11px;color:var(--muted)">旅券: ${l.passportNumber}</span>` : ''}` : '-'}</td>
       <td>${companions}</td>
-      <td>${l.arrivalTime || '-'}</td>
+      <td>${l ? (l.arrivalTime || '-') : '-'}</td>
       <td>${b.checkedInAt ? new Date(b.checkedInAt).toLocaleString('ja-JP') : ''}</td>
-      <td><button class="small-btn" onclick="printLedgerEntry(${b._idx})">印刷</button></td>
+      <td>${isDone ? `<button class="small-btn" onclick="printLedgerEntry(${b._idx})">印刷</button>` : ''}</td>
     </tr>`;
-  }).join('') || '<tr><td colspan="10" style="color:var(--muted)">記入済みの宿泊者名簿はまだありません</td></tr>';
+  }).join('') || '<tr><td colspan="12" style="color:var(--muted)">該当する予約はありません</td></tr>';
+}
+
+async function sendRemindersNow() {
+  if (!confirm('明日チェックインのお客様（未送信の方）に、チェックイン手続きのご案内を今すぐ送信します。よろしいですか？')) return;
+  const el = document.getElementById('reminder-msg');
+  el.textContent = '送信中...';
+  try {
+    const r = await apiPostTo('/.netlify/functions/send-checkin-reminders-now', { forceAll: false });
+    if (r.ok) {
+      el.textContent = `送信完了: ${r.sentCount}件に送信しました。`;
+      const r2 = await fetch('/.netlify/functions/admin', { headers: { 'x-admin-key': adminKey } });
+      if (r2.ok) { state = await r2.json(); renderAll(); }
+    } else {
+      el.textContent = '送信に失敗しました。';
+    }
+  } catch (err) {
+    el.textContent = '送信に失敗しました。';
+  }
+  setTimeout(() => { el.textContent = ''; }, 6000);
+}
+
+async function apiPostTo(url, body) {
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'x-admin-key': adminKey },
+    body: JSON.stringify(body),
+  });
+  return res.json();
 }
 
 function printLedgerEntry(idx) {

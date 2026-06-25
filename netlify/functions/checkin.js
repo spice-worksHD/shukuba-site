@@ -6,9 +6,14 @@ const THEME = `
     --bengara: #C14C32; --dark: #211A14; --muted: #6B7770; --border: #DCD0B8;
   }
   * { box-sizing: border-box; }
-  body { font-family: 'Hiragino Sans', 'Yu Gothic', 'Zen Kaku Gothic New', sans-serif; background: var(--paper); color: var(--ink); margin: 0; padding: 24px 16px; }
-  .wrap { max-width: 520px; margin: 0 auto; background: #fff; border: 1px solid var(--border); border-radius: 10px; padding: 32px 28px; }
-  h1 { font-size: 18px; letter-spacing: 1px; margin: 0 0 6px; font-weight: 600; }
+  body {
+    font-family: 'Zen Kaku Gothic New', 'Hiragino Sans', 'Yu Gothic', sans-serif;
+    background: var(--paper); color: var(--ink); margin: 0; padding: 0 0 40px;
+  }
+  .brand-bar { background: var(--dark); padding: 22px 16px; text-align: center; }
+  .brand-bar .brand { font-family: 'Shippori Mincho', 'Hiragino Mincho ProN', serif; font-size: 20px; letter-spacing: 5px; color: var(--paper); }
+  .wrap { max-width: 520px; margin: -20px auto 0; background: #fff; border: 1px solid var(--border); border-radius: 10px; padding: 32px 28px; position: relative; box-shadow: 0 8px 28px rgba(43,33,24,0.10); }
+  h1 { font-family: 'Shippori Mincho', 'Hiragino Mincho ProN', serif; font-size: 19px; letter-spacing: 1px; margin: 0 0 8px; font-weight: 600; color: var(--dark); }
   .lead { font-size: 13px; color: var(--muted); margin-bottom: 24px; line-height: 1.8; }
   .summary { background: var(--paper); border-radius: 8px; padding: 14px 16px; font-size: 13px; line-height: 1.9; margin-bottom: 24px; border-left: 3px solid var(--susuki); }
   .summary strong { color: var(--dark); }
@@ -17,11 +22,12 @@ const THEME = `
     width: 100%; padding: 10px 12px; border: 1px solid var(--border); border-radius: 6px;
     font-size: 14px; font-family: inherit; color: var(--ink); background: #fff;
   }
+  input:focus, textarea:focus, select:focus { outline: none; border-color: var(--susuki); box-shadow: 0 0 0 3px rgba(138,110,75,0.15); }
   textarea { resize: vertical; min-height: 64px; }
   .hint { font-size: 11px; color: var(--muted); margin-top: 4px; }
   .req { color: var(--bengara); }
   .btn { display: inline-block; width: 100%; padding: 14px; background: var(--reed); color: #fff; border: none;
-    border-radius: 6px; font-size: 14px; letter-spacing: 2px; cursor: pointer; margin-top: 28px; }
+    border-radius: 6px; font-size: 14px; letter-spacing: 2px; cursor: pointer; margin-top: 28px; transition: background .2s; }
   .btn:hover { background: var(--dark); }
   .error { background: #fbe9e7; color: #b8584f; font-size: 12px; padding: 10px 12px; border-radius: 6px; margin-bottom: 16px; }
   .done-mark { text-align: center; }
@@ -35,10 +41,14 @@ function page(title, body) {
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;700&family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap" rel="stylesheet">
 <title>${title} | SHUKUBA</title>
 <style>${THEME}</style>
 </head>
 <body>
+  <div class="brand-bar"><span class="brand">SHUKUBA</span></div>
   <div class="wrap">
     <h1>${title}</h1>
     ${body}

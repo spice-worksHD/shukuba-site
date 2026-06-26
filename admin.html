@@ -204,6 +204,16 @@
       <div id="reminder-msg" class="msg"></div>
     </div>
     <div class="card">
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:14px">
+        <h3 style="margin:0">自動チェックアウト手動実行</h3>
+        <button class="btn" onclick="runAutoCheckoutNow()">チェックアウト日を過ぎた予約を今すぐ退出完了</button>
+      </div>
+      <p style="font-size:12px;color:var(--muted);margin-bottom:6px">
+        通常は毎日12:00（JST）に自動実行されます。チェックアウト日当日以前の未退出予約を一括で退出済にし、LINE連携済みのゲストにサンクスメッセージを送信します。
+      </p>
+      <div id="auto-checkout-msg" class="msg"></div>
+    </div>
+    <div class="card">
       <h3 style="margin-bottom:10px">LINEリマインダー本文テンプレート</h3>
       <p style="font-size:12px;color:var(--muted);margin-bottom:8px">
         使用できる変数: <code>{checkinUrl}</code>（チェックインURL）　<code>{roomName}</code>　<code>{checkin}</code>（チェックイン日）　<code>{name}</code>（氏名）
@@ -509,6 +519,7 @@ function clearBookingFilters() {
 
 function renderBookings() {
   const today = new Date(); today.setHours(0,0,0,0);
+  const todayStr = today.toISOString().slice(0, 10);
   const search = (document.getElementById('filter-search')?.value || '').toLowerCase();
   const roomFilter = document.getElementById('filter-room')?.value || '';
   const statusFilter = document.getElementById('filter-status')?.value || '';
@@ -537,10 +548,13 @@ function renderBookings() {
     const statusLabel = isCancelled ? 'キャンセル' : (isFuture ? '予定' : '完了');
     const statusClass = isCancelled ? 'cancelled' : (isFuture ? 'future' : 'past');
 
+    const canCheckout = !isCancelled && !b.checkedOut && b.checkout <= todayStr;
+
     const statusCell = `
       <span class="badge ${b.checkedIn ? 'future' : 'past'}" style="display:block;margin-bottom:2px">${b.checkedIn ? '台帳済' : '台帳未'}</span>
       <span class="badge ${b.lineUserId ? 'future' : 'past'}" style="display:block;margin-bottom:2px">${b.lineUserId ? 'LINE済' : 'LINE未'}</span>
-      ${b.doorCodeSent ? '<span class="badge future" style="display:block">鍵送信済</span>' : ''}
+      ${b.doorCodeSent ? '<span class="badge future" style="display:block;margin-bottom:2px">鍵送信済</span>' : ''}
+      ${b.checkedOut ? '<span class="badge past" style="display:block;background:var(--muted)">退出済</span>' : ''}
     `;
 
     const actionBtns = isCancelled
@@ -551,8 +565,11 @@ function renderBookings() {
           ${b.checkedIn && b.lineUserId && !b.doorCodeSent
             ? `<button class="mini-btn gold-btn" onclick="confirmCheckin(${b._idx})" title="パスポート確認済・ドアコード送信">🔑送信</button>`
             : ''}
-          ${b.checkedIn && b.lineUserId && b.doorCodeSent && !b.checkoutThanksSent && !isFuture
-            ? `<button class="mini-btn" style="background:#5a5a8a" onclick="sendCheckoutThanks(${b._idx})" title="チェックアウトサンクス送信">✉退出</button>`
+          ${canCheckout
+            ? `<button class="mini-btn" style="background:#3a6b8a" onclick="adminCheckout(${b._idx})" title="チェックアウト確認（LINE連携ありの場合サンクスも同時送信）">退出確認</button>`
+            : ''}
+          ${b.checkedOut && b.lineUserId && !b.checkoutThanksSent
+            ? `<button class="mini-btn" style="background:#5a5a8a" onclick="sendCheckoutThanks(${b._idx})" title="サンクスメッセージのみ送信">✉サンクス</button>`
             : ''}
         </div>`;
 
@@ -607,6 +624,17 @@ function filterByMonth(start, end) {
   document.getElementById('filter-to').value = end;
   renderBookings();
   renderMonthlySales();
+}
+
+async function adminCheckout(idx) {
+  if (!confirm('チェックアウトを確認しますか？LINE連携済みの場合、サンクスメッセージも同時送信されます。')) return;
+  const r = await apiPost({ action: 'checkout-booking', index: idx });
+  if (r.ok) {
+    state.bookings = r.bookings;
+    renderStats(); renderBookings(); renderLedger(); renderMonthlySales();
+  } else {
+    alert('処理に失敗しました: ' + (r.error || ''));
+  }
 }
 
 async function sendCheckoutThanks(idx) {
@@ -734,6 +762,27 @@ function renderLedger() {
       <td>${isDone ? `<button class="small-btn" onclick="printLedgerEntry(${b._idx})">印刷</button>` : ''}</td>
     </tr>`;
   }).join('') || '<tr><td colspan="12" style="color:var(--muted)">該当する予約はありません</td></tr>';
+}
+
+async function runAutoCheckoutNow() {
+  if (!confirm('チェックアウト日が本日以前の未退出予約を一括退出完了にします（LINE連携済みの場合サンクスも送信）。実行しますか？')) return;
+  const el = document.getElementById('auto-checkout-msg');
+  el.textContent = '実行中...';
+  try {
+    const r = await apiPostTo('/.netlify/functions/auto-checkout-now', {});
+    if (r.ok) {
+      el.textContent = `完了: ${r.processedCount}件を退出処理しました。`;
+      el.style.color = 'var(--green)';
+      if (r.bookings) { state.bookings = r.bookings; renderAll(); }
+    } else {
+      el.textContent = 'エラー: ' + (r.error || '不明');
+      el.style.color = 'var(--danger)';
+    }
+  } catch (e) {
+    el.textContent = 'エラー: ' + e.message;
+    el.style.color = 'var(--danger)';
+  }
+  setTimeout(() => { el.textContent = ''; }, 5000);
 }
 
 async function sendRemindersNow() {

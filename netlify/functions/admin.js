@@ -218,6 +218,50 @@ export default async (req) => {
       });
     }
 
+    if (data.action === 'checkout-booking') {
+      const bookings = (await store.get('bookings.json', { type: 'json' })) || [];
+      const idx = Number(data.index);
+      if (!(idx >= 0 && idx < bookings.length)) {
+        return new Response(JSON.stringify({ ok: false, error: 'not_found' }), { status: 404 });
+      }
+      const booking = bookings[idx];
+      if (booking.status === 'cancelled') {
+        return new Response(JSON.stringify({ ok: false, error: 'cancelled' }), { status: 400 });
+      }
+      const now = new Date().toISOString();
+      booking.checkedOut = true;
+      booking.checkedOutAt = now;
+      booking.history = Array.isArray(booking.history) ? booking.history : [];
+      booking.history.push({ event: 'checked-out', at: now, by: 'admin' });
+
+      if (booking.lineUserId && !booking.checkoutThanksSent) {
+        const accessToken = process.env.LINE_CHANNEL_ACCESS_TOKEN;
+        if (accessToken) {
+          const checkoutTemplate = (await store.get('checkout-template.json', { type: 'json' })) || null;
+          const DEFAULT_CHECKOUT_TEXT = '{name}様、ご滞在ありがとうございました。またのお越しをお待ちしております。';
+          const text = (checkoutTemplate?.text || DEFAULT_CHECKOUT_TEXT)
+            .replace('{name}', booking.name || '')
+            .replace('{roomName}', booking.roomName || '')
+            .replace('{checkout}', booking.checkout || '');
+          const res = await fetch('https://api.line.me/v2/bot/message/push', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` },
+            body: JSON.stringify({ to: booking.lineUserId, messages: [{ type: 'text', text }] }),
+          });
+          if (res.ok) {
+            booking.checkoutThanksSent = true;
+            booking.checkoutThanksSentAt = now;
+            booking.history.push({ event: 'checkout-thanks-sent', at: now, by: 'admin' });
+          }
+        }
+      }
+      bookings[idx] = booking;
+      await store.setJSON('bookings.json', bookings);
+      return new Response(JSON.stringify({ ok: true, bookings }), {
+        status: 200, headers: { 'Content-Type': 'application/json' },
+      });
+    }
+
     if (data.action === 'set-checkout-template') {
       const text = typeof data.text === 'string' ? data.text : '';
       await store.setJSON('checkout-template.json', { text });

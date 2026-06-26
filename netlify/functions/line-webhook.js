@@ -65,7 +65,41 @@ export default async (req) => {
     }
 
     if (event.type === 'message' && event.message?.type === 'text' && event.replyToken) {
-      const text = event.message.text.trim().toLowerCase();
+      const rawText = event.message.text.trim();
+      const text = rawText.toLowerCase();
+
+      // チェックアウトキーワード検知
+      const CHECKOUT_KEYWORDS = ['チェックアウト', 'checkout', '退出しました', '退出'];
+      if (CHECKOUT_KEYWORDS.some((kw) => rawText.includes(kw) || text.includes(kw.toLowerCase()))) {
+        const bookingId = lineUsers[userId];
+        const match = bookings.find((b) => b.id === bookingId && b.status !== 'cancelled' && !b.checkedOut);
+        if (match) {
+          const now = new Date().toISOString();
+          match.checkedOut = true;
+          match.checkedOutAt = now;
+          match.history = Array.isArray(match.history) ? match.history : [];
+          match.history.push({ event: 'checked-out', at: now, by: 'guest' });
+          bookingsChanged = true;
+
+          const checkoutTemplate = (await store.get('checkout-template.json', { type: 'json' })) || null;
+          const DEFAULT_CHECKOUT_TEXT = '{name}様、ご滞在ありがとうございました。またのお越しをお待ちしております。';
+          const thanksText = (checkoutTemplate?.text || DEFAULT_CHECKOUT_TEXT)
+            .replace('{name}', match.name || '')
+            .replace('{roomName}', match.roomName || '')
+            .replace('{checkout}', match.checkout || '');
+
+          match.checkoutThanksSent = true;
+          match.checkoutThanksSentAt = now;
+          match.history.push({ event: 'checkout-thanks-sent', at: now, by: 'system' });
+
+          await reply(event.replyToken, [{ type: 'text', text: thanksText }]);
+          continue;
+        } else {
+          await reply(event.replyToken, [{ type: 'text', text: 'チェックアウトのご連絡ありがとうございます。またのお越しをお待ちしております。' }]);
+          continue;
+        }
+      }
+
       const candidates = bookings.filter((b) => b.status !== 'cancelled' && b.email?.toLowerCase() === text);
       // Prefer a booking that isn't linked yet, so re-sending the email links
       // the next pending reservation instead of always re-matching the first one.

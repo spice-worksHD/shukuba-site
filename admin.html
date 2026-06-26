@@ -143,9 +143,33 @@
   <div class="panel active" id="panel-reservations">
     <div class="stats-grid" id="stats-grid"></div>
     <div class="card">
-      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:12px">
         <h3>予約一覧</h3>
         <button class="btn" onclick="exportCSV()">CSVダウンロード</button>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px;padding:10px 12px;background:var(--paper);border-radius:6px">
+        <input type="text" id="filter-search" placeholder="氏名・メール検索" oninput="renderBookings()"
+          style="padding:6px 10px;border:1px solid var(--border);border-radius:4px;font-size:13px;width:150px">
+        <select id="filter-room" onchange="renderBookings()"
+          style="padding:6px 10px;border:1px solid var(--border);border-radius:4px;font-size:13px">
+          <option value="">全施設</option>
+          <option value="0">近江八幡・為心町</option>
+          <option value="1">近江八幡・鍵之手町</option>
+          <option value="2">長浜・元浜町</option>
+        </select>
+        <select id="filter-status" onchange="renderBookings()"
+          style="padding:6px 10px;border:1px solid var(--border);border-radius:4px;font-size:13px">
+          <option value="">全状態</option>
+          <option value="future">予定</option>
+          <option value="past">完了</option>
+          <option value="cancelled">キャンセル</option>
+        </select>
+        <input type="date" id="filter-from" onchange="renderBookings()"
+          style="padding:6px 10px;border:1px solid var(--border);border-radius:4px;font-size:13px">
+        <span style="font-size:12px;color:var(--muted)">〜</span>
+        <input type="date" id="filter-to" onchange="renderBookings()"
+          style="padding:6px 10px;border:1px solid var(--border);border-radius:4px;font-size:13px">
+        <button onclick="clearBookingFilters()" style="padding:6px 12px;border:1px solid var(--border);border-radius:4px;font-size:13px;background:#fff;cursor:pointer">クリア</button>
       </div>
       <table id="bookings-table">
         <thead>
@@ -409,10 +433,37 @@ function renderStats() {
   `;
 }
 
+function clearBookingFilters() {
+  document.getElementById('filter-search').value = '';
+  document.getElementById('filter-room').value = '';
+  document.getElementById('filter-status').value = '';
+  document.getElementById('filter-from').value = '';
+  document.getElementById('filter-to').value = '';
+  renderBookings();
+}
+
 function renderBookings() {
   const today = new Date(); today.setHours(0,0,0,0);
+  const search = (document.getElementById('filter-search')?.value || '').toLowerCase();
+  const roomFilter = document.getElementById('filter-room')?.value || '';
+  const statusFilter = document.getElementById('filter-status')?.value || '';
+  const fromFilter = document.getElementById('filter-from')?.value || '';
+  const toFilter = document.getElementById('filter-to')?.value || '';
+
   const tbody = document.querySelector('#bookings-table tbody');
   const sorted = state.bookings.map((b, i) => ({...b, _idx: i}))
+    .filter(b => {
+      if (search && !b.name?.toLowerCase().includes(search) && !b.email?.toLowerCase().includes(search)) return false;
+      if (roomFilter && String(b.room) !== roomFilter) return false;
+      const isCancelled = b.status === 'cancelled';
+      const isFuture = new Date(b.checkin) >= today;
+      if (statusFilter === 'future' && (isCancelled || !isFuture)) return false;
+      if (statusFilter === 'past' && (isCancelled || isFuture)) return false;
+      if (statusFilter === 'cancelled' && !isCancelled) return false;
+      if (fromFilter && b.checkin < fromFilter) return false;
+      if (toFilter && b.checkin > toFilter) return false;
+      return true;
+    })
     .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 
   tbody.innerHTML = sorted.map(b => {
@@ -493,14 +544,37 @@ function setLedgerFilter(f) {
 
 function renderLedger() {
   const today = new Date(); today.setHours(0,0,0,0);
+  const tomorrow = new Date(today); tomorrow.setDate(tomorrow.getDate() + 1);
+  const dayAfter = new Date(tomorrow); dayAfter.setDate(dayAfter.getDate() + 1);
+  const fmt = d => `${d.getMonth()+1}/${d.getDate()}`;
+
   const active = state.bookings.filter(b => b.status !== 'cancelled');
-  const checkedIn = active.filter(b => b.checkedIn);
-  const pendingSoon = active.filter(b => !b.checkedIn && new Date(b.checkin) >= today &&
-    (new Date(b.checkin) - today) / 86400000 <= 1);
+  const todayList = active.filter(b => { const d = new Date(b.checkin); return d >= today && d < tomorrow; });
+  const tomorrowList = active.filter(b => { const d = new Date(b.checkin); return d >= tomorrow && d < dayAfter; });
+  const todayDone = todayList.filter(b => b.checkedIn).length;
+  const tomorrowDone = tomorrowList.filter(b => b.checkedIn).length;
+  const todayOk = todayList.length > 0 && todayDone === todayList.length;
+  const tomorrowOk = tomorrowList.length > 0 && tomorrowDone === tomorrowList.length;
+  const todayColor = todayList.length === 0 ? 'var(--border)' : todayOk ? 'var(--green)' : 'var(--danger)';
+  const tomorrowColor = tomorrowList.length === 0 ? 'var(--border)' : tomorrowOk ? 'var(--green)' : 'var(--danger)';
 
   document.getElementById('ledger-stats').innerHTML = `
-    <div class="stat-box"><div class="label">記入済み台帳件数</div><div class="value">${checkedIn.length}件</div></div>
-    <div class="stat-box"><div class="label">本日・明日チェックインで未記入</div><div class="value" style="color:${pendingSoon.length ? 'var(--danger)' : 'var(--dark)'}">${pendingSoon.length}件</div></div>
+    <div class="stat-box" style="border-left:4px solid ${todayColor}">
+      <div class="label">本日チェックイン（${fmt(today)}）</div>
+      <div class="value" style="color:${todayColor}">${todayList.length}件</div>
+      <div style="font-size:12px;margin-top:4px;color:var(--muted)">台帳済 ${todayDone}件 / 未記入 ${todayList.length - todayDone}件
+        ${todayOk ? '<span style="color:var(--green);font-weight:bold"> ✓ ALL OK</span>' : todayList.length > 0 ? '<span style="color:var(--danger)"> ⚠ 未記入あり</span>' : ''}</div>
+    </div>
+    <div class="stat-box" style="border-left:4px solid ${tomorrowColor}">
+      <div class="label">明日チェックイン（${fmt(tomorrow)}）</div>
+      <div class="value" style="color:${tomorrowColor}">${tomorrowList.length}件</div>
+      <div style="font-size:12px;margin-top:4px;color:var(--muted)">台帳済 ${tomorrowDone}件 / 未記入 ${tomorrowList.length - tomorrowDone}件
+        ${tomorrowOk ? '<span style="color:var(--green);font-weight:bold"> ✓ ALL OK</span>' : tomorrowList.length > 0 ? '<span style="color:var(--danger)"> ⚠ 未記入あり</span>' : ''}</div>
+    </div>
+    <div class="stat-box">
+      <div class="label">全期間 台帳記入済み</div>
+      <div class="value">${active.filter(b => b.checkedIn).length}件</div>
+    </div>
   `;
 
   const sorted = state.bookings.map((b, i) => ({...b, _idx: i}))

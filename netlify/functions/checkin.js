@@ -108,22 +108,62 @@ function renderForm({ booking, error, values }) {
       <label>到着予定時刻</label>
       <input type="time" name="arrivalTime" value="${html(v.arrivalTime ?? '')}">
 
-      <label>同行者の氏名（代表者以外。1行に1名ずつご記入ください）</label>
-      <textarea name="companions" placeholder="例）山田 花子&#10;山田 一郎">${html(v.companions ?? '')}</textarea>
+      <label>同行者（代表者以外の方）</label>
+      <div id="companions-list" style="margin-bottom:8px"></div>
+      <button type="button" onclick="addCompanion()"
+        style="padding:8px 14px;border:1px dashed var(--border);border-radius:6px;background:#fff;font-size:13px;cursor:pointer;color:var(--muted);width:100%">
+        ＋ 同行者を追加
+      </button>
+      <input type="hidden" name="companions_json" id="companions-json" value="${html(v.companions_json ?? '[]')}">
 
       <button class="btn" type="submit">この内容で送信する</button>
     </form>
     <script>
       (function () {
-        var input = document.getElementById('nationality-input');
-        var field = document.getElementById('passport-field');
-        function sync() {
-          var val = (input.value || '').trim();
-          var isJp = val === '' || val === '日本' || val === '日本国';
-          field.style.display = isJp ? 'none' : 'block';
+        var natInput = document.getElementById('nationality-input');
+        var passField = document.getElementById('passport-field');
+        function syncPassport() {
+          var val = (natInput.value || '').trim();
+          passField.style.display = (val === '' || val === '日本' || val === '日本国') ? 'none' : 'block';
         }
-        input.addEventListener('input', sync);
-        sync();
+        natInput.addEventListener('input', syncPassport);
+        syncPassport();
+      })();
+
+      (function () {
+        var companions = [];
+        try { companions = JSON.parse(document.getElementById('companions-json').value || '[]'); } catch(e) {}
+
+        function render() {
+          var list = document.getElementById('companions-list');
+          list.innerHTML = companions.map(function(c, i) {
+            return '<div style="border:1px solid #DCD0B8;border-radius:6px;padding:12px 12px 8px;margin-bottom:8px">' +
+              '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">' +
+                '<strong style="font-size:12px;color:var(--muted)">同行者 ' + (i+1) + '</strong>' +
+                '<button type="button" onclick="removeCompanion(' + i + ')" style="background:none;border:none;color:#C14C32;cursor:pointer;font-size:12px;padding:0">削除</button>' +
+              '</div>' +
+              '<label style="margin:0 0 4px">氏名</label>' +
+              '<input type="text" value="' + escHtml(c.name||'') + '" oninput="updateCompanion(' + i + ',\'name\',this.value)" placeholder="山田 花子">' +
+              '<label style="margin:8px 0 4px">住所（代表者と同一の場合は空欄）</label>' +
+              '<input type="text" value="' + escHtml(c.address||'') + '" oninput="updateCompanion(' + i + ',\'address\',this.value)" placeholder="省略可">' +
+              '<label style="margin:8px 0 4px">備考</label>' +
+              '<input type="text" value="' + escHtml(c.note||'') + '" oninput="updateCompanion(' + i + ',\'note\',this.value)" placeholder="省略可">' +
+            '</div>';
+          }).join('');
+          document.getElementById('companions-json').value = JSON.stringify(companions);
+        }
+
+        function escHtml(s) {
+          return String(s).replace(/[&<>"']/g, function(c) {
+            return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
+          });
+        }
+
+        window.addCompanion = function() { companions.push({name:'',address:'',note:''}); render(); };
+        window.removeCompanion = function(i) { companions.splice(i,1); render(); };
+        window.updateCompanion = function(i, key, val) { companions[i][key] = val; document.getElementById('companions-json').value = JSON.stringify(companions); };
+
+        render();
       })();
     </script>
   `;
@@ -154,7 +194,7 @@ export default async (req) => {
       nationality: formData.get('nationality') || '',
       passportNumber: formData.get('passportNumber') || '',
       arrivalTime: formData.get('arrivalTime') || '',
-      companions: formData.get('companions') || '',
+      companions_json: formData.get('companions_json') || '[]',
     };
   }
 
@@ -215,11 +255,12 @@ export default async (req) => {
   }
 
   const now = new Date().toISOString();
-  const companions = f.companions
-    .split('\n')
-    .map((s) => s.trim())
-    .filter(Boolean)
-    .map((name) => ({ name }));
+  let companions = [];
+  try {
+    companions = JSON.parse(f.companions_json || '[]')
+      .filter((c) => c?.name?.trim())
+      .map((c) => ({ name: c.name.trim(), address: (c.address || '').trim(), note: (c.note || '').trim() }));
+  } catch { companions = []; }
 
   booking.checkedIn = true;
   booking.checkedInAt = now;
@@ -239,6 +280,21 @@ export default async (req) => {
 
   bookings[idx] = booking;
   await store.setJSON('bookings.json', bookings);
+
+  if (booking.lineUserId) {
+    const accessToken = process.env.LINE_CHANNEL_ACCESS_TOKEN;
+    if (accessToken) {
+      const doorCode = process.env.DOOR_CODE || '####';
+      await fetch('https://api.line.me/v2/bot/message/push', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` },
+        body: JSON.stringify({
+          to: booking.lineUserId,
+          messages: [{ type: 'text', text: `宿泊者名簿のご記入ありがとうございました。\n\nドアロックの番号をお知らせします。\n\n【暗証番号】${doorCode}\n\n当日のお越しをお待ちしております。` }],
+        }),
+      }).catch((err) => console.error('LINE push error:', err));
+    }
+  }
 
   return new Response(page('チェックイン手続きが完了しました', `
     <div class="done-mark">

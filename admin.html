@@ -210,10 +210,13 @@
     <div class="card">
       <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:6px">
         <h3 style="margin:0">宿泊者名簿（旅館業法対応）</h3>
-        <div style="display:flex;gap:6px" id="ledger-filter-group">
-          <button class="small-btn active" data-filter="all" onclick="setLedgerFilter('all')">すべて</button>
-          <button class="small-btn" data-filter="pending" onclick="setLedgerFilter('pending')">未記入</button>
-          <button class="small-btn" data-filter="done" onclick="setLedgerFilter('done')">記入済み</button>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
+          <button class="btn" onclick="exportLedgerCSV()" style="font-size:12px;padding:6px 12px">台帳CSVダウンロード</button>
+          <div id="ledger-filter-group" style="display:flex;gap:6px">
+            <button class="small-btn active" data-filter="all" onclick="setLedgerFilter('all')">すべて</button>
+            <button class="small-btn" data-filter="pending" onclick="setLedgerFilter('pending')">未記入</button>
+            <button class="small-btn" data-filter="done" onclick="setLedgerFilter('done')">記入済み</button>
+          </div>
         </div>
       </div>
       <table id="ledger-table">
@@ -417,19 +420,60 @@ function renderAll() {
 
 // ===== RESERVATIONS =====
 function renderStats() {
-  const today = new Date(); today.setHours(0,0,0,0);
+  const now = new Date();
+  const today = new Date(now); today.setHours(0,0,0,0);
+  const tomorrow = new Date(today); tomorrow.setDate(tomorrow.getDate() + 1);
+  const fmt = d => `${d.getMonth()+1}/${d.getDate()}`;
+
   const active = state.bookings.filter(b => b.status !== 'cancelled');
-  const total = active.length;
-  const upcoming = active.filter(b => new Date(b.checkin) >= today).length;
-  const revenue = active.reduce((sum, b) => sum + (b.total || 0), 0);
-  const upcomingRevenue = active.filter(b => new Date(b.checkin) >= today)
-    .reduce((sum, b) => sum + (b.total || 0), 0);
+  const todayArrival = active.filter(b => b.checkin === fmtDateAdmin(today));
+  const todayDeparture = active.filter(b => b.checkout === fmtDateAdmin(today));
+  const stayingNow = active.filter(b => b.checkin <= fmtDateAdmin(today) && b.checkout > fmtDateAdmin(today));
+
+  // 要確認: 明日チェックイン未台帳 or 台帳済み未ドアコード送信
+  const needAction = active.filter(b => {
+    const tomorrowArrival = b.checkin === fmtDateAdmin(tomorrow) && !b.checkedIn;
+    const doorPending = b.checkedIn && !b.doorCodeSent && b.lineUserId && b.checkin >= fmtDateAdmin(today);
+    return tomorrowArrival || doorPending;
+  });
+
+  const thisMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+  const thisMonthRevenue = active
+    .filter(b => new Date(b.createdAt) >= thisMonthStart)
+    .reduce((s, b) => s + (b.total || 0), 0);
+  const upcomingRevenue = active
+    .filter(b => new Date(b.checkin) >= today)
+    .reduce((s, b) => s + (b.total || 0), 0);
+
+  const arrivalNames = todayArrival.map(b => b.name).join('・') || '—';
 
   document.getElementById('stats-grid').innerHTML = `
-    <div class="stat-box"><div class="label">総予約数</div><div class="value">${total}件</div></div>
-    <div class="stat-box"><div class="label">今後の予約</div><div class="value">${upcoming}件</div></div>
-    <div class="stat-box"><div class="label">合計売上（全期間）</div><div class="value">¥${revenue.toLocaleString()}</div></div>
-    <div class="stat-box"><div class="label">今後の売上予定</div><div class="value">¥${upcomingRevenue.toLocaleString()}</div></div>
+    <div class="stat-box" style="border-left:4px solid var(--gold)">
+      <div class="label">今日到着（${fmt(today)}）</div>
+      <div class="value">${todayArrival.length}件</div>
+      <div style="font-size:11px;color:var(--muted);margin-top:4px">${arrivalNames}</div>
+    </div>
+    <div class="stat-box">
+      <div class="label">今日出発</div>
+      <div class="value">${todayDeparture.length}件</div>
+    </div>
+    <div class="stat-box">
+      <div class="label">宿泊中</div>
+      <div class="value">${stayingNow.length}件</div>
+    </div>
+    <div class="stat-box" style="border-left:4px solid ${needAction.length ? 'var(--danger)' : 'var(--border)'}">
+      <div class="label">要確認</div>
+      <div class="value" style="color:${needAction.length ? 'var(--danger)' : 'var(--dark)'}">${needAction.length}件</div>
+      <div style="font-size:11px;color:var(--muted);margin-top:4px">${needAction.length ? '未台帳・未コード送信あり' : '問題なし'}</div>
+    </div>
+    <div class="stat-box">
+      <div class="label">今月売上</div>
+      <div class="value">¥${thisMonthRevenue.toLocaleString()}</div>
+    </div>
+    <div class="stat-box">
+      <div class="label">今後の売上予定</div>
+      <div class="value">¥${upcomingRevenue.toLocaleString()}</div>
+    </div>
   `;
 }
 
@@ -485,9 +529,14 @@ function renderBookings() {
       <td>¥${(b.total || 0).toLocaleString()}</td>
       <td><span class="badge ${statusClass}">${statusLabel}</span></td>
       <td>${b.checkedIn ? '<span class="badge future">済</span>' : '<span class="badge past">未</span>'}</td>
-      <td>${b.lineUserId
-        ? `<span class="badge future">連携済</span><br><button class="small-btn" style="margin-top:4px" onclick="sendLineTest(${b._idx})">LINEテスト送信</button>`
-        : '<span class="badge past">未連携</span>'}</td>
+      <td>
+        ${b.lineUserId
+          ? `<span class="badge future">連携済</span><br><button class="small-btn" style="margin-top:4px" onclick="sendLineTest(${b._idx})">テスト送信</button>`
+          : '<span class="badge past">未連携</span>'}
+        ${b.checkedIn && b.lineUserId && !b.doorCodeSent
+          ? `<br><button class="small-btn" style="margin-top:4px;background:var(--gold);color:#fff;border-color:var(--gold)" onclick="confirmCheckin(${b._idx})">✓パスポート確認<br>ドアコード送信</button>`
+          : b.doorCodeSent ? '<br><span style="font-size:10px;color:var(--green)">✓コード送信済</span>' : ''}
+      </td>
       <td>${actionCell}</td>
     </tr>`;
   }).join('') || '<tr><td colspan="12" style="color:var(--muted)">予約はまだありません</td></tr>';
@@ -625,6 +674,53 @@ async function sendRemindersNow() {
     el.textContent = '送信に失敗しました。';
   }
   setTimeout(() => { el.textContent = ''; }, 6000);
+}
+
+async function confirmCheckin(idx) {
+  if (!confirm('パスポートの確認が完了しましたか？\nOKを押すとドアロック番号をLINEで送信します。')) return;
+  const r = await apiPost({ action: 'confirm-checkin', index: idx });
+  if (r.ok) {
+    state.bookings = r.bookings;
+    renderStats();
+    renderBookings();
+    alert('ドアロック番号を送信しました。');
+  } else {
+    alert('送信に失敗しました: ' + (r.error || '不明なエラー'));
+  }
+}
+
+function exportLedgerCSV() {
+  const headers = ['チェックイン','チェックアウト','物件','予約者','代表者氏名','フリガナ','住所','電話番号','職業','国籍','旅券番号','到着予定','人数','同行者氏名','同行者住所','同行者旅券番号','同行者備考','記入日時'];
+  const rows = [];
+  state.bookings.forEach(b => {
+    if (b.status === 'cancelled' || !b.checkedIn || !b.ledger) return;
+    const l = b.ledger;
+    const companions = l.companions || [];
+    if (companions.length === 0) {
+      rows.push([b.checkin, b.checkout, roomLabels[String(b.room)]||b.roomName||b.room, b.name,
+        l.name, l.nameKana, l.address, l.phone||'', l.occupation, l.nationality||'日本', l.passportNumber||'',
+        l.arrivalTime||'', b.guests||'', '', '', '', '',
+        b.checkedInAt ? new Date(b.checkedInAt).toLocaleString('ja-JP') : '']);
+    } else {
+      companions.forEach((c, ci) => {
+        rows.push([b.checkin, b.checkout, roomLabels[String(b.room)]||b.roomName||b.room, b.name,
+          ci === 0 ? l.name : '', ci === 0 ? l.nameKana : '', ci === 0 ? l.address : '',
+          ci === 0 ? (l.phone||'') : '', ci === 0 ? l.occupation : '', ci === 0 ? (l.nationality||'日本') : '',
+          ci === 0 ? (l.passportNumber||'') : '', ci === 0 ? (l.arrivalTime||'') : '',
+          ci === 0 ? (b.guests||'') : '',
+          c.name||'', c.address||'', c.passportNumber||'', c.note||'',
+          ci === 0 ? (b.checkedInAt ? new Date(b.checkedInAt).toLocaleString('ja-JP') : '') : '']);
+      });
+    }
+  });
+  const esc = v => `"${String(v).replace(/"/g,'""')}"`;
+  const csv = '﻿' + [headers, ...rows].map(r => r.map(esc).join(',')).join('\r\n');
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = `shukuba-ledger_${new Date().toISOString().slice(0,10)}.csv`;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
 }
 
 const DEFAULT_LINE_TEMPLATE = '明日はご来訪日です。スムーズなご案内のため、下記より宿泊者名簿のご記入（チェックイン手続き）をお願いいたします。\n{checkinUrl}';

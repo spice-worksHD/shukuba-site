@@ -178,6 +178,45 @@ export default async (req) => {
       });
     }
 
+    if (data.action === 'confirm-checkin') {
+      const bookings = (await store.get('bookings.json', { type: 'json' })) || [];
+      const idx = Number(data.index);
+      if (!(idx >= 0 && idx < bookings.length)) {
+        return new Response(JSON.stringify({ ok: false, error: 'not_found' }), { status: 404 });
+      }
+      const booking = bookings[idx];
+      if (!booking.lineUserId) {
+        return new Response(JSON.stringify({ ok: false, error: 'no_line_user' }), { status: 400 });
+      }
+      const accessToken = process.env.LINE_CHANNEL_ACCESS_TOKEN;
+      if (accessToken) {
+        const doorCode = process.env.DOOR_CODE || '####';
+        const res = await fetch('https://api.line.me/v2/bot/message/push', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` },
+          body: JSON.stringify({
+            to: booking.lineUserId,
+            messages: [{ type: 'text', text: `ご来訪ありがとうございます。パスポートのご確認が完了しました。\n\nドアロックの番号をお知らせします。\n\n【暗証番号】${doorCode}\n\nどうぞごゆっくりお過ごしください。` }],
+          }),
+        });
+        if (!res.ok) {
+          const errText = await res.text();
+          return new Response(JSON.stringify({ ok: false, error: `LINE API: ${errText}` }), { status: 500 });
+        }
+      }
+      const now = new Date().toISOString();
+      booking.doorCodeSent = true;
+      booking.doorCodeSentAt = now;
+      booking.history = Array.isArray(booking.history) ? booking.history : [];
+      booking.history.push({ event: 'door-code-sent', at: now, by: 'admin' });
+      bookings[idx] = booking;
+      await store.setJSON('bookings.json', bookings);
+      return new Response(JSON.stringify({ ok: true, bookings }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+
     if (data.action === 'set-line-template') {
       const text = typeof data.text === 'string' ? data.text : '';
       await store.setJSON('line-template.json', { text });

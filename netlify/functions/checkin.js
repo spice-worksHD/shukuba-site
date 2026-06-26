@@ -144,6 +144,11 @@ function renderForm({ booking, error, values }) {
               '</div>' +
               '<label style="margin:0 0 4px">氏名</label>' +
               '<input type="text" value="' + escHtml(c.name||'') + '" oninput="updateCompanion(' + i + ',\'name\',this.value)" placeholder="山田 花子">' +
+              '<label style="margin:8px 0 4px">国籍</label>' +
+              '<input type="text" value="' + escHtml(c.nationality||\'日本\') + '" oninput="updateCompanion(' + i + ',\'nationality\',this.value);render()" placeholder="日本">' +
+              ((!c.nationality || c.nationality===\'日本\' || c.nationality===\'日本国\') ? \'\' :
+                \'<label style="margin:8px 0 4px">旅券（パスポート）番号 <span style="color:#C14C32">必須</span></label>\' +
+                \'<input type="text" value="\' + escHtml(c.passportNumber||\'\') + \'" oninput="updateCompanion(\' + i + \',\\\'passportNumber\\\',this.value)" placeholder="AB1234567">\') +
               '<label style="margin:8px 0 4px">住所（代表者と同一の場合は空欄）</label>' +
               '<input type="text" value="' + escHtml(c.address||'') + '" oninput="updateCompanion(' + i + ',\'address\',this.value)" placeholder="省略可">' +
               '<label style="margin:8px 0 4px">備考</label>' +
@@ -159,7 +164,7 @@ function renderForm({ booking, error, values }) {
           });
         }
 
-        window.addCompanion = function() { companions.push({name:'',address:'',note:''}); render(); };
+        window.addCompanion = function() { companions.push({name:'',nationality:'日本',address:'',note:'',passportNumber:''}); render(); };
         window.removeCompanion = function(i) { companions.splice(i,1); render(); };
         window.updateCompanion = function(i, key, val) { companions[i][key] = val; document.getElementById('companions-json').value = JSON.stringify(companions); };
 
@@ -280,21 +285,6 @@ export default async (req) => {
 
   bookings[idx] = booking;
   await store.setJSON('bookings.json', bookings);
-
-  if (booking.lineUserId) {
-    const accessToken = process.env.LINE_CHANNEL_ACCESS_TOKEN;
-    if (accessToken) {
-      const doorCode = process.env.DOOR_CODE || '####';
-      await fetch('https://api.line.me/v2/bot/message/push', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` },
-        body: JSON.stringify({
-          to: booking.lineUserId,
-          messages: [{ type: 'text', text: `宿泊者名簿のご記入ありがとうございました。\n\nドアロックの番号をお知らせします。\n\n【暗証番号】${doorCode}\n\n当日のお越しをお待ちしております。` }],
-        }),
-      }).catch((err) => console.error('LINE push error:', err));
-    }
-  }
 
   return new Response(page('チェックイン手続きが完了しました', `
     <div class="done-mark">

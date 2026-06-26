@@ -93,7 +93,8 @@
   #bookings-table th { font-size: 11px; }
   .save-row { text-align: right; }
   .badge { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 11px; }
-  .badge.future { background: #e2f0ec; color: var(--gold); }
+  .badge.future { background: #e2f0ec; color: #2e7d5e; }
+  .badge.staying { background: #fff3cd; color: #856404; font-weight: bold; }
   .badge.past { background: #eee; color: var(--muted); }
   .badge.cancelled { background: #fbe9e7; color: #b8584f; }
   tr.cancelled-row { opacity: 0.55; }
@@ -545,8 +546,16 @@ function renderBookings() {
   tbody.innerHTML = sorted.map(b => {
     const isFuture = new Date(b.checkin) >= today;
     const isCancelled = b.status === 'cancelled';
-    const statusLabel = isCancelled ? 'キャンセル' : (isFuture ? '予定' : '完了');
-    const statusClass = isCancelled ? 'cancelled' : (isFuture ? 'future' : 'past');
+    let statusLabel, statusClass;
+    if (isCancelled) {
+      statusLabel = 'キャンセル'; statusClass = 'cancelled';
+    } else if (b.checkin > todayStr) {
+      statusLabel = '宿泊前'; statusClass = 'future';
+    } else if (b.checkout > todayStr) {
+      statusLabel = '宿泊中'; statusClass = 'staying';
+    } else {
+      statusLabel = '宿泊済'; statusClass = 'past';
+    }
 
     const canCheckout = !isCancelled && !b.checkedOut && b.checkout <= todayStr;
 

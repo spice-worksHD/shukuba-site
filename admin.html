@@ -558,21 +558,33 @@ function renderBookings() {
     }
 
     const canCheckout = !isCancelled && !b.checkedOut && b.checkout <= todayStr;
+    const photos = b.ledger?.passportPhotos || [];
+    const nonJpRequired = b.ledger?.nonJapaneseCount ?? 0;
+    const photoOk = nonJpRequired === 0 || photos.length >= nonJpRequired;
+    const photoLabel = nonJpRequired > 0
+      ? `<span class="badge ${photoOk ? 'future' : 'cancelled'}" style="display:block;margin-bottom:2px" title="パスポート写真 ${photos.length}/${nonJpRequired}枚">📷 ${photos.length}/${nonJpRequired}</span>`
+      : '';
 
     const statusCell = `
       <span class="badge ${b.checkedIn ? 'future' : 'past'}" style="display:block;margin-bottom:2px">${b.checkedIn ? '台帳済' : '台帳未'}</span>
+      ${photoLabel}
       <span class="badge ${b.lineUserId ? 'future' : 'past'}" style="display:block;margin-bottom:2px">${b.lineUserId ? 'LINE済' : 'LINE未'}</span>
       ${b.doorCodeSent ? '<span class="badge future" style="display:block;margin-bottom:2px">鍵送信済</span>' : ''}
       ${b.checkedOut ? '<span class="badge past" style="display:block;background:var(--muted)">退出済</span>' : ''}
     `;
+
+    const passportBlockMsg = !photoOk
+      ? `title="パスポート写真が不足しています (${photos.length}/${nonJpRequired}枚)" style="opacity:0.4;cursor:not-allowed"`
+      : `title="パスポート確認済・ドアコード送信"`;
 
     const actionBtns = isCancelled
       ? `<span style="font-size:10px;color:var(--muted)">${b.cancelledAt ? new Date(b.cancelledAt).toLocaleString('ja-JP') : 'キャンセル済'}</span>`
       : `<div style="display:flex;gap:3px;flex-wrap:wrap;justify-content:flex-end">
           <button class="mini-btn danger-btn" onclick="cancelBooking(${b._idx})">取消</button>
           ${b.lineUserId ? `<button class="mini-btn" onclick="sendLineTest(${b._idx})" title="LINEテスト送信">LINE</button>` : ''}
+          ${photos.length > 0 ? `<button class="mini-btn" style="background:#5a7a9a" onclick="viewPassportPhotos(${b._idx})" title="パスポート写真を確認">📷確認</button>` : ''}
           ${b.checkedIn && b.lineUserId && !b.doorCodeSent
-            ? `<button class="mini-btn gold-btn" onclick="confirmCheckin(${b._idx})" title="パスポート確認済・ドアコード送信">🔑送信</button>`
+            ? `<button class="mini-btn gold-btn" onclick="${photoOk ? `confirmCheckin(${b._idx})` : "alert('パスポート写真が人数分揃っていません。写真を確認してください。')"}" ${passportBlockMsg}>🔑送信</button>`
             : ''}
           ${canCheckout
             ? `<button class="mini-btn" style="background:#3a6b8a" onclick="adminCheckout(${b._idx})" title="チェックアウト確認（LINE連携ありの場合サンクスも同時送信）">退出確認</button>`
@@ -633,6 +645,24 @@ function filterByMonth(start, end) {
   document.getElementById('filter-to').value = end;
   renderBookings();
   renderMonthlySales();
+}
+
+async function viewPassportPhotos(idx) {
+  const b = state.bookings[idx];
+  const photos = b?.ledger?.passportPhotos || [];
+  if (photos.length === 0) { alert('パスポート写真はありません。'); return; }
+  for (const p of photos) {
+    const r = await fetch(`/.netlify/functions/passport-photo?key=${encodeURIComponent(p.key)}`, {
+      headers: { 'x-admin-key': adminKey },
+    });
+    if (r.ok) {
+      const blob = await r.blob();
+      const objectUrl = URL.createObjectURL(blob);
+      window.open(objectUrl, '_blank');
+    } else {
+      alert('写真の取得に失敗しました: ' + p.name);
+    }
+  }
 }
 
 async function adminCheckout(idx) {

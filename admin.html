@@ -173,6 +173,17 @@
       <div id="reminder-msg" class="msg"></div>
     </div>
     <div class="card">
+      <h3 style="margin-bottom:10px">LINEリマインダー本文テンプレート</h3>
+      <p style="font-size:12px;color:var(--muted);margin-bottom:8px">
+        使用できる変数: <code>{checkinUrl}</code>（チェックインURL）　<code>{roomName}</code>　<code>{checkin}</code>（チェックイン日）　<code>{name}</code>（氏名）
+      </p>
+      <textarea id="line-template-text" rows="5" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:4px;font-size:13px;font-family:inherit;resize:vertical"></textarea>
+      <div style="display:flex;gap:8px;margin-top:8px;align-items:center">
+        <button class="btn" onclick="saveLineTemplate()">保存</button>
+        <span id="line-template-msg" class="msg"></span>
+      </div>
+    </div>
+    <div class="card">
       <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:6px">
         <h3 style="margin:0">宿泊者名簿（旅館業法対応）</h3>
         <div style="display:flex;gap:6px" id="ledger-filter-group">
@@ -305,7 +316,7 @@ let adminKey = '';
 const DEFAULT_PAYMENT = {
   methods: { credit: true, paypay: true },
 };
-let state = { bookings: [], pricing: {}, pricingLive: {}, blocked: {}, payment: DEFAULT_PAYMENT };
+let state = { bookings: [], pricing: {}, pricingLive: {}, blocked: {}, payment: DEFAULT_PAYMENT, lineTemplate: null };
 
 async function tryLogin(key) {
   const res = await fetch('/.netlify/functions/admin', { headers: { 'x-admin-key': key } });
@@ -377,6 +388,7 @@ function renderAll() {
   renderGrid();
   renderPayment();
   renderTestPanel();
+  loadLineTemplate();
 }
 
 // ===== RESERVATIONS =====
@@ -422,7 +434,9 @@ function renderBookings() {
       <td>¥${(b.total || 0).toLocaleString()}</td>
       <td><span class="badge ${statusClass}">${statusLabel}</span></td>
       <td>${b.checkedIn ? '<span class="badge future">済</span>' : '<span class="badge past">未</span>'}</td>
-      <td>${b.lineUserId ? '<span class="badge future">連携済</span>' : '<span class="badge past">未連携</span>'}</td>
+      <td>${b.lineUserId
+        ? `<span class="badge future">連携済</span><br><button class="small-btn" style="margin-top:4px" onclick="sendLineTest(${b._idx})">LINEテスト送信</button>`
+        : '<span class="badge past">未連携</span>'}</td>
       <td>${actionCell}</td>
     </tr>`;
   }).join('') || '<tr><td colspan="12" style="color:var(--muted)">予約はまだありません</td></tr>';
@@ -537,6 +551,38 @@ async function sendRemindersNow() {
     el.textContent = '送信に失敗しました。';
   }
   setTimeout(() => { el.textContent = ''; }, 6000);
+}
+
+const DEFAULT_LINE_TEMPLATE = '明日はご来訪日です。スムーズなご案内のため、下記より宿泊者名簿のご記入（チェックイン手続き）をお願いいたします。\n{checkinUrl}';
+
+function loadLineTemplate() {
+  const el = document.getElementById('line-template-text');
+  if (!el) return;
+  el.value = state.lineTemplate?.text ?? DEFAULT_LINE_TEMPLATE;
+}
+
+async function saveLineTemplate() {
+  const text = document.getElementById('line-template-text').value;
+  const r = await apiPost({ action: 'set-line-template', text });
+  const msg = document.getElementById('line-template-msg');
+  if (r.ok) {
+    state.lineTemplate = { text };
+    msg.textContent = '保存しました';
+    msg.style.color = 'var(--green)';
+  } else {
+    msg.textContent = '保存に失敗しました';
+    msg.style.color = 'var(--danger)';
+  }
+  setTimeout(() => { msg.textContent = ''; }, 3000);
+}
+
+async function sendLineTest(idx) {
+  const r = await apiPost({ action: 'send-line-test', index: idx });
+  if (r.ok) {
+    alert('LINEを送信しました');
+  } else {
+    alert('送信に失敗しました: ' + (r.error || '不明なエラー'));
+  }
 }
 
 async function apiPostTo(url, body) {

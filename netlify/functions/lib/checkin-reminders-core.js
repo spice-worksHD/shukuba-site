@@ -49,9 +49,13 @@ async function sendReminderEmail(to, html) {
 
 // forceAll: when true, sends to every eligible booking checking in tomorrow
 // regardless of whether a reminder was already sent (used for manual resend).
+const DEFAULT_LINE_TEXT = '明日はご来訪日です。スムーズなご案内のため、下記より宿泊者名簿のご記入（チェックイン手続き）をお願いいたします。\n{checkinUrl}';
+
 export async function runCheckinReminders({ forceAll = false } = {}) {
   const store = getStore('shukuba-bookings');
   const bookings = (await store.get('bookings.json', { type: 'json' })) || [];
+  const lineTemplate = (await store.get('line-template.json', { type: 'json' })) || null;
+  const lineTextTemplate = lineTemplate?.text || DEFAULT_LINE_TEXT;
 
   const tomorrow = jstDateString(new Date(Date.now() + 24 * 60 * 60 * 1000));
   let changed = false;
@@ -73,8 +77,12 @@ export async function runCheckinReminders({ forceAll = false } = {}) {
     `);
 
     if (booking.lineUserId) {
-      await sendLinePush(booking.lineUserId,
-        `明日はご来訪日です。スムーズなご案内のため、下記より宿泊者名簿のご記入（チェックイン手続き）をお願いいたします。\n${checkinUrl}`);
+      const lineText = lineTextTemplate
+        .replace('{checkinUrl}', checkinUrl)
+        .replace('{roomName}', booking.roomName || '')
+        .replace('{checkin}', booking.checkin || '')
+        .replace('{name}', booking.name || '');
+      await sendLinePush(booking.lineUserId, lineText);
     }
 
     booking.reminderSentAt = new Date().toISOString();

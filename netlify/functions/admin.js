@@ -33,7 +33,8 @@ export default async (req) => {
     const pricingLive = (await store.get('pricing-live.json', { type: 'json' })) || DEFAULT_PRICING;
     const blocked = (await store.get('blocked.json', { type: 'json' })) || DEFAULT_BLOCKED;
     const payment = (await store.get('payment.json', { type: 'json' })) || DEFAULT_PAYMENT;
-    return new Response(JSON.stringify({ ok: true, bookings, pricing, pricingLive, blocked, payment }), {
+    const lineTemplate = (await store.get('line-template.json', { type: 'json' })) || null;
+    return new Response(JSON.stringify({ ok: true, bookings, pricing, pricingLive, blocked, payment, lineTemplate }), {
       status: 200,
       headers: { 'Content-Type': 'application/json' },
     });
@@ -172,6 +173,53 @@ export default async (req) => {
       bookings.splice(idx, 1);
       await store.setJSON('bookings.json', bookings);
       return new Response(JSON.stringify({ ok: true, bookings }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+
+    if (data.action === 'set-line-template') {
+      const text = typeof data.text === 'string' ? data.text : '';
+      await store.setJSON('line-template.json', { text });
+      return new Response(JSON.stringify({ ok: true, lineTemplate: { text } }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+
+    if (data.action === 'send-line-test') {
+      const bookings = (await store.get('bookings.json', { type: 'json' })) || [];
+      const idx = Number(data.index);
+      if (!(idx >= 0 && idx < bookings.length)) {
+        return new Response(JSON.stringify({ ok: false, error: 'not_found' }), { status: 404 });
+      }
+      const booking = bookings[idx];
+      if (!booking.lineUserId) {
+        return new Response(JSON.stringify({ ok: false, error: 'no_line_user' }), { status: 400 });
+      }
+      const accessToken = process.env.LINE_CHANNEL_ACCESS_TOKEN;
+      if (!accessToken) {
+        return new Response(JSON.stringify({ ok: false, error: 'no_access_token' }), { status: 500 });
+      }
+      const siteUrl = process.env.SITE_URL || 'https://shukuba-shiga.com';
+      const checkinUrl = `${siteUrl}/.netlify/functions/checkin?id=${encodeURIComponent(booking.id)}&token=${encodeURIComponent(booking.checkinToken)}`;
+      const lineTemplate = (await store.get('line-template.json', { type: 'json' })) || null;
+      const DEFAULT_LINE_TEXT = '明日はご来訪日です。スムーズなご案内のため、下記より宿泊者名簿のご記入（チェックイン手続き）をお願いいたします。\n{checkinUrl}';
+      const text = (lineTemplate?.text || DEFAULT_LINE_TEXT)
+        .replace('{checkinUrl}', checkinUrl)
+        .replace('{roomName}', booking.roomName || '')
+        .replace('{checkin}', booking.checkin || '')
+        .replace('{name}', booking.name || '');
+      const res = await fetch('https://api.line.me/v2/bot/message/push', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` },
+        body: JSON.stringify({ to: booking.lineUserId, messages: [{ type: 'text', text }] }),
+      });
+      if (!res.ok) {
+        const errText = await res.text();
+        return new Response(JSON.stringify({ ok: false, error: `LINE API: ${errText}` }), { status: 500 });
+      }
+      return new Response(JSON.stringify({ ok: true }), {
         status: 200,
         headers: { 'Content-Type': 'application/json' },
       });

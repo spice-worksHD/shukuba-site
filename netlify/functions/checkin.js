@@ -27,9 +27,9 @@ const THEME = `
   .divider{border:none;border-top:1px solid var(--border);margin:22px 0;}
   .pp-card{border:2px solid var(--susuki);border-radius:8px;padding:14px;margin-top:10px;background:#f5faf8;}
   .pp-card h4{margin:0 0 6px;font-size:13px;font-weight:700;color:var(--reed);}
-  .file-wrap{display:flex;align-items:center;gap:10px;margin-top:6px;}
-  .file-wrap input[type=file]{flex:1;font-size:13px;color:var(--reed);}
-  .pp-thumb{width:80px;height:60px;object-fit:cover;border-radius:5px;border:1px solid var(--border);flex-shrink:0;display:none;}
+  .pp-pick{position:relative;display:block;width:100%;padding:15px 14px;background:#eef6f3;border:2px dashed var(--susuki);border-radius:8px;font-size:14px;font-weight:600;color:var(--reed);text-align:center;cursor:pointer;margin-top:8px;-webkit-tap-highlight-color:transparent;}
+  .pp-pick input[type=file]{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;}
+  .pp-thumb{display:block;width:100%;max-height:160px;object-fit:contain;border-radius:6px;border:1px solid var(--border);margin-top:8px;display:none;}
   .pp-none{font-size:12px;color:var(--muted);padding:10px 0;}
   .lang-sw{text-align:right;font-size:12px;margin-bottom:10px;}
   .lang-sw a{color:var(--susuki);}
@@ -136,7 +136,7 @@ function renderForm({ booking, error, values:v={}, lang, checkinUrl }) {
     const cNat = cv.nationality||'';
     const cIsJP = isJP(cNat);
     compHtml += `<div class="card" id="c-card-${i}">
-      <h4>${T.roleComp(i+1)}</h4>
+      <h4>${T.roleComp(i)}</h4>
       <label>${esc(T.cName)} <span class="req">*</span></label>
       <input type="text" name="c_name_${i}" value="${esc(cv.name||'')}" autocomplete="name">
       <label>${esc(T.cNat)}</label>
@@ -158,13 +158,13 @@ function renderForm({ booking, error, values:v={}, lang, checkinUrl }) {
   function ppSlot(slotId, defaultLabel, defaultDisplay, defaultName) {
     return `<div class="pp-card" id="pp-slot-${slotId}" style="display:${defaultDisplay}">
       <h4 id="pp-label-${slotId}">${defaultLabel}${esc(T.ppOf)}</h4>
-      <p class="hint" style="margin:0 0 8px">${T.ppBtnHint}</p>
-      <div class="file-wrap">
+      <label class="pp-pick">
+        📷 ${esc(T.ppBtnHint)}
         <input type="file" name="${defaultName}" id="pp-file-${slotId}"
-          accept="image/*" capture="environment"
+          accept="image/*"
           onchange="onPPFile(this,'${slotId}')">
-        <img class="pp-thumb" id="pp-thumb-${slotId}">
-      </div>
+      </label>
+      <img class="pp-thumb" id="pp-thumb-${slotId}">
     </div>`;
   }
 
@@ -173,14 +173,14 @@ function renderForm({ booking, error, values:v={}, lang, checkinUrl }) {
     const cv=(v.companions||[])[i]||{};
     const cNat=cv.nationality||'';
     const display=isJP(cNat)?'none':'block';
-    const label=esc((cv.name||'').trim()||T.roleComp(i+1));
+    const label=esc((cv.name||'').trim()||T.roleComp(i));
     ppHtml += ppSlot(`c${i}`, label, display, `passport_photo_c${i}`);
   }
   const anyNonJP = !mainIsJP || (v.companions||[]).some(c=>!isJP(c.nationality||''));
 
   // Inline JS — only show/hide logic, no DOM creation
   const jsRoleMain = JSON.stringify(T.roleMain);
-  const jsRoleComp = JSON.stringify(Array.from({length:cc},(_,i)=>T.roleComp(i+1)));
+  const jsRoleComp = JSON.stringify(Array.from({length:cc},(_,i)=>T.roleComp(i)));
   const jsPPOf = JSON.stringify(T.ppOf);
   const jsErrCName = JSON.stringify(Array.from({length:cc},(_,i)=>T.errCName(i)));
   const jsAlertPhoto = JSON.stringify(T.errPhoto(99,0));
@@ -203,8 +203,8 @@ function renderForm({ booking, error, values:v={}, lang, checkinUrl }) {
     <label>${esc(T.fName)} <span class="req">*</span></label>
     <input type="text" name="name" id="main-name" value="${esc(v.name??booking.name??'')}" autocomplete="name" oninput="onMainName(this.value)">
 
-    <label>${esc(T.fKana)} <span class="req">*</span></label>
-    <input type="text" name="nameKana" value="${esc(v.nameKana??'')}" autocomplete="off">
+    ${lang==='ja'?`<label>${esc(T.fKana)} <span class="req">*</span></label>
+    <input type="text" name="nameKana" value="${esc(v.nameKana??'')}" autocomplete="off">`:'<input type="hidden" name="nameKana" value="">'}
 
     <label>${esc(T.fAddr)} <span class="req">*</span></label>
     <input type="text" name="address" placeholder="${esc(T.fAddrP)}" value="${esc(v.address??'')}" autocomplete="street-address">
@@ -397,7 +397,7 @@ export default async (req) => {
   const f=fields;
   const errors=[];
   if(!f.name.trim()) errors.push(T.errName);
-  if(!f.nameKana.trim()) errors.push(T.errKana);
+  if(eLang==='ja'&&!f.nameKana.trim()) errors.push(T.errKana);
   if(!f.address.trim()) errors.push(T.errAddr);
   if(!f.occupation.trim()) errors.push(T.errJob);
   if(!isJP(f.nationality)&&!f.passportNumber.trim()) errors.push(T.errPPNum);

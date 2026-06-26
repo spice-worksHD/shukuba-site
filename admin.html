@@ -83,8 +83,14 @@
   .small-btn:hover { background: var(--gold); }
   #ledger-filter-group .small-btn { background: #fff; color: var(--muted); border: 1px solid var(--border); }
   #ledger-filter-group .small-btn.active { background: var(--gold); color: #fff; border-color: var(--gold); }
+  .mini-btn { background: #5a7a72; color: #fff; border: none; border-radius: 3px; padding: 2px 7px; font-size: 11px; cursor: pointer; white-space: nowrap; line-height: 1.6; }
+  .mini-btn:hover { background: var(--dark); }
+  .mini-btn.danger-btn { background: var(--danger); }
+  .mini-btn.gold-btn { background: var(--gold); }
   .danger-btn { background: var(--danger); }
   .danger-btn:hover { background: #a3463a; }
+  #bookings-table th, #bookings-table td { padding: 5px 7px; vertical-align: middle; font-size: 12px; }
+  #bookings-table th { font-size: 11px; }
   .save-row { text-align: right; }
   .badge { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 11px; }
   .badge.future { background: #e2f0ec; color: var(--gold); }
@@ -142,6 +148,7 @@
   <!-- Reservations -->
   <div class="panel active" id="panel-reservations">
     <div class="stats-grid" id="stats-grid"></div>
+    <div id="monthly-sales" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px"></div>
     <div class="card">
       <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:12px">
         <h3>予約一覧</h3>
@@ -174,8 +181,8 @@
       <table id="bookings-table">
         <thead>
           <tr>
-            <th>予約日時</th><th>物件</th><th>チェックイン</th><th>チェックアウト</th>
-            <th>人数</th><th>氏名</th><th>連絡先</th><th>金額</th><th>状態</th><th>チェックイン手続き</th><th>LINE連携</th><th></th>
+            <th>予約日時</th><th>物件</th><th>IN</th><th>OUT</th>
+            <th>名</th><th>氏名</th><th>連絡先</th><th>金額</th><th>状態</th><th>状況</th><th>操作</th>
           </tr>
         </thead>
         <tbody></tbody>
@@ -205,6 +212,18 @@
       <div style="display:flex;gap:8px;margin-top:8px;align-items:center">
         <button class="btn" onclick="saveLineTemplate()">保存</button>
         <span id="line-template-msg" class="msg"></span>
+      </div>
+    </div>
+    <div class="card">
+      <h3 style="margin-bottom:10px">チェックアウト後サンクスメッセージ</h3>
+      <p style="font-size:12px;color:var(--muted);margin-bottom:8px">
+        使用できる変数: <code>{name}</code>（氏名）　<code>{roomName}</code>　<code>{checkout}</code>（チェックアウト日）<br>
+        予約一覧の「✉退出」ボタンから手動送信します（LINE連携済み・コード送信済みの過去予約が対象）。
+      </p>
+      <textarea id="checkout-template-text" rows="5" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:4px;font-size:13px;font-family:inherit;resize:vertical"></textarea>
+      <div style="display:flex;gap:8px;margin-top:8px;align-items:center">
+        <button class="btn" onclick="saveCheckoutTemplate()">保存</button>
+        <span id="checkout-template-msg" class="msg"></span>
       </div>
     </div>
     <div class="card">
@@ -343,7 +362,7 @@ let adminKey = '';
 const DEFAULT_PAYMENT = {
   methods: { credit: true, paypay: true },
 };
-let state = { bookings: [], pricing: {}, pricingLive: {}, blocked: {}, payment: DEFAULT_PAYMENT, lineTemplate: null };
+let state = { bookings: [], pricing: {}, pricingLive: {}, blocked: {}, payment: DEFAULT_PAYMENT, lineTemplate: null, checkoutTemplate: null };
 
 async function tryLogin(key) {
   const res = await fetch('/.netlify/functions/admin', { headers: { 'x-admin-key': key } });
@@ -410,12 +429,14 @@ function showTab(name) {
 
 function renderAll() {
   renderStats();
+  renderMonthlySales();
   renderBookings();
   renderLedger();
   renderGrid();
   renderPayment();
   renderTestPanel();
   loadLineTemplate();
+  loadCheckoutTemplate();
 }
 
 // ===== RESERVATIONS =====
@@ -515,31 +536,89 @@ function renderBookings() {
     const isCancelled = b.status === 'cancelled';
     const statusLabel = isCancelled ? 'キャンセル' : (isFuture ? '予定' : '完了');
     const statusClass = isCancelled ? 'cancelled' : (isFuture ? 'future' : 'past');
-    const actionCell = isCancelled
-      ? `<span style="font-size:11px;color:var(--muted)">${b.cancelledAt ? new Date(b.cancelledAt).toLocaleString('ja-JP') : ''}</span>`
-      : `<button class="small-btn danger-btn" onclick="cancelBooking(${b._idx})">取消</button>`;
+
+    const statusCell = `
+      <span class="badge ${b.checkedIn ? 'future' : 'past'}" style="display:block;margin-bottom:2px">${b.checkedIn ? '台帳済' : '台帳未'}</span>
+      <span class="badge ${b.lineUserId ? 'future' : 'past'}" style="display:block;margin-bottom:2px">${b.lineUserId ? 'LINE済' : 'LINE未'}</span>
+      ${b.doorCodeSent ? '<span class="badge future" style="display:block">鍵送信済</span>' : ''}
+    `;
+
+    const actionBtns = isCancelled
+      ? `<span style="font-size:10px;color:var(--muted)">${b.cancelledAt ? new Date(b.cancelledAt).toLocaleString('ja-JP') : 'キャンセル済'}</span>`
+      : `<div style="display:flex;gap:3px;flex-wrap:wrap;justify-content:flex-end">
+          <button class="mini-btn danger-btn" onclick="cancelBooking(${b._idx})">取消</button>
+          ${b.lineUserId ? `<button class="mini-btn" onclick="sendLineTest(${b._idx})" title="LINEテスト送信">LINE</button>` : ''}
+          ${b.checkedIn && b.lineUserId && !b.doorCodeSent
+            ? `<button class="mini-btn gold-btn" onclick="confirmCheckin(${b._idx})" title="パスポート確認済・ドアコード送信">🔑送信</button>`
+            : ''}
+          ${b.checkedIn && b.lineUserId && b.doorCodeSent && !b.checkoutThanksSent && !isFuture
+            ? `<button class="mini-btn" style="background:#5a5a8a" onclick="sendCheckoutThanks(${b._idx})" title="チェックアウトサンクス送信">✉退出</button>`
+            : ''}
+        </div>`;
+
     return `<tr class="${isCancelled ? 'cancelled-row' : ''}">
-      <td>${new Date(b.createdAt).toLocaleString('ja-JP')}</td>
-      <td>${roomLabels[String(b.room)] || b.roomName || b.room}</td>
-      <td>${b.checkin}</td>
-      <td>${b.checkout}</td>
-      <td>${b.guests || '-'}</td>
+      <td style="font-size:11px;white-space:nowrap">${new Date(b.createdAt).toLocaleString('ja-JP',{month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'})}</td>
+      <td style="font-size:11px">${roomLabels[String(b.room)] || b.roomName || b.room}</td>
+      <td style="white-space:nowrap">${b.checkin}</td>
+      <td style="white-space:nowrap">${b.checkout}</td>
+      <td style="text-align:center">${b.guests || '-'}</td>
       <td>${b.name}</td>
-      <td>${b.email}<br>${b.phone || ''}</td>
-      <td>¥${(b.total || 0).toLocaleString()}</td>
+      <td style="font-size:11px">${b.email}<br><span style="color:var(--muted)">${b.phone || ''}</span></td>
+      <td style="white-space:nowrap">¥${(b.total || 0).toLocaleString()}</td>
       <td><span class="badge ${statusClass}">${statusLabel}</span></td>
-      <td>${b.checkedIn ? '<span class="badge future">済</span>' : '<span class="badge past">未</span>'}</td>
-      <td>
-        ${b.lineUserId
-          ? `<span class="badge future">連携済</span><br><button class="small-btn" style="margin-top:4px" onclick="sendLineTest(${b._idx})">テスト送信</button>`
-          : '<span class="badge past">未連携</span>'}
-        ${b.checkedIn && b.lineUserId && !b.doorCodeSent
-          ? `<br><button class="small-btn" style="margin-top:4px;background:var(--gold);color:#fff;border-color:var(--gold)" onclick="confirmCheckin(${b._idx})">✓パスポート確認<br>ドアコード送信</button>`
-          : b.doorCodeSent ? '<br><span style="font-size:10px;color:var(--green)">✓コード送信済</span>' : ''}
-      </td>
-      <td>${actionCell}</td>
+      <td style="min-width:64px">${statusCell}</td>
+      <td style="text-align:right">${actionBtns}</td>
     </tr>`;
-  }).join('') || '<tr><td colspan="12" style="color:var(--muted)">予約はまだありません</td></tr>';
+  }).join('') || '<tr><td colspan="11" style="color:var(--muted)">予約はまだありません</td></tr>';
+}
+
+function renderMonthlySales() {
+  const el = document.getElementById('monthly-sales');
+  if (!el) return;
+  const now = new Date();
+  const fromVal = document.getElementById('filter-from')?.value || '';
+  const months = [0, 1, 2].map(offset => {
+    const d = new Date(now.getFullYear(), now.getMonth() + offset, 1);
+    const start = fmtDateAdmin(d);
+    const nextD = new Date(d.getFullYear(), d.getMonth() + 1, 1);
+    const end = fmtDateAdmin(new Date(nextD.getTime() - 86400000));
+    const revenue = state.bookings
+      .filter(b => b.status !== 'cancelled' && b.checkin >= start && b.checkin <= end)
+      .reduce((s, b) => s + (b.total || 0), 0);
+    const label = ['今月','来月','再来月'][offset];
+    return { start, end, revenue, label, m: d.getMonth()+1 };
+  });
+  el.innerHTML = months.map(m => {
+    const isActive = fromVal === m.start;
+    return `<button onclick="filterByMonth('${m.start}','${m.end}')"
+      style="padding:10px 16px;border:2px solid ${isActive ? 'var(--gold)' : 'var(--border)'};border-radius:8px;
+      background:${isActive ? 'var(--gold)' : '#fff'};color:${isActive ? '#fff' : 'var(--ink)'};cursor:pointer;text-align:left;min-width:110px">
+      <div style="font-size:11px;color:${isActive ? 'rgba(255,255,255,0.8)' : 'var(--muted)'};">${m.label}（${m.m}月）</div>
+      <div style="font-size:17px;font-weight:bold;margin-top:3px">¥${m.revenue.toLocaleString()}</div>
+    </button>`;
+  }).join('') + `<button onclick="clearBookingFilters()"
+    style="padding:10px 14px;border:1px solid var(--border);border-radius:8px;background:#fff;cursor:pointer;font-size:12px;color:var(--muted);align-self:center">
+    フィルター解除
+  </button>`;
+}
+
+function filterByMonth(start, end) {
+  document.getElementById('filter-from').value = start;
+  document.getElementById('filter-to').value = end;
+  renderBookings();
+  renderMonthlySales();
+}
+
+async function sendCheckoutThanks(idx) {
+  if (!confirm('チェックアウトのお礼メッセージをLINEで送信しますか？')) return;
+  const r = await apiPost({ action: 'send-checkout-thanks', index: idx });
+  if (r.ok) {
+    state.bookings = r.bookings;
+    renderStats(); renderBookings(); renderMonthlySales();
+    alert('サンクスメッセージを送信しました。');
+  } else {
+    alert('送信に失敗しました: ' + (r.error || ''));
+  }
 }
 
 async function cancelBooking(idx) {
@@ -721,6 +800,27 @@ function exportLedgerCSV() {
   a.href = url; a.download = `shukuba-ledger_${new Date().toISOString().slice(0,10)}.csv`;
   document.body.appendChild(a); a.click(); document.body.removeChild(a);
   URL.revokeObjectURL(url);
+}
+
+const DEFAULT_CHECKOUT_TEMPLATE = '{name}様、ご滞在ありがとうございました。またのお越しをお待ちしております。もしよろしければ、ご感想をGoogleマップのクチコミとしてお寄せいただけると大変嬉しいです。';
+
+function loadCheckoutTemplate() {
+  const el = document.getElementById('checkout-template-text');
+  if (!el) return;
+  el.value = state.checkoutTemplate?.text ?? DEFAULT_CHECKOUT_TEMPLATE;
+}
+
+async function saveCheckoutTemplate() {
+  const text = document.getElementById('checkout-template-text').value;
+  const r = await apiPost({ action: 'set-checkout-template', text });
+  const msg = document.getElementById('checkout-template-msg');
+  if (r.ok) {
+    state.checkoutTemplate = { text };
+    msg.textContent = '保存しました'; msg.style.color = 'var(--green)';
+  } else {
+    msg.textContent = '保存に失敗しました'; msg.style.color = 'var(--danger)';
+  }
+  setTimeout(() => { msg.textContent = ''; }, 3000);
 }
 
 const DEFAULT_LINE_TEMPLATE = '明日はご来訪日です。スムーズなご案内のため、下記より宿泊者名簿のご記入（チェックイン手続き）をお願いいたします。\n{checkinUrl}';

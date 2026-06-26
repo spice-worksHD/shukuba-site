@@ -34,7 +34,8 @@ export default async (req) => {
     const blocked = (await store.get('blocked.json', { type: 'json' })) || DEFAULT_BLOCKED;
     const payment = (await store.get('payment.json', { type: 'json' })) || DEFAULT_PAYMENT;
     const lineTemplate = (await store.get('line-template.json', { type: 'json' })) || null;
-    return new Response(JSON.stringify({ ok: true, bookings, pricing, pricingLive, blocked, payment, lineTemplate }), {
+    const checkoutTemplate = (await store.get('checkout-template.json', { type: 'json' })) || null;
+    return new Response(JSON.stringify({ ok: true, bookings, pricing, pricingLive, blocked, payment, lineTemplate, checkoutTemplate }), {
       status: 200,
       headers: { 'Content-Type': 'application/json' },
     });
@@ -214,6 +215,55 @@ export default async (req) => {
       return new Response(JSON.stringify({ ok: true, bookings }), {
         status: 200,
         headers: { 'Content-Type': 'application/json' },
+      });
+    }
+
+    if (data.action === 'set-checkout-template') {
+      const text = typeof data.text === 'string' ? data.text : '';
+      await store.setJSON('checkout-template.json', { text });
+      return new Response(JSON.stringify({ ok: true, checkoutTemplate: { text } }), {
+        status: 200, headers: { 'Content-Type': 'application/json' },
+      });
+    }
+
+    if (data.action === 'send-checkout-thanks') {
+      const bookings = (await store.get('bookings.json', { type: 'json' })) || [];
+      const idx = Number(data.index);
+      if (!(idx >= 0 && idx < bookings.length)) {
+        return new Response(JSON.stringify({ ok: false, error: 'not_found' }), { status: 404 });
+      }
+      const booking = bookings[idx];
+      if (!booking.lineUserId) {
+        return new Response(JSON.stringify({ ok: false, error: 'no_line_user' }), { status: 400 });
+      }
+      const accessToken = process.env.LINE_CHANNEL_ACCESS_TOKEN;
+      if (!accessToken) {
+        return new Response(JSON.stringify({ ok: false, error: 'no_access_token' }), { status: 500 });
+      }
+      const checkoutTemplate = (await store.get('checkout-template.json', { type: 'json' })) || null;
+      const DEFAULT_CHECKOUT_TEXT = '{name}様、ご滞在ありがとうございました。またのお越しをお待ちしております。';
+      const text = (checkoutTemplate?.text || DEFAULT_CHECKOUT_TEXT)
+        .replace('{name}', booking.name || '')
+        .replace('{roomName}', booking.roomName || '')
+        .replace('{checkout}', booking.checkout || '');
+      const res = await fetch('https://api.line.me/v2/bot/message/push', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` },
+        body: JSON.stringify({ to: booking.lineUserId, messages: [{ type: 'text', text }] }),
+      });
+      if (!res.ok) {
+        const errText = await res.text();
+        return new Response(JSON.stringify({ ok: false, error: `LINE API: ${errText}` }), { status: 500 });
+      }
+      const now = new Date().toISOString();
+      booking.checkoutThanksSent = true;
+      booking.checkoutThanksSentAt = now;
+      booking.history = Array.isArray(booking.history) ? booking.history : [];
+      booking.history.push({ event: 'checkout-thanks-sent', at: now, by: 'admin' });
+      bookings[idx] = booking;
+      await store.setJSON('bookings.json', bookings);
+      return new Response(JSON.stringify({ ok: true, bookings }), {
+        status: 200, headers: { 'Content-Type': 'application/json' },
       });
     }
 

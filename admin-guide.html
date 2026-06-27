@@ -1,0 +1,603 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SHUKUBA | 管理画面 操作マニュアル</title>
+<style>
+  :root {
+    --ink: #2B2118;
+    --paper: #F4EEE2;
+    --warm: #3D5A52;
+    --gold: #8A6E4B;
+    --dark: #211A14;
+    --muted: #6B7770;
+    --border: #DCD0B8;
+    --green: #3D5A52;
+    --danger: #C14C32;
+    --blue: #3a6b8a;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Zen Kaku Gothic New', 'Hiragino Sans', 'Yu Gothic', sans-serif;
+    background: var(--paper);
+    color: var(--ink);
+    font-size: 14px;
+    line-height: 1.8;
+  }
+
+  /* ヘッダー */
+  .site-header {
+    background: var(--dark);
+    color: var(--paper);
+    padding: 16px 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  .site-header .brand { font-size: 16px; letter-spacing: 3px; }
+  .site-header .title { font-size: 12px; opacity: .65; margin-top: 2px; }
+  .site-header a { color: var(--paper); opacity: .7; font-size: 12px; text-decoration: none; }
+  .site-header a:hover { opacity: 1; }
+
+  /* レイアウト */
+  .layout { display: flex; max-width: 1100px; margin: 0 auto; min-height: calc(100vh - 60px); }
+
+  /* サイドナビ */
+  .sidenav {
+    width: 220px;
+    flex-shrink: 0;
+    background: #fff;
+    border-right: 1px solid var(--border);
+    padding: 24px 0;
+    position: sticky;
+    top: 60px;
+    height: calc(100vh - 60px);
+    overflow-y: auto;
+  }
+  .sidenav-section { padding: 0 16px; margin-bottom: 20px; }
+  .sidenav-section h4 { font-size: 10px; letter-spacing: 2px; color: var(--muted); text-transform: uppercase; margin-bottom: 6px; padding-bottom: 4px; border-bottom: 1px solid var(--border); }
+  .sidenav a { display: block; font-size: 13px; color: var(--ink); text-decoration: none; padding: 5px 8px; border-radius: 4px; transition: background .15s; }
+  .sidenav a:hover { background: var(--paper); color: var(--gold); }
+  .sidenav a.active { background: var(--paper); color: var(--gold); font-weight: bold; }
+  .sidenav a.sub { padding-left: 18px; font-size: 12px; color: var(--muted); }
+  .sidenav a.sub:hover { color: var(--gold); }
+
+  /* メインコンテンツ */
+  .main { flex: 1; padding: 32px 40px; max-width: 820px; }
+
+  /* セクション */
+  .section { margin-bottom: 56px; scroll-margin-top: 80px; }
+  .section-label { display: inline-block; font-size: 10px; letter-spacing: 2px; color: var(--gold); background: #f5ede0; padding: 2px 10px; border-radius: 10px; margin-bottom: 10px; }
+  h1.page-title { font-size: 24px; letter-spacing: 1px; margin-bottom: 6px; color: var(--dark); }
+  h2.sec-title { font-size: 18px; letter-spacing: 1px; margin-bottom: 16px; color: var(--dark); padding-bottom: 8px; border-bottom: 2px solid var(--gold); }
+  h3.sub-title { font-size: 14px; font-weight: bold; color: var(--dark); margin: 20px 0 8px; }
+
+  /* リード */
+  .lead { color: var(--muted); font-size: 13px; margin-bottom: 24px; }
+
+  /* カード */
+  .card { background: #fff; border: 1px solid var(--border); border-radius: 8px; padding: 18px 20px; margin-bottom: 16px; }
+  .card.warn { border-left: 4px solid var(--danger); }
+  .card.tip { border-left: 4px solid var(--green); }
+  .card.info { border-left: 4px solid var(--blue); }
+  .card-label { font-size: 11px; font-weight: bold; letter-spacing: 1px; margin-bottom: 6px; }
+  .card-label.warn { color: var(--danger); }
+  .card-label.tip { color: var(--green); }
+  .card-label.info { color: var(--blue); }
+
+  /* ステップ */
+  .steps { list-style: none; counter-reset: step; }
+  .steps li { counter-increment: step; display: flex; gap: 14px; margin-bottom: 14px; align-items: flex-start; }
+  .steps li::before {
+    content: counter(step);
+    flex-shrink: 0;
+    width: 26px; height: 26px;
+    background: var(--gold); color: #fff;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px; font-weight: bold;
+    margin-top: 1px;
+  }
+
+  /* バッジ */
+  .badge { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 11px; vertical-align: middle; }
+  .badge.green { background: #e2f0ec; color: #2e7d5e; }
+  .badge.grey { background: #eee; color: var(--muted); }
+  .badge.red { background: #fbe9e7; color: #b8584f; }
+  .badge.yellow { background: #fff3cd; color: #856404; }
+  .badge.blue { background: #e3edf6; color: #2c5f82; }
+
+  /* ボタン見本 */
+  .btn-sample { display: inline-block; padding: 4px 10px; border-radius: 4px; font-size: 12px; vertical-align: middle; font-weight: bold; }
+  .btn-sample.gold { background: var(--gold); color: #fff; }
+  .btn-sample.red { background: var(--danger); color: #fff; }
+  .btn-sample.green { background: var(--green); color: #fff; }
+  .btn-sample.blue { background: var(--blue); color: #fff; }
+  .btn-sample.purple { background: #5a5a8a; color: #fff; }
+  .btn-sample.dark-blue { background: #3a6b8a; color: #fff; }
+  .btn-sample.outline { background: #fff; color: var(--ink); border: 1px solid var(--border); }
+
+  /* フロー */
+  .flow { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; margin: 12px 0; }
+  .flow-item { background: #fff; border: 1px solid var(--border); border-radius: 6px; padding: 6px 12px; font-size: 13px; }
+  .flow-arrow { color: var(--gold); font-size: 16px; }
+
+  /* テーブル */
+  table.guide-table { width: 100%; border-collapse: collapse; font-size: 13px; margin: 12px 0; }
+  table.guide-table th, table.guide-table td { border: 1px solid var(--border); padding: 8px 12px; text-align: left; }
+  table.guide-table th { background: var(--paper); color: var(--muted); font-weight: normal; }
+
+  /* 区切り */
+  .divider { border: none; border-top: 1px solid var(--border); margin: 32px 0; }
+
+  /* 更新ログ */
+  .update-log { font-size: 12px; color: var(--muted); }
+  .update-log li { margin-bottom: 4px; }
+
+  /* スマホ */
+  @media (max-width: 700px) {
+    .sidenav { display: none; }
+    .main { padding: 20px 16px; }
+    h1.page-title { font-size: 19px; }
+    h2.sec-title { font-size: 16px; }
+    .flow { flex-direction: column; align-items: flex-start; }
+    .flow-arrow { transform: rotate(90deg); }
+  }
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div>
+    <div class="brand">SHUKUBA</div>
+    <div class="title">管理画面 操作マニュアル</div>
+  </div>
+  <a href="admin.html">← 管理画面へ戻る</a>
+</header>
+
+<div class="layout">
+
+  <!-- サイドナビ -->
+  <nav class="sidenav">
+    <div class="sidenav-section">
+      <h4>はじめに</h4>
+      <a href="#overview">画面の全体構成</a>
+      <a href="#login">ログイン・ログアウト</a>
+    </div>
+    <div class="sidenav-section">
+      <h4>予約履歴・サマリー</h4>
+      <a href="#stats">サマリー数値の見方</a>
+      <a href="#monthly">月次売上フィルター</a>
+      <a href="#booking-list">予約一覧の操作</a>
+      <a href="#booking-actions" class="sub">各ボタンの役割</a>
+      <a href="#csv" class="sub">CSVダウンロード</a>
+    </div>
+    <div class="sidenav-section">
+      <h4>宿泊台帳</h4>
+      <a href="#ledger-table">台帳一覧の見方</a>
+      <a href="#ledger-print">印刷プレビュー</a>
+      <a href="#reminder">リマインダー送信</a>
+      <a href="#auto-checkout">自動チェックアウト</a>
+      <a href="#templates">メッセージテンプレート</a>
+    </div>
+    <div class="sidenav-section">
+      <h4>料金・在庫カレンダー</h4>
+      <a href="#calendar-nav">カレンダーの操作</a>
+      <a href="#blocked">売止・販売中の切り替え</a>
+      <a href="#price-override">日別特別料金</a>
+      <a href="#base-pricing">基本料金・定員設定</a>
+      <a href="#publish">本番サイトへ反映</a>
+    </div>
+    <div class="sidenav-section">
+      <h4>決済設定</h4>
+      <a href="#payment">決済方法の設定</a>
+    </div>
+    <div class="sidenav-section">
+      <h4>運用フロー</h4>
+      <a href="#flow-checkin">チェックインの流れ</a>
+      <a href="#flow-checkout">チェックアウトの流れ</a>
+    </div>
+  </nav>
+
+  <!-- メインコンテンツ -->
+  <main class="main">
+
+    <div class="section" id="top">
+      <span class="section-label">MANUAL</span>
+      <h1 class="page-title">SHUKUBA 管理画面<br>操作マニュアル</h1>
+      <p class="lead">このページは管理画面の使い方を説明する手順書です。機能が追加・変更されるたびに更新します。</p>
+      <div class="card info">
+        <div class="card-label info">対象読者</div>
+        SHUKUBA（滋賀県古民家民泊）の宿泊管理を担当するオーナー・スタッフ向けです。
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- ======== 全体構成 ======== -->
+    <div class="section" id="overview">
+      <h2 class="sec-title">画面の全体構成</h2>
+      <p>管理画面は上部のタブで5つのセクションに分かれています。</p>
+      <table class="guide-table" style="margin-top:16px">
+        <tr><th>タブ名</th><th>主な用途</th></tr>
+        <tr><td><strong>予約履歴・サマリー</strong></td><td>今日の到着・出発状況の確認、予約一覧の操作（取消・LINE・チェックイン・チェックアウト）</td></tr>
+        <tr><td><strong>宿泊台帳</strong></td><td>旅館業法対応の台帳確認、印刷プレビュー、リマインダー送信</td></tr>
+        <tr><td><strong>料金・在庫カレンダー</strong></td><td>日別の空室管理、料金設定、本番サイトへの反映</td></tr>
+        <tr><td><strong>決済設定</strong></td><td>クレジットカード・PayPayなど受付する決済方法の選択</td></tr>
+        <tr><td><strong>🧪 テストデータ</strong></td><td>開発用テスト予約の作成・削除（本番公開前に削除予定）</td></tr>
+      </table>
+    </div>
+
+    <!-- ======== ログイン ======== -->
+    <div class="section" id="login">
+      <h2 class="sec-title">ログイン・ログアウト</h2>
+      <ol class="steps">
+        <li>管理画面URL（<code>https://shukuba-shiga.com/admin.html</code>）を開く</li>
+        <li>管理パスワードを入力して「ログイン」を押す</li>
+        <li>セッションはブラウザを閉じるまで保持されます（再起動後は再ログインが必要）</li>
+      </ol>
+      <div class="card warn" style="margin-top:16px">
+        <div class="card-label warn">⚠ 注意</div>
+        パスワードを他者に共有しないこと。パブリックなWi-Fiでの使用は避けてください。ログアウトは画面右上の「ログアウト」ボタンから。
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- ======== サマリー ======== -->
+    <div class="section" id="stats">
+      <h2 class="sec-title">サマリー数値の見方</h2>
+      <p>「予約履歴・サマリー」タブ上部に6つの数値カードが表示されます。</p>
+      <table class="guide-table" style="margin-top:16px">
+        <tr><th>カード</th><th>内容</th></tr>
+        <tr><td><strong>今日到着</strong></td><td>本日チェックインの予約件数と氏名</td></tr>
+        <tr><td><strong>今日出発</strong></td><td>本日チェックアウトの件数</td></tr>
+        <tr><td><strong>宿泊中</strong></td><td>現在滞在中のゲスト数</td></tr>
+        <tr><td><strong>要確認</strong><br><span style="font-size:11px;color:var(--danger)">（赤枠で表示）</span></td><td>アクションが必要な予約。「未台帳・未コード送信あり」と表示される場合は、チェックインフォームの入力待ち または ドアコード未送信の状態</td></tr>
+        <tr><td><strong>今月売上</strong></td><td>当月に作成された（キャンセル除く）予約の合計金額</td></tr>
+        <tr><td><strong>今後の売上予定</strong></td><td>チェックイン日が未来の予約の合計金額</td></tr>
+      </table>
+    </div>
+
+    <!-- ======== 月次売上 ======== -->
+    <div class="section" id="monthly">
+      <h2 class="sec-title">月次売上フィルター</h2>
+      <p>「今月 / 来月 / 再来月」の売上ボタンをタップすると、その月のチェックイン予約だけに絞り込んで予約一覧を表示します。</p>
+      <ul style="margin:12px 0 0 20px;font-size:13px">
+        <li>ボタンをもう一度押すか「フィルター解除」で全件表示に戻る</li>
+        <li>金額はキャンセル済みを除いた合計</li>
+      </ul>
+    </div>
+
+    <!-- ======== 予約一覧 ======== -->
+    <div class="section" id="booking-list">
+      <h2 class="sec-title">予約一覧の操作</h2>
+
+      <h3 class="sub-title">絞り込み検索</h3>
+      <table class="guide-table">
+        <tr><th>フィルター</th><th>説明</th></tr>
+        <tr><td>氏名・メール検索</td><td>文字を入力すると即座に絞り込み</td></tr>
+        <tr><td>全施設</td><td>物件で絞り込み</td></tr>
+        <tr><td>全状態</td><td>予定（未チェックイン）・完了・キャンセルで絞り込み</td></tr>
+        <tr><td>日付（〜）</td><td>チェックイン日の範囲で絞り込み</td></tr>
+        <tr><td>クリア</td><td>すべてのフィルターを解除</td></tr>
+      </table>
+
+      <h3 class="sub-title" id="booking-actions">「状況」列のバッジについて</h3>
+      <p style="margin-bottom:8px">各予約行の「状況」列に以下のバッジが表示されます。</p>
+      <table class="guide-table">
+        <tr><th>バッジ</th><th>意味</th></tr>
+        <tr><td><span class="badge green">台帳済</span></td><td>ゲストがチェックインフォームの記入を完了している</td></tr>
+        <tr><td><span class="badge grey">台帳未</span></td><td>チェックインフォームがまだ未記入</td></tr>
+        <tr><td><span class="badge green">LINE済</span></td><td>ゲストがLINEを友だち追加・連携済み</td></tr>
+        <tr><td><span class="badge grey">LINE未</span></td><td>LINE未連携（LINEボタンが表示されない）</td></tr>
+        <tr><td><span class="badge blue">📷 1/1</span>（緑）</td><td>外国籍ゲストのパスポート写真が必要枚数揃っている</td></tr>
+        <tr><td><span class="badge red">📷 0/1</span>（赤）</td><td>パスポート写真が不足（ドアコード送信がブロックされる）</td></tr>
+        <tr><td><span class="badge green">鍵送信済</span></td><td>ドアロック番号をLINEで送信済み</td></tr>
+        <tr><td><span class="badge grey">退出済</span></td><td>チェックアウト処理完了</td></tr>
+      </table>
+
+      <h3 class="sub-title">「操作」列のボタンについて</h3>
+      <table class="guide-table">
+        <tr><th>ボタン</th><th>できること・条件</th></tr>
+        <tr>
+          <td><span class="btn-sample red">取消</span></td>
+          <td>予約をキャンセルにする。日程が再予約可能になる。履歴には「キャンセル」として残る。</td>
+        </tr>
+        <tr>
+          <td><span class="btn-sample green">LINE</span></td>
+          <td>LINE連携済みのゲストにテストメッセージを送る（LINE済バッジがある場合のみ表示）</td>
+        </tr>
+        <tr>
+          <td><span class="btn-sample blue">📷確認</span></td>
+          <td>アップロードされたパスポート写真を新しいタブで確認できる（写真がある場合のみ表示）</td>
+        </tr>
+        <tr>
+          <td><span class="btn-sample gold">🔑送信</span></td>
+          <td>パスポート確認後にドアロック番号をLINEで送信する。<br>条件: 台帳済 ＋ LINE済 ＋ ドアコード未送信。<br>外国籍ゲストがいる場合はパスポート写真が揃っていないとブロックされる。</td>
+        </tr>
+        <tr>
+          <td><span class="btn-sample dark-blue">退出確認</span></td>
+          <td>チェックアウト日が来た後に押す。LINE連携済みの場合、サンクスメッセージも同時送信。</td>
+        </tr>
+        <tr>
+          <td><span class="btn-sample purple">✉サンクス</span></td>
+          <td>退出済み後に手動でサンクスメッセージだけ送る（未送信の場合のみ表示）</td>
+        </tr>
+      </table>
+    </div>
+
+    <!-- ======== CSV ======== -->
+    <div class="section" id="csv">
+      <h2 class="sec-title">CSVダウンロード</h2>
+      <p>予約一覧右上の <span class="btn-sample gold">CSVダウンロード</span> を押すと、現在の絞り込み条件に関係なく全予約データをCSVで保存できます。Excelで開いて売上管理などに活用できます。</p>
+      <div class="card tip" style="margin-top:12px">
+        <div class="card-label tip">ヒント</div>
+        CSVにはBOM（文字化け防止）付きでエクスポートするため、Excelで開いても文字化けしません。
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- ======== 宿泊台帳 ======== -->
+    <div class="section" id="ledger-table">
+      <h2 class="sec-title">台帳一覧の見方</h2>
+      <p>「宿泊台帳」タブの上部に台帳の記入状況サマリー（本日・明日のチェックイン件数、記入済み数）が表示されます。</p>
+      <h3 class="sub-title">フィルターボタン</h3>
+      <table class="guide-table">
+        <tr><th>ボタン</th><th>内容</th></tr>
+        <tr><td>すべて</td><td>全予約を表示</td></tr>
+        <tr><td>未記入</td><td>チェックインフォームをまだ入力していないゲストのみ</td></tr>
+        <tr><td>記入済み</td><td>フォーム入力完了のゲストのみ</td></tr>
+      </table>
+      <p style="margin-top:12px">記入済みの行には「<span class="btn-sample outline">印刷</span>」ボタンが表示されます。</p>
+    </div>
+
+    <!-- ======== 印刷プレビュー ======== -->
+    <div class="section" id="ledger-print">
+      <h2 class="sec-title">印刷プレビュー</h2>
+      <ol class="steps">
+        <li>宿泊台帳一覧で「記入済み」の行の「印刷」ボタンを押す</li>
+        <li>新しいタブが開き、宿泊者名簿が表示される（自動で印刷ダイアログも開く）</li>
+        <li>内容を確認し、プリンターで印刷する（旅館業法上の保管用）</li>
+      </ol>
+      <h3 class="sub-title">印刷プレビューの内容</h3>
+      <ul style="margin:8px 0 0 20px;font-size:13px">
+        <li>宿泊期間・物件名</li>
+        <li>代表者情報（氏名・フリガナ・住所・電話番号・職業・国籍・旅券番号・到着予定）</li>
+        <li>パスポート写真（外国籍ゲストのみ）</li>
+        <li>同行者情報（氏名・国籍・旅券番号・住所・備考）</li>
+        <li>記入完了日時</li>
+      </ul>
+      <div class="card info" style="margin-top:12px">
+        <div class="card-label info">旅館業法対応</div>
+        旅館業法第6条に基づき、外国人宿泊者については旅券番号・国籍の記録が義務付けられています。印刷した名簿は3年間保管してください。
+      </div>
+    </div>
+
+    <!-- ======== リマインダー ======== -->
+    <div class="section" id="reminder">
+      <h2 class="sec-title">チェックインリマインダー送信</h2>
+      <p>明日チェックインのゲストに、チェックインフォームのURLをメール/LINEで送ります。</p>
+      <table class="guide-table" style="margin-top:12px">
+        <tr><th></th><th>内容</th></tr>
+        <tr><td><strong>自動送信</strong></td><td>毎日09:00（JST）に自動実行。未送信のゲストのみが対象。</td></tr>
+        <tr><td><strong>手動送信</strong></td><td>「明日チェックインの方へ今すぐ送信」ボタンで即時送信。二重送信にはならない（送信済みはスキップ）。</td></tr>
+      </table>
+      <div class="card warn" style="margin-top:12px">
+        <div class="card-label warn">注意</div>
+        LINE連携していないゲストにはメール送信のみになります。LINE連携は予約時にLINE公式アカウントを友だち追加することで連携されます。
+      </div>
+    </div>
+
+    <!-- ======== 自動チェックアウト ======== -->
+    <div class="section" id="auto-checkout">
+      <h2 class="sec-title">自動チェックアウト手動実行</h2>
+      <p>チェックアウト日が来た（または過ぎた）予約を一括で「退出済み」にします。</p>
+      <table class="guide-table" style="margin-top:12px">
+        <tr><th></th><th>内容</th></tr>
+        <tr><td><strong>自動実行</strong></td><td>毎日12:00（JST）に自動実行</td></tr>
+        <tr><td><strong>手動実行</strong></td><td>「今すぐ退出完了」ボタンで即時処理。LINE連携済みゲストにはサンクスメッセージも同時送信。</td></tr>
+      </table>
+    </div>
+
+    <!-- ======== テンプレート ======== -->
+    <div class="section" id="templates">
+      <h2 class="sec-title">メッセージテンプレート</h2>
+      <p>台帳タブの下部にアコーディオン形式で2種類のテンプレートがあります。ヘッダーをタップして展開してください。</p>
+
+      <h3 class="sub-title">① LINEリマインダー本文テンプレート</h3>
+      <p>チェックイン前日に自動送信するLINEメッセージの文面を編集できます。</p>
+      <table class="guide-table" style="margin-top:8px">
+        <tr><th>変数</th><th>置き換えられる内容</th></tr>
+        <tr><td><code>{checkinUrl}</code></td><td>チェックインフォームのURL</td></tr>
+        <tr><td><code>{roomName}</code></td><td>物件名</td></tr>
+        <tr><td><code>{checkin}</code></td><td>チェックイン日</td></tr>
+        <tr><td><code>{name}</code></td><td>予約者氏名</td></tr>
+      </table>
+
+      <h3 class="sub-title" style="margin-top:20px">② チェックアウト後サンクスメッセージ</h3>
+      <p>退出確認時または「✉サンクス」ボタン押下時にLINEで送信する感謝メッセージを編集できます。</p>
+      <table class="guide-table" style="margin-top:8px">
+        <tr><th>変数</th><th>置き換えられる内容</th></tr>
+        <tr><td><code>{name}</code></td><td>予約者氏名</td></tr>
+        <tr><td><code>{roomName}</code></td><td>物件名</td></tr>
+        <tr><td><code>{checkout}</code></td><td>チェックアウト日</td></tr>
+      </table>
+
+      <div class="card tip" style="margin-top:16px">
+        <div class="card-label tip">編集後は「保存」を忘れずに</div>
+        テンプレートを変更したら必ず「保存」ボタンを押してください。押さずにタブを閉じると変更は失われます。
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- ======== カレンダー ======== -->
+    <div class="section" id="calendar-nav">
+      <h2 class="sec-title">カレンダーの操作</h2>
+      <p>「料金・在庫カレンダー」タブでは21日分の在庫・料金を管理できます。</p>
+      <table class="guide-table" style="margin-top:12px">
+        <tr><th>操作</th><th>内容</th></tr>
+        <tr><td>← 前の週 / 次の週 →</td><td>表示期間を7日ずつ移動</td></tr>
+        <tr><td>今日</td><td>本日を起点に戻す</td></tr>
+        <tr><td>横スクロール</td><td>日付列が多い場合はカレンダーを横にスクロールして確認</td></tr>
+      </table>
+    </div>
+
+    <!-- ======== 売止 ======== -->
+    <div class="section" id="blocked">
+      <h2 class="sec-title">売止・販売中の切り替え</h2>
+      <p>カレンダーの「状態」行のセルをタップ・クリックして切り替えます。</p>
+      <table class="guide-table" style="margin-top:12px">
+        <tr><th>表示</th><th>意味</th><th>操作</th></tr>
+        <tr><td style="color:var(--green);font-weight:bold">販売中</td><td>予約受付可能な状態</td><td>クリックすると「売止」に切り替わる</td></tr>
+        <tr><td style="color:var(--danger);font-weight:bold">売止</td><td>予約ブロック中（予約できない）</td><td>クリックすると「販売中」に戻る</td></tr>
+        <tr><td style="color:var(--muted)">予約済</td><td>実際の予約が入っている日</td><td>クリックできない。取消は「予約履歴」タブから</td></tr>
+      </table>
+    </div>
+
+    <!-- ======== 日別料金 ======== -->
+    <div class="section" id="price-override">
+      <h2 class="sec-title">日別特別料金の設定</h2>
+      <p>カレンダーの「料金」行の入力欄に数値を入力すると、その日だけの特別料金に設定できます。</p>
+      <ul style="margin:12px 0 0 20px;font-size:13px">
+        <li>空欄にすると基本料金に戻ります</li>
+        <li>入力欄のプレースホルダー数値が基本料金です</li>
+        <li>繁忙期・連休など料金を上げたい日に使います</li>
+        <li><strong>設定後は必ず「本番サイトに反映する」を押すこと</strong></li>
+      </ul>
+    </div>
+
+    <!-- ======== 基本料金 ======== -->
+    <div class="section" id="base-pricing">
+      <h2 class="sec-title">基本料金・定員設定</h2>
+      <p>各物件の基本的な料金・人数設定です。</p>
+
+      <h3 class="sub-title">PCの場合</h3>
+      <p>カレンダー左端の物件名列（スクロールしても固定されている列）内に入力欄があります。</p>
+
+      <h3 class="sub-title">スマホの場合</h3>
+      <p>カレンダーの下にスクロールすると「部屋の基本料金・定員設定」セクションが表示されます。</p>
+
+      <table class="guide-table" style="margin-top:12px">
+        <tr><th>項目</th><th>内容</th></tr>
+        <tr><td>基本料金（円）</td><td>1泊あたりのデフォルト料金</td></tr>
+        <tr><td>最小人数</td><td>予約受付する最少人数</td></tr>
+        <tr><td>最大人数</td><td>予約受付する最大人数</td></tr>
+        <tr><td>超過1名あたり追加料金</td><td>基本人数を超えた場合の1名あたり追加料金</td></tr>
+      </table>
+      <div class="card warn" style="margin-top:12px">
+        <div class="card-label warn">注意</div>
+        基本料金・定員を変更した後も、<strong>「本番サイトに反映する」を押さないとお客様の予約画面には反映されません。</strong>
+      </div>
+    </div>
+
+    <!-- ======== 本番反映 ======== -->
+    <div class="section" id="publish">
+      <h2 class="sec-title">本番サイトへの反映</h2>
+      <ol class="steps">
+        <li>料金・在庫カレンダーで設定を変更する（売止・料金など）</li>
+        <li>画面右上（またはカレンダー上部）のステータスを確認。「⚠ 未反映の変更があります」と表示されたら反映が必要</li>
+        <li><span class="btn-sample gold">本番サイトに反映する</span> ボタンを押す</li>
+        <li>「✓ 本番サイトの内容は最新です」に変わったら完了</li>
+      </ol>
+      <div class="card tip" style="margin-top:12px">
+        <div class="card-label tip">ヒント</div>
+        在庫の「売止・販売中」切り替えは即座に保存されますが、料金変更と同様に「本番サイトに反映する」が必要です。ゲストの予約画面に反映させるために必ず押してください。
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- ======== 決済設定 ======== -->
+    <div class="section" id="payment">
+      <h2 class="sec-title">決済方法の設定</h2>
+      <p>「決済設定」タブで、予約画面に表示する支払い方法を選択できます。</p>
+      <table class="guide-table" style="margin-top:12px">
+        <tr><th>決済方法</th><th>説明</th></tr>
+        <tr><td>クレジットカード（事前決済）</td><td>Stripeによるオンライン決済</td></tr>
+        <tr><td>PayPay（事前決済）</td><td>PayPayオンライン決済</td></tr>
+      </table>
+      <p style="margin-top:10px;font-size:13px">チェックを入れた方法のみ予約フォームに表示されます。「保存」を押して反映してください。</p>
+    </div>
+
+    <hr class="divider">
+
+    <!-- ======== 運用フロー ======== -->
+    <div class="section" id="flow-checkin">
+      <h2 class="sec-title">チェックインの流れ（全体）</h2>
+      <div class="flow">
+        <div class="flow-item">① ゲストが予約</div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-item">② LINE公式アカウントを友だち追加</div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-item">③ 前日09:00にリマインダー自動送信</div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-item">④ ゲストがチェックインフォーム記入</div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-item">⑤ 管理者が台帳・パスポートを確認</div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-item">⑥ 🔑送信ボタンでドアコードをLINE送信</div>
+      </div>
+      <div class="card info" style="margin-top:16px">
+        <div class="card-label info">外国籍ゲストの場合</div>
+        ④のフォーム記入時にパスポート写真をアップロードします。管理者は⑤で「📷確認」ボタンから写真を確認し、問題なければ⑥へ進んでください。写真が不足している場合、🔑送信はブロックされます。
+      </div>
+    </div>
+
+    <div class="section" id="flow-checkout">
+      <h2 class="sec-title">チェックアウトの流れ</h2>
+      <div class="flow">
+        <div class="flow-item">① チェックアウト日の12:00に自動処理</div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-item">② LINE連携済みゲストにサンクス自動送信</div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-item">③ 管理画面で「退出済」バッジを確認</div>
+      </div>
+      <h3 class="sub-title">手動で対応する場合</h3>
+      <ul style="margin:0 0 0 20px;font-size:13px">
+        <li>予約一覧の「退出確認」ボタンを押すと即時退出処理＋サンクス送信</li>
+        <li>サンクスメッセージだけ後から送りたい場合は「✉サンクス」ボタン</li>
+      </ul>
+    </div>
+
+    <hr class="divider">
+
+    <div class="section" id="changelog">
+      <h2 class="sec-title">更新ログ</h2>
+      <ul class="update-log">
+        <li>2026-06-27 — マニュアル初版作成</li>
+        <li>2026-06-27 — 台帳印刷プレビューに同行者詳細・パスポート写真を追加</li>
+        <li>2026-06-27 — 管理画面のモバイル表示を最適化（タブスクロール・テーブル横スクロール）</li>
+        <li>2026-06-27 — カレンダーのスマホ表示を改善（料金設定をカード形式でカレンダー下に表示）</li>
+      </ul>
+    </div>
+
+  </main>
+</div>
+
+<script>
+// スクロールに合わせてサイドナビのアクティブリンクを更新
+const sections = document.querySelectorAll('.section[id]');
+const navLinks = document.querySelectorAll('.sidenav a[href^="#"]');
+
+function updateActiveNav() {
+  let current = '';
+  sections.forEach(s => {
+    if (window.scrollY >= s.offsetTop - 100) current = s.id;
+  });
+  navLinks.forEach(a => {
+    a.classList.toggle('active', a.getAttribute('href') === '#' + current);
+  });
+}
+window.addEventListener('scroll', updateActiveNav, { passive: true });
+updateActiveNav();
+</script>
+</body>
+</html>

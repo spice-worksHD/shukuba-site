@@ -158,6 +158,8 @@
     .grid-table th, .grid-table td { padding: 4px 5px; font-size: 11px; }
     .price-input { width: 46px; font-size: 11px; }
     .cell-status { font-size: 10px; }
+    /* モバイル用料金設定パネルを表示 */
+    #mobile-pricing-panel { display: block !important; }
   }
 </style>
 </head>
@@ -340,6 +342,8 @@
         ・「予約済」は実際の予約が入っている日で、ここから直接は変更できません（取消は「予約履歴・サマリー」タブから）。<br>
         ・料金欄に数値を入力するとその日だけの特別料金になります。空欄にすると基本料金に戻ります。
       </p>
+      <!-- モバイル専用: 基本料金・定員設定 (PC では非表示) -->
+      <div id="mobile-pricing-panel" style="display:none;margin-top:16px"></div>
     </div>
   </div>
 
@@ -1214,6 +1218,41 @@ function renderGrid() {
   html += '</tbody>';
   document.getElementById('grid-table').innerHTML = html;
   renderPricingStatus();
+  renderMobilePricing();
+}
+
+function renderMobilePricing() {
+  const el = document.getElementById('mobile-pricing-panel');
+  if (!el) return;
+  el.innerHTML = '<p style="font-size:12px;font-weight:bold;color:var(--muted);margin-bottom:10px;letter-spacing:1px">部屋の基本料金・定員設定</p>' +
+    Object.keys(roomLabels).map(room => {
+      const p = state.pricing[room] || { base: 0 };
+      return `<div style="margin-bottom:12px;padding:14px;border:1px solid var(--border);border-radius:8px;background:#fff">
+        <div style="font-weight:bold;font-size:13px;margin-bottom:12px">${roomLabels[room]}</div>
+        <label style="font-size:12px;color:var(--muted);display:block;margin-bottom:4px">基本料金（円）</label>
+        <input type="number" step="500" value="${p.base || 0}"
+          style="width:100%;padding:10px;border:1px solid var(--border);border-radius:6px;font-size:15px;box-sizing:border-box"
+          onchange="savePricingField('${room}','base',this.value)">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px">
+          <div>
+            <label style="font-size:12px;color:var(--muted);display:block;margin-bottom:4px">最小人数</label>
+            <input type="number" min="1" value="${p.minGuests ?? 1}"
+              style="width:100%;padding:10px;border:1px solid var(--border);border-radius:6px;font-size:15px;box-sizing:border-box"
+              onchange="savePricingField('${room}','minGuests',this.value)">
+          </div>
+          <div>
+            <label style="font-size:12px;color:var(--muted);display:block;margin-bottom:4px">最大人数</label>
+            <input type="number" min="1" value="${p.maxGuests ?? 10}"
+              style="width:100%;padding:10px;border:1px solid var(--border);border-radius:6px;font-size:15px;box-sizing:border-box"
+              onchange="savePricingField('${room}','maxGuests',this.value)">
+          </div>
+        </div>
+        <label style="font-size:12px;color:var(--muted);display:block;margin-top:10px;margin-bottom:4px">超過1名あたり追加料金（円）</label>
+        <input type="number" step="500" value="${p.extraGuestFee ?? 0}"
+          style="width:100%;padding:10px;border:1px solid var(--border);border-radius:6px;font-size:15px;box-sizing:border-box"
+          onchange="savePricingField('${room}','extraGuestFee',this.value)">
+      </div>`;
+    }).join('');
 }
 
 function renderPricingStatus() {

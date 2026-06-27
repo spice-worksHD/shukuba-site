@@ -120,6 +120,37 @@
   .accordion-header { display:flex; align-items:center; justify-content:space-between; cursor:pointer; user-select:none; }
   .accordion-arrow { font-size:11px; color:var(--muted); transition:transform .2s; margin-left:8px; }
   .accordion-card.open .accordion-arrow { transform:rotate(90deg); }
+
+  @media (max-width: 640px) {
+    body { padding: 12px; }
+    h1 { font-size: 17px; }
+    .sub { margin-bottom: 16px; }
+    /* タブ横スクロール */
+    .tabs { overflow-x: auto; -webkit-overflow-scrolling: touch; flex-wrap: nowrap; padding-bottom: 1px; }
+    .tab-btn { flex-shrink: 0; white-space: nowrap; padding: 8px 10px; font-size: 12px; }
+    /* スタッツ2列グリッド */
+    .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .stat-box { min-width: 0; padding: 12px 10px; }
+    .stat-box .value { font-size: 18px; }
+    .stat-box .label { font-size: 11px; }
+    /* 月次売上 */
+    #monthly-sales { gap: 6px; }
+    #monthly-sales > button { flex: 1; min-width: 0; padding: 8px 8px; font-size: 12px; }
+    /* カード */
+    .card { padding: 14px 12px; }
+    .card h3 { font-size: 14px; }
+    /* フィルター */
+    #filter-search { width: 110px; font-size: 12px; }
+    /* テーブルラッパー */
+    .table-scroll-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    /* ミニボタン */
+    .mini-btn { padding: 3px 6px; font-size: 10px; }
+    .btn { font-size: 13px; padding: 9px 14px; }
+    /* カレンダー */
+    .cal-toolbar { flex-wrap: wrap; gap: 6px; }
+    /* アコーディオン */
+    .accordion-header { padding: 2px 0; }
+  }
 </style>
 </head>
 <body>
@@ -182,15 +213,17 @@
           style="padding:6px 10px;border:1px solid var(--border);border-radius:4px;font-size:13px">
         <button onclick="clearBookingFilters()" style="padding:6px 12px;border:1px solid var(--border);border-radius:4px;font-size:13px;background:#fff;cursor:pointer">クリア</button>
       </div>
-      <table id="bookings-table">
-        <thead>
-          <tr>
-            <th>予約日時</th><th>物件</th><th>IN</th><th>OUT</th>
-            <th>名</th><th>氏名</th><th>連絡先</th><th>金額</th><th>状態</th><th>状況</th><th>操作</th>
-          </tr>
-        </thead>
-        <tbody></tbody>
-      </table>
+      <div class="table-scroll-wrap">
+        <table id="bookings-table">
+          <thead>
+            <tr>
+              <th>予約日時</th><th>物件</th><th>IN</th><th>OUT</th>
+              <th>名</th><th>氏名</th><th>連絡先</th><th>金額</th><th>状態</th><th>状況</th><th>操作</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
     </div>
   </div>
 
@@ -209,15 +242,17 @@
           </div>
         </div>
       </div>
-      <table id="ledger-table">
-        <thead>
-          <tr>
-            <th>チェックイン</th><th>物件</th><th>予約者</th><th>状態</th><th>代表者（記入）</th><th>住所</th><th>職業</th>
-            <th>国籍</th><th>同行者</th><th>到着予定</th><th>記入時刻</th><th></th>
-          </tr>
-        </thead>
-        <tbody></tbody>
-      </table>
+      <div class="table-scroll-wrap">
+        <table id="ledger-table">
+          <thead>
+            <tr>
+              <th>チェックイン</th><th>物件</th><th>予約者</th><th>状態</th><th>代表者（記入）</th><th>住所</th><th>職業</th>
+              <th>国籍</th><th>同行者</th><th>到着予定</th><th>記入時刻</th><th></th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
     </div>
     <div class="card">
       <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:14px">
@@ -365,12 +400,14 @@
     </div>
     <div class="card">
       <h3>全予約データ（完全削除可）</h3>
-      <table id="testdata-table">
-        <thead>
-          <tr><th>チェックイン</th><th>物件</th><th>氏名</th><th>メール</th><th>状態</th><th></th></tr>
-        </thead>
-        <tbody></tbody>
-      </table>
+      <div class="table-scroll-wrap">
+        <table id="testdata-table">
+          <thead>
+            <tr><th>チェックイン</th><th>物件</th><th>氏名</th><th>メール</th><th>状態</th><th></th></tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
     </div>
   </div>
 </div>

@@ -117,6 +117,9 @@
   .price-input { width: 64px; border: 1px solid transparent; background: transparent; text-align: center; font-size: 12px; border-radius: 4px; padding: 4px; }
   .price-input:hover, .price-input:focus { border-color: var(--gold); background: #fff; outline: none; }
   .base-input { border: 1px solid var(--border); border-radius: 4px; padding: 2px 4px; font-size: 11px; width: 70px; }
+  .accordion-header { display:flex; align-items:center; justify-content:space-between; cursor:pointer; user-select:none; }
+  .accordion-arrow { font-size:11px; color:var(--muted); transition:transform .2s; margin-left:8px; }
+  .accordion-card.open .accordion-arrow { transform:rotate(90deg); }
 </style>
 </head>
 <body>
@@ -195,49 +198,6 @@
   <div class="panel" id="panel-ledger">
     <div class="stats-grid" id="ledger-stats"></div>
     <div class="card">
-      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:14px">
-        <h3 style="margin:0">チェックインリマインダー一斉送信</h3>
-        <button class="btn" onclick="sendRemindersNow()">明日チェックインの方へ今すぐ送信</button>
-      </div>
-      <p style="font-size:12px;color:var(--muted);margin-bottom:6px">
-        通常は毎日09:00（JST）に自動送信されますが、このボタンで今すぐ送信することもできます。未送信の対象者のみに送られます。
-      </p>
-      <div id="reminder-msg" class="msg"></div>
-    </div>
-    <div class="card">
-      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:14px">
-        <h3 style="margin:0">自動チェックアウト手動実行</h3>
-        <button class="btn" onclick="runAutoCheckoutNow()">チェックアウト日を過ぎた予約を今すぐ退出完了</button>
-      </div>
-      <p style="font-size:12px;color:var(--muted);margin-bottom:6px">
-        通常は毎日12:00（JST）に自動実行されます。チェックアウト日当日以前の未退出予約を一括で退出済にし、LINE連携済みのゲストにサンクスメッセージを送信します。
-      </p>
-      <div id="auto-checkout-msg" class="msg"></div>
-    </div>
-    <div class="card">
-      <h3 style="margin-bottom:10px">LINEリマインダー本文テンプレート</h3>
-      <p style="font-size:12px;color:var(--muted);margin-bottom:8px">
-        使用できる変数: <code>{checkinUrl}</code>（チェックインURL）　<code>{roomName}</code>　<code>{checkin}</code>（チェックイン日）　<code>{name}</code>（氏名）
-      </p>
-      <textarea id="line-template-text" rows="5" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:4px;font-size:13px;font-family:inherit;resize:vertical"></textarea>
-      <div style="display:flex;gap:8px;margin-top:8px;align-items:center">
-        <button class="btn" onclick="saveLineTemplate()">保存</button>
-        <span id="line-template-msg" class="msg"></span>
-      </div>
-    </div>
-    <div class="card">
-      <h3 style="margin-bottom:10px">チェックアウト後サンクスメッセージ</h3>
-      <p style="font-size:12px;color:var(--muted);margin-bottom:8px">
-        使用できる変数: <code>{name}</code>（氏名）　<code>{roomName}</code>　<code>{checkout}</code>（チェックアウト日）<br>
-        予約一覧の「✉退出」ボタンから手動送信します（LINE連携済み・コード送信済みの過去予約が対象）。
-      </p>
-      <textarea id="checkout-template-text" rows="5" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:4px;font-size:13px;font-family:inherit;resize:vertical"></textarea>
-      <div style="display:flex;gap:8px;margin-top:8px;align-items:center">
-        <button class="btn" onclick="saveCheckoutTemplate()">保存</button>
-        <span id="checkout-template-msg" class="msg"></span>
-      </div>
-    </div>
-    <div class="card">
       <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:6px">
         <h3 style="margin:0">宿泊者名簿（旅館業法対応）</h3>
         <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
@@ -258,6 +218,59 @@
         </thead>
         <tbody></tbody>
       </table>
+    </div>
+    <div class="card">
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:14px">
+        <h3 style="margin:0">チェックインリマインダー一斉送信</h3>
+        <button class="btn" onclick="sendRemindersNow()">明日チェックインの方へ今すぐ送信</button>
+      </div>
+      <p style="font-size:12px;color:var(--muted);margin-bottom:6px">
+        通常は毎日09:00（JST）に自動送信されますが、このボタンで今すぐ送信することもできます。未送信の対象者のみに送られます。
+      </p>
+      <div id="reminder-msg" class="msg"></div>
+    </div>
+    <div class="card">
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:14px">
+        <h3 style="margin:0">自動チェックアウト手動実行</h3>
+        <button class="btn" onclick="runAutoCheckoutNow()">チェックアウト日を過ぎた予約を今すぐ退出完了</button>
+      </div>
+      <p style="font-size:12px;color:var(--muted);margin-bottom:6px">
+        通常は毎日12:00（JST）に自動実行されます。チェックアウト日当日以前の未退出予約を一括で退出済にし、LINE連携済みのゲストにサンクスメッセージを送信します。
+      </p>
+      <div id="auto-checkout-msg" class="msg"></div>
+    </div>
+    <div class="card accordion-card">
+      <div class="accordion-header" onclick="toggleAccordion(this)">
+        <h3 style="margin:0">LINEリマインダー本文テンプレート</h3>
+        <span class="accordion-arrow">▶</span>
+      </div>
+      <div class="accordion-body" style="display:none;padding-top:14px">
+        <p style="font-size:12px;color:var(--muted);margin-bottom:8px">
+          使用できる変数: <code>{checkinUrl}</code>（チェックインURL）　<code>{roomName}</code>　<code>{checkin}</code>（チェックイン日）　<code>{name}</code>（氏名）
+        </p>
+        <textarea id="line-template-text" rows="5" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:4px;font-size:13px;font-family:inherit;resize:vertical"></textarea>
+        <div style="display:flex;gap:8px;margin-top:8px;align-items:center">
+          <button class="btn" onclick="saveLineTemplate()">保存</button>
+          <span id="line-template-msg" class="msg"></span>
+        </div>
+      </div>
+    </div>
+    <div class="card accordion-card">
+      <div class="accordion-header" onclick="toggleAccordion(this)">
+        <h3 style="margin:0">チェックアウト後サンクスメッセージ</h3>
+        <span class="accordion-arrow">▶</span>
+      </div>
+      <div class="accordion-body" style="display:none;padding-top:14px">
+        <p style="font-size:12px;color:var(--muted);margin-bottom:8px">
+          使用できる変数: <code>{name}</code>（氏名）　<code>{roomName}</code>　<code>{checkout}</code>（チェックアウト日）<br>
+          予約一覧の「✉退出」ボタンから手動送信します（LINE連携済み・コード送信済みの過去予約が対象）。
+        </p>
+        <textarea id="checkout-template-text" rows="5" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:4px;font-size:13px;font-family:inherit;resize:vertical"></textarea>
+        <div style="display:flex;gap:8px;margin-top:8px;align-items:center">
+          <button class="btn" onclick="saveCheckoutTemplate()">保存</button>
+          <span id="checkout-template-msg" class="msg"></span>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -952,15 +965,73 @@ async function apiPostTo(url, body) {
   return res.json();
 }
 
-function printLedgerEntry(idx) {
+function isJPNat(n) {
+  const v = (n || '').trim().toLowerCase();
+  return v === '' || v === '日本' || v === '日本国' || v === 'japan' || v === 'japanese';
+}
+
+function toggleAccordion(header) {
+  const card = header.closest('.accordion-card');
+  const body = card.querySelector('.accordion-body');
+  const isOpen = card.classList.contains('open');
+  card.classList.toggle('open', !isOpen);
+  body.style.display = isOpen ? 'none' : 'block';
+}
+
+async function printLedgerEntry(idx) {
   const b = state.bookings[idx];
   if (!b || !b.ledger) return;
   const l = b.ledger;
-  const companionRows = (l.companions || []).map(c =>
-    `<tr><td>${c.name}</td><td></td><td></td></tr>`).join('');
+
+  // 非日本人の名前リスト（写真ラベル用）
+  const nonJPNames = [];
+  if (!isJPNat(l.nationality)) nonJPNames.push(l.name);
+  (l.companions || []).forEach(c => { if (!isJPNat(c.nationality || '')) nonJPNames.push(c.name); });
+
+  // パスポート写真をfetchしてbase64化
+  const photoImgs = [];
+  for (let i = 0; i < (l.passportPhotos || []).length; i++) {
+    const p = l.passportPhotos[i];
+    try {
+      const r = await fetch(`/.netlify/functions/passport-photo?key=${encodeURIComponent(p.key)}`, {
+        headers: { 'x-admin-key': adminKey },
+      });
+      if (r.ok) {
+        const blob = await r.blob();
+        const src = await new Promise(res => {
+          const reader = new FileReader();
+          reader.onload = e => res(e.target.result);
+          reader.readAsDataURL(blob);
+        });
+        const label = nonJPNames[i] ? `${nonJPNames[i]}のパスポート写真` : `写真 ${i + 1}枚目`;
+        photoImgs.push({ src, label });
+      }
+    } catch (_) {}
+  }
+
+  const esc = s => String(s || '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+  const companionRows = (l.companions || []).map(c => `
+    <tr>
+      <td>${esc(c.name)}</td>
+      <td>${esc(c.nationality || '')}</td>
+      <td>${esc(c.passportNumber || '')}</td>
+      <td>${esc(c.address || '')}</td>
+      <td>${esc(c.note || '')}</td>
+    </tr>`).join('');
+
+  const photosSection = photoImgs.length ? `
+    <h2>パスポート写真</h2>
+    <div style="display:flex;flex-wrap:wrap;gap:16px;margin-bottom:16px">
+      ${photoImgs.map(p => `
+        <div style="text-align:center">
+          <img src="${p.src}" style="max-width:200px;max-height:280px;object-fit:contain;border:1px solid var(--border);border-radius:4px">
+          <div style="font-size:11px;color:var(--muted);margin-top:4px">${esc(p.label)}</div>
+        </div>`).join('')}
+    </div>` : '';
 
   const docHtml = `<!DOCTYPE html>
-<html lang="ja"><head><meta charset="utf-8"><title>宿泊者名簿 — ${b.name}</title>
+<html lang="ja"><head><meta charset="utf-8"><title>宿泊者名簿 — ${esc(b.name)}</title>
 <style>
   :root { --ink:#2B2118; --paper:#F4EEE2; --susuki:#8A6E4B; --bengara:#C14C32; --border:#DCD0B8; --muted:#6B7770; }
   * { box-sizing: border-box; }
@@ -980,23 +1051,24 @@ function printLedgerEntry(idx) {
 </style></head>
 <body>
   <div class="title">宿泊者名簿</div>
-  <div class="subtitle">SHUKUBA — ${roomLabels[String(b.room)] || b.roomName || ''}</div>
+  <div class="subtitle">SHUKUBA — ${esc(roomLabels[String(b.room)] || b.roomName || '')}</div>
   <hr class="rule">
   <table class="fields">
-    <tr><th>宿泊期間</th><td>${b.checkin} 〜 ${b.checkout}</td></tr>
-    <tr><th>代表者氏名</th><td>${l.name}（${l.nameKana}）</td></tr>
-    <tr><th>住所</th><td>${l.address}</td></tr>
-    <tr><th>電話番号</th><td>${l.phone || '-'}</td></tr>
-    <tr><th>職業</th><td>${l.occupation}</td></tr>
-    <tr><th>国籍</th><td>${l.nationality}</td></tr>
-    ${l.passportNumber ? `<tr><th>旅券番号</th><td>${l.passportNumber}</td></tr>` : ''}
-    <tr><th>到着予定時刻</th><td>${l.arrivalTime || '-'}</td></tr>
-    <tr><th>人数</th><td>${b.guests || '-'}名</td></tr>
+    <tr><th>宿泊期間</th><td>${esc(b.checkin)} 〜 ${esc(b.checkout)}</td></tr>
+    <tr><th>代表者氏名</th><td>${esc(l.name)}（${esc(l.nameKana || '')}）</td></tr>
+    <tr><th>住所</th><td>${esc(l.address)}</td></tr>
+    <tr><th>電話番号</th><td>${esc(l.phone || '-')}</td></tr>
+    <tr><th>職業</th><td>${esc(l.occupation)}</td></tr>
+    <tr><th>国籍</th><td>${esc(l.nationality)}</td></tr>
+    ${l.passportNumber ? `<tr><th>旅券番号</th><td>${esc(l.passportNumber)}</td></tr>` : ''}
+    <tr><th>到着予定時刻</th><td>${esc(l.arrivalTime || '-')}</td></tr>
+    <tr><th>人数</th><td>${esc(String(b.guests || '-'))}名</td></tr>
   </table>
+  ${photosSection}
   ${(l.companions || []).length ? `
     <h2>同行者</h2>
     <table class="companions">
-      <thead><tr><th>氏名</th><th>住所（代表者と同一の場合は空欄）</th><th>備考</th></tr></thead>
+      <thead><tr><th>氏名</th><th>国籍</th><th>旅券番号</th><th>住所（代表者と同一の場合は空欄）</th><th>備考</th></tr></thead>
       <tbody>${companionRows}</tbody>
     </table>
   ` : ''}

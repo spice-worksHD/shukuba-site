@@ -150,6 +150,14 @@
     .cal-toolbar { flex-wrap: wrap; gap: 6px; }
     /* アコーディオン */
     .accordion-header { padding: 2px 0; }
+    /* カレンダー: 物件列を縮小して日付列を広く */
+    .sticky-col { min-width: 72px; max-width: 72px; padding: 6px 4px; }
+    .sticky-col strong { font-size: 10px; line-height: 1.4; word-break: break-all; display: block; }
+    .room-price-settings { display: none; }
+    .sticky-col2 { left: 72px; min-width: 32px; font-size: 10px; padding: 4px 3px; }
+    .grid-table th, .grid-table td { padding: 4px 5px; font-size: 11px; }
+    .price-input { width: 46px; font-size: 11px; }
+    .cell-status { font-size: 10px; }
   }
 </style>
 </head>
@@ -1173,7 +1181,7 @@ function renderGrid() {
     html += `<tr>
       <td class="sticky-col" rowspan="2">
         <strong>${roomLabels[room]}</strong>
-        <div style="font-size:11px;color:var(--muted);margin-top:4px;line-height:1.8">
+        <div class="room-price-settings" style="font-size:11px;color:var(--muted);margin-top:4px;line-height:1.8">
           基本料金 ¥<input type="number" class="base-input" value="${p.base || 0}" step="500" onchange="savePricingField('${room}','base',this.value)"><br>
           人数 <input type="number" class="base-input" style="width:40px" min="1" value="${p.minGuests ?? 1}" onchange="savePricingField('${room}','minGuests',this.value)">
           〜<input type="number" class="base-input" style="width:40px" min="1" value="${p.maxGuests ?? 10}" onchange="savePricingField('${room}','maxGuests',this.value)">名<br>

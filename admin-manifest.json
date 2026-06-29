@@ -1,0 +1,14 @@
+{
+  "name": "SHUKUBA 管理",
+  "short_name": "SHUKUBA管理",
+  "start_url": "/admin.html",
+  "scope": "/admin.html",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#211A14",
+  "theme_color": "#2C453E",
+  "icons": [
+    { "src": "/assets/admin-icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/assets/admin-icon-512.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}

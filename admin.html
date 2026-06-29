@@ -112,7 +112,11 @@
   #chat-drawer { display:none;position:fixed;top:0;right:0;width:360px;height:100vh;background:#fff;box-shadow:-4px 0 24px rgba(0,0,0,.18);z-index:1900;flex-direction:column; }
   #chat-header { padding:14px 16px;background:#3D5A52;color:#fff;display:flex;align-items:center;gap:10px;flex-shrink:0; }
   #chat-messages { flex:1;overflow-y:auto;padding:14px 12px;background:#f0ede8;display:flex;flex-direction:column;gap:10px; }
-  #chat-footer { padding:10px 12px;border-top:1px solid var(--border);display:flex;gap:8px;align-items:flex-end;flex-shrink:0; }
+  #chat-footer { padding:10px 12px;border-top:1px solid var(--border);display:flex;gap:8px;align-items:stretch;flex-shrink:0; }
+  #chat-send-btn { display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;min-width:66px;padding:6px 14px;background:#06c755;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap;transition:background .15s;box-shadow:0 1px 3px rgba(0,0,0,.12); }
+  #chat-send-btn:hover { background:#05b14a; }
+  #chat-send-btn:active { background:#049a40; }
+  #chat-send-btn:disabled { background:#a9d8bd;cursor:default; }
   .chat-bw { display:flex;flex-direction:column; }
   .chat-bw.out { align-items:flex-end; }
   .chat-bw.in { align-items:flex-start; }
@@ -1776,10 +1780,12 @@ async function sendChatMessage() {
   </div>
   <div id="chat-messages"></div>
   <div id="chat-footer">
-    <textarea id="chat-input" placeholder="メッセージを入力… (Enterで送信、Shift+Enterで改行)" rows="2"
-      style="flex:1;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;font-family:inherit;resize:none;line-height:1.5"
-      onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendChatMessage();}"></textarea>
-    <button onclick="sendChatMessage()" class="btn" style="padding:0 16px;align-self:stretch;white-space:nowrap">送信</button>
+    <textarea id="chat-input" placeholder="メッセージを入力…（Enterで改行できます）" rows="2"
+      style="flex:1;padding:9px 11px;border:1px solid var(--border);border-radius:8px;font-size:14px;font-family:inherit;resize:none;line-height:1.6"></textarea>
+    <button onclick="sendChatMessage()" id="chat-send-btn" aria-label="送信">
+      <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden="true"><path d="M3.4 20.4l17.45-7.48a1 1 0 000-1.84L3.4 3.6a.5.5 0 00-.7.46l.01 6.2 11.29 1.74-11.29 1.74-.01 6.2a.5.5 0 00.7.46z"/></svg>
+      <span>送信</span>
+    </button>
   </div>
 </div>
 

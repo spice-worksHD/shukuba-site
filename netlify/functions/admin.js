@@ -49,6 +49,27 @@ export default async (req) => {
       return new Response(JSON.stringify({ ok: false, error: 'invalid_json' }), { status: 400 });
     }
 
+    if (data.action === 'get-passport-photos') {
+      const bookings = (await store.get('bookings.json', { type: 'json' })) || [];
+      const idx = Number(data.index);
+      if (!(idx >= 0 && idx < bookings.length)) {
+        return new Response(JSON.stringify({ ok: false, error: 'not_found' }), { status: 404 });
+      }
+      const photos = bookings[idx]?.ledger?.passportPhotos || [];
+      const photoData = await Promise.all(photos.map(async (p) => {
+        try {
+          const entry = await store.getWithMetadata(p.key, { type: 'arrayBuffer' });
+          if (!entry?.data) return null;
+          const base64 = Buffer.from(entry.data).toString('base64');
+          const contentType = entry.metadata?.type || 'image/jpeg';
+          return { dataUrl: `data:${contentType};base64,${base64}`, name: p.name || '' };
+        } catch { return null; }
+      }));
+      return new Response(JSON.stringify({ ok: true, photos: photoData.filter(Boolean) }), {
+        status: 200, headers: { 'Content-Type': 'application/json' },
+      });
+    }
+
     if (data.action === 'set-pricing') {
       const pricing = (await store.get('pricing.json', { type: 'json' })) || DEFAULT_PRICING;
       const existing = pricing[String(data.room)] || DEFAULT_PRICING[String(data.room)] || {};
@@ -209,10 +230,10 @@ export default async (req) => {
       booking.doorCodeSent = true;
       booking.doorCodeSentAt = now;
       booking.history = Array.isArray(booking.history) ? booking.history : [];
-      booking.history.push({ event: 'door-code-sent', at: now, by: 'admin' });
+      booking.history.push({ event: 'door-code-sent', at: now, by: 'admin', doorCode });
       bookings[idx] = booking;
       await store.setJSON('bookings.json', bookings);
-      return new Response(JSON.stringify({ ok: true, bookings }), {
+      return new Response(JSON.stringify({ ok: true, bookings, doorCode }), {
         status: 200,
         headers: { 'Content-Type': 'application/json' },
       });
@@ -352,9 +373,53 @@ export default async (req) => {
         const errText = await res.text();
         return new Response(JSON.stringify({ ok: false, error: `LINE API: ${errText}` }), { status: 500 });
       }
-      return new Response(JSON.stringify({ ok: true }), {
+      const now = new Date().toISOString();
+      booking.ciLineSent = true;
+      booking.ciLineSentAt = now;
+      booking.history = Array.isArray(booking.history) ? booking.history : [];
+      booking.history.push({ event: 'ci-line-sent', at: now, by: 'admin' });
+      bookings[idx] = booking;
+      await store.setJSON('bookings.json', bookings);
+      return new Response(JSON.stringify({ ok: true, bookings }), {
         status: 200,
         headers: { 'Content-Type': 'application/json' },
+      });
+    }
+
+    if (data.action === 'get-chat') {
+      const { lineUserId } = data;
+      if (!lineUserId) return new Response(JSON.stringify({ ok: false, error: 'no_lineUserId' }), { status: 400 });
+      const messages = (await store.get(`chat-${lineUserId}.json`, { type: 'json' })) || [];
+      return new Response(JSON.stringify({ ok: true, messages }), {
+        status: 200, headers: { 'Content-Type': 'application/json' },
+      });
+    }
+
+    if (data.action === 'send-chat') {
+      const { lineUserId, text } = data;
+      if (!lineUserId || !text) return new Response(JSON.stringify({ ok: false, error: 'missing_fields' }), { status: 400 });
+      const accessToken = process.env.LINE_CHANNEL_ACCESS_TOKEN;
+      if (!accessToken) return new Response(JSON.stringify({ ok: false, error: 'no_access_token' }), { status: 500 });
+      const res = await fetch('https://api.line.me/v2/bot/message/push', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` },
+        body: JSON.stringify({ to: lineUserId, messages: [{ type: 'text', text }] }),
+      });
+      if (!res.ok) {
+        const errText = await res.text();
+        return new Response(JSON.stringify({ ok: false, error: `LINE API: ${errText}` }), { status: 500 });
+      }
+      const chatKey = `chat-${lineUserId}.json`;
+      const chatHistory = (await store.get(chatKey, { type: 'json' })) || [];
+      chatHistory.push({
+        id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
+        direction: 'out',
+        text,
+        at: new Date().toISOString(),
+      });
+      await store.setJSON(chatKey, chatHistory);
+      return new Response(JSON.stringify({ ok: true, messages: chatHistory }), {
+        status: 200, headers: { 'Content-Type': 'application/json' },
       });
     }
 

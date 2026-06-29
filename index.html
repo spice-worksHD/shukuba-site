@@ -24,6 +24,7 @@
     <a href="#concept"><span data-ja>コンセプト</span><span data-en>Concept</span></a>
     <a href="rooms.html"><span data-ja>客室紹介</span><span data-en>Rooms</span></a>
     <a href="area.html"><span data-ja>地域紹介</span><span data-en>The Area</span></a>
+    <a href="seasons.html"><span data-ja>四季の旅</span><span data-en>Seasons</span></a>
     <a href="#booking"><span data-ja>ご予約</span><span data-en>Reserve</span></a>
   </div>
   <button class="nav-toggle" aria-label="メニュー" onclick="toggleNavMenu()"><span></span><span></span><span></span></button>
@@ -31,6 +32,9 @@
 
 <!-- Hero -->
 <div id="hero">
+  <video class="hero-video" id="hero-video" autoplay loop muted playsinline preload="auto" poster="hero-poster.jpg">
+    <source src="video/hero-video-v2.mp4" type="video/mp4">
+  </video>
   <div class="hero-bg"></div>
   <div class="hero-content">
     <div class="hero-sub" data-ja>滋賀県 古民家再生宿泊</div>
@@ -406,6 +410,7 @@
     <a href="#concept"><span data-ja>コンセプト</span><span data-en>Concept</span></a>
     <a href="rooms.html"><span data-ja>客室紹介</span><span data-en>Rooms</span></a>
     <a href="area.html"><span data-ja>地域紹介</span><span data-en>The Area</span></a>
+    <a href="seasons.html"><span data-ja>四季の旅</span><span data-en>Seasons</span></a>
     <a href="#booking"><span data-ja>ご予約</span><span data-en>Reserve</span></a>
   </div>
   <div class="footer-copy">
@@ -889,7 +894,6 @@ async function submitForm(e) {
   const checkinStr = fmtDate(checkIn);
   const checkoutStr = fmtDate(checkOut);
   const roomLabel = (isJa ? roomNames : roomNamesEn)[Number(roomVal)];
-  document.getElementById('payment-method-input').value = paymentMethod;
 
   const fd = new FormData(form);
   const payload = {
@@ -903,24 +907,22 @@ async function submitForm(e) {
     phone: fd.get('phone'),
     arrivalTime: fd.get('arrivalTime'),
     message: fd.get('message'),
-    paymentMethod: fd.get('paymentMethod'),
   };
 
   const submitBtn = form.querySelector('.submit-btn');
   const submitBtnOriginalHtml = submitBtn.innerHTML;
   submitBtn.disabled = true;
   submitBtn.classList.add('is-loading');
-  submitBtn.innerHTML = `<span class="btn-spinner"></span>${isJa ? '送信中…' : 'Submitting…'}`;
+  submitBtn.innerHTML = `<span class="btn-spinner"></span>${isJa ? '決済ページへ移動中…' : 'Redirecting to payment…'}`;
 
   try {
-    // 1. Register the booking + check for date conflicts
-    const reserveRes = await fetch('/.netlify/functions/reserve', {
+    const res = await fetch('/.netlify/functions/stripe-checkout', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
     });
 
-    if (reserveRes.status === 409) {
+    if (res.status === 409) {
       alert(isJa
         ? 'たいへん申し訳ございません。選択された日程は他のお客様により直前にご予約されました。お手数ですが別の日程をお選びください。'
         : 'Sorry, those dates were just booked by another guest. Please choose different dates.');
@@ -930,28 +932,19 @@ async function submitForm(e) {
       backToForm();
       return;
     }
-    if (!reserveRes.ok) throw new Error('reserve failed');
+    if (!res.ok) throw new Error('checkout failed');
 
-    // 2. Reflect the new booking locally so the calendar updates immediately
-    let cur = new Date(checkIn);
-    while (cur < checkOut) {
-      bookedByRoom[roomVal].add(fmtDate(cur));
-      cur.setDate(cur.getDate() + 1);
-    }
-    updateBookedDatesForRoom();
+    const json = await res.json();
+    if (!json.checkoutUrl) throw new Error('no checkout url');
 
-    document.getElementById('modal-overlay').classList.add('open');
-    form.reset();
-    checkIn = null; checkOut = null;
-    renderCalendar();
-    document.querySelectorAll('.room-card').forEach(c => c.classList.remove('selected'));
-    backToForm();
+    // Stripeの決済ページへリダイレクト
+    window.location.href = json.checkoutUrl;
+
   } catch (err) {
     console.error(err);
     alert(isJa
-      ? '送信中にエラーが発生しました。お手数ですが時間をおいて再度お試しください。'
-      : 'Something went wrong while sending your request. Please try again in a moment.');
-  } finally {
+      ? '決済ページへの移動中にエラーが発生しました。お手数ですが時間をおいて再度お試しください。'
+      : 'Something went wrong while redirecting to payment. Please try again in a moment.');
     submitBtn.disabled = false;
     submitBtn.classList.remove('is-loading');
     submitBtn.innerHTML = submitBtnOriginalHtml;

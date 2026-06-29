@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>四季の近江路 ― 一泊二日のすすめ | SHUKUBA</title>
+<meta name="description" content="滋賀・琵琶湖のほとりで過ごす春夏秋冬。季節ごとの見どころをめぐる一泊二日のモデルルートを、古民家宿SHUKUBAを拠点にご提案します。">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;700&family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+<style>
+/* ===== SEASONS PAGE ===== */
+
+/* Intro lead */
+.seasons-intro { text-align: center; }
+.seasons-intro .section-body { margin: 0 auto; }
+
+/* Sticky season jump nav */
+.season-jump {
+  position: sticky; top: 0; z-index: 50;
+  display: flex; justify-content: center; flex-wrap: wrap; gap: 0;
+  background: rgba(244,238,226,0.92); backdrop-filter: blur(8px);
+  border-top: 1px solid var(--border); border-bottom: 1px solid var(--border);
+}
+.season-jump a {
+  flex: 1 1 0; min-width: 0; text-align: center; text-decoration: none;
+  padding: 16px 8px; color: var(--muted); font-size: 13px; letter-spacing: 3px;
+  border-right: 1px solid var(--border); transition: color .25s, background .25s;
+  font-family: 'Shippori Mincho', serif;
+}
+.season-jump a:last-child { border-right: none; }
+.season-jump a .jb-en { display: block; font-size: 9px; letter-spacing: 2px; margin-top: 3px; opacity: .7; font-family: 'Zen Kaku Gothic New', sans-serif; }
+.season-jump a.s-spring:hover { color: #C2587A; background: rgba(217,138,160,0.12); }
+.season-jump a.s-summer:hover { color: #2E7E91; background: rgba(46,139,158,0.12); }
+.season-jump a.s-autumn:hover { color: #B45A26; background: rgba(194,98,43,0.12); }
+.season-jump a.s-winter:hover { color: #5E7488; background: rgba(110,132,153,0.12); }
+
+/* Season block */
+.season { padding: 0; max-width: 100%; scroll-margin-top: 56px; }
+.season-hero {
+  position: relative; height: 60vh; min-height: 360px;
+  display: flex; align-items: center; justify-content: center; text-align: center;
+  background-size: cover; background-position: center; overflow: hidden;
+}
+.season-hero::before {
+  content: ''; position: absolute; inset: 0;
+  background: linear-gradient(180deg, rgba(33,26,20,0.30) 0%, rgba(33,26,20,0.55) 100%);
+}
+.season-hero-inner { position: relative; z-index: 1; color: #F4EEE2; padding: 0 20px; }
+.season-kanji {
+  font-family: 'Shippori Mincho', serif; font-weight: 700;
+  font-size: clamp(72px, 16vw, 150px); line-height: 1; letter-spacing: 6px;
+  text-shadow: 0 4px 30px rgba(0,0,0,.45);
+}
+.season-roman { font-size: 13px; letter-spacing: 8px; margin-top: 14px; text-transform: uppercase; opacity: .92; }
+.season-period { font-size: 13px; letter-spacing: 3px; margin-top: 18px; padding: 6px 18px; border: 1px solid rgba(244,238,226,0.55); display: inline-block; }
+
+/* Season body */
+.season-body { max-width: 1100px; margin: 0 auto; padding: 80px 40px; }
+.season-lead-title { font-family: 'Shippori Mincho', serif; font-size: clamp(24px, 3.6vw, 36px); font-weight: 500; line-height: 1.5; margin-bottom: 18px; }
+.season-lead { font-size: 15px; line-height: 2.1; color: var(--muted); max-width: 760px; }
+
+/* Highlight tags */
+.season-tags { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 28px; }
+.season-tag { font-size: 12px; letter-spacing: 1px; padding: 6px 16px; border-radius: 2px; border: 1px solid var(--border); background: #fff; }
+
+/* Itinerary */
+.itin-head { display: flex; align-items: center; gap: 14px; margin: 56px 0 8px; }
+.itin-head .itin-badge {
+  font-family: 'Shippori Mincho', serif; font-size: 12px; letter-spacing: 3px;
+  color: #fff; padding: 5px 14px; border-radius: 2px;
+}
+.itin-head .itin-label { font-size: 12px; letter-spacing: 4px; color: var(--muted); text-transform: uppercase; }
+.itin-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 28px; margin-top: 28px; }
+.day-card { background: #fff; border: 1px solid var(--border); padding: 32px 30px 30px; }
+.day-title { font-family: 'Shippori Mincho', serif; font-size: 20px; letter-spacing: 2px; margin-bottom: 4px; }
+.day-sub { font-size: 11px; letter-spacing: 3px; color: var(--muted); text-transform: uppercase; margin-bottom: 24px; }
+
+.timeline { list-style: none; position: relative; }
+.timeline::before { content: ''; position: absolute; left: 7px; top: 6px; bottom: 6px; width: 1px; background: var(--border); }
+.stop { position: relative; padding: 0 0 26px 34px; }
+.stop:last-child { padding-bottom: 0; }
+.stop::before {
+  content: ''; position: absolute; left: 1px; top: 4px; width: 13px; height: 13px;
+  border-radius: 50%; background: #fff; border: 3px solid var(--border);
+}
+.stop-time { font-family: 'Zen Kaku Gothic New', sans-serif; font-size: 12px; letter-spacing: 1px; font-weight: 700; color: var(--muted); }
+.stop-title { font-size: 15px; font-weight: 600; letter-spacing: .5px; margin: 4px 0 6px; }
+.stop-desc { font-size: 13px; line-height: 1.85; color: var(--muted); }
+
+/* per-season accent application */
+.season.spring { --sa: #C2587A; --sa-soft: rgba(217,138,160,0.10); }
+.season.summer { --sa: #2E8B9E; --sa-soft: rgba(46,139,158,0.10); }
+.season.autumn { --sa: #B45A26; --sa-soft: rgba(194,98,43,0.10); }
+.season.winter { --sa: #5E7488; --sa-soft: rgba(110,132,153,0.10); }
+.season .season-lead-title { color: var(--ink); }
+.season .itin-badge { background: var(--sa); }
+.season .season-tag { color: var(--sa); border-color: var(--sa); background: var(--sa-soft); }
+.season .stop::before { border-color: var(--sa); }
+.season .day-card { border-top: 3px solid var(--sa); }
+.season.alt .season-body { background: #fff; max-width: 100%; }
+.season.alt .season-body > .inner { max-width: 1100px; margin: 0 auto; }
+.season.alt .day-card { background: var(--paper); }
+
+/* CTA */
+.season-cta { text-align: center; padding: 96px 40px; background: var(--dark); color: #F4EEE2; max-width: 100%; }
+.season-cta .section-label { color: var(--susuki); }
+.season-cta h2 { font-family: 'Shippori Mincho', serif; font-size: clamp(26px, 4vw, 40px); font-weight: 500; letter-spacing: 2px; line-height: 1.5; margin-bottom: 24px; }
+.season-cta p { font-size: 15px; line-height: 2; color: rgba(244,238,226,0.6); max-width: 600px; margin: 0 auto 36px; }
+.season-cta .hero-cta { display: inline-block; }
+
+@media (max-width: 768px) {
+  .season-body { padding: 56px 20px; }
+  .itin-grid { grid-template-columns: 1fr; gap: 20px; }
+  .day-card { padding: 26px 22px; }
+  .season-hero { height: 52vh; min-height: 300px; }
+  .season-jump a { letter-spacing: 1px; padding: 13px 4px; font-size: 14px; }
+  .season-cta { padding: 64px 24px; }
+}
+</style>
+</head>
+<body class="lang-ja">
+
+<!-- Lang Toggle -->
+<div id="lang-toggle">
+  <button class="lang-btn active" onclick="setLang('ja')">JP</button>
+  <button class="lang-btn" onclick="setLang('en')">EN</button>
+</div>
+
+<!-- Nav -->
+<nav id="nav" class="scrolled">
+  <a class="nav-logo" href="index.html">SHUKUBA</a>
+  <div class="nav-links">
+    <a href="index.html#concept"><span data-ja>コンセプト</span><span data-en>Concept</span></a>
+    <a href="rooms.html"><span data-ja>客室紹介</span><span data-en>Rooms</span></a>
+    <a href="area.html"><span data-ja>地域紹介</span><span data-en>The Area</span></a>
+    <a href="seasons.html" style="color:#fff"><span data-ja>四季の旅</span><span data-en>Seasons</span></a>
+    <a href="index.html#booking"><span data-ja>ご予約</span><span data-en>Reserve</span></a>
+  </div>
+  <button class="nav-toggle" aria-label="メニュー" onclick="toggleNavMenu()"><span></span><span></span><span></span></button>
+</nav>
+
+<!-- Page Header -->
+<div class="page-header" style="background-image:linear-gradient(180deg, rgba(15,45,52,0.35) 0%, rgba(20,58,66,0.55) 100%), url('https://upload.wikimedia.org/wikipedia/commons/thumb/5/53/Chikubushima-2016-07-21.jpg/1920px-Chikubushima-2016-07-21.jpg')">
+  <div class="page-header-content">
+    <div class="hero-sub" data-ja>四季の近江路</div>
+    <div class="hero-sub" data-en>Four Seasons of Omi</div>
+    <div class="hero-title">
+      <span data-ja>めぐる季節と、<br>一泊二日の旅。</span>
+      <span data-en>Turning Seasons,<br>One Night &amp; Two Days.</span>
+    </div>
+  </div>
+</div>
+
+<!-- Intro -->
+<section class="fade-in seasons-intro">
+  <div class="section-label" data-ja>滋賀・琵琶湖 ／ 春夏秋冬</div>
+  <div class="section-label" data-en>Lake Biwa · Spring, Summer, Autumn, Winter</div>
+  <h2 class="section-title">
+    <span data-ja>同じ町が、季節ごとに<br>まったく違う表情を見せる。</span>
+    <span data-en>The same towns wear a wholly<br>different face each season.</span>
+  </h2>
+  <p class="section-body">
+    <span data-ja>琵琶湖のほとりに広がる近江の町は、四季の移ろいがそのまま暮らしの風景になります。桜の湖岸、青く澄んだ夏の湖、黄金に染まる並木、雪化粧の城下町——。古民家宿SHUKUBAを夜の拠点に、その季節だけの近江を味わう一泊二日のモデルルートを、春・夏・秋・冬それぞれにご用意しました。下のボタンから、気になる季節へどうぞ。</span>
+    <span data-en>Around Lake Biwa, the passing of the seasons becomes the everyday scenery of Omi. Cherry-lined shores, the clear blue lake of summer, avenues turned to gold, a castle town under snow. With the machiya inn SHUKUBA as your base for the night, we've prepared a one-night, two-day model route for each season — spring, summer, autumn and winter. Jump to the season that calls to you below.</span>
+  </p>
+</section>
+
+<!-- Season jump nav -->
+<div class="season-jump">
+  <a href="#spring" class="s-spring"><span data-ja>春</span><span data-en>Spring</span><span class="jb-en" data-ja>桜と水の近江</span><span class="jb-en" data-en>Mar–Apr</span></a>
+  <a href="#summer" class="s-summer"><span data-ja>夏</span><span data-en>Summer</span><span class="jb-en" data-ja>湖と祈りの島</span><span class="jb-en" data-en>Jun–Aug</span></a>
+  <a href="#autumn" class="s-autumn"><span data-ja>秋</span><span data-en>Autumn</span><span class="jb-en" data-ja>紅葉と実り</span><span class="jb-en" data-en>Oct–Nov</span></a>
+  <a href="#winter" class="s-winter"><span data-ja>冬</span><span data-en>Winter</span><span class="jb-en" data-ja>静寂と滋味</span><span class="jb-en" data-en>Dec–Feb</span></a>
+</div>
+
+<!-- ===== SPRING ===== -->
+<section id="spring" class="season spring">
+  <div class="season-hero" style="background-image:url('https://upload.wikimedia.org/wikipedia/commons/thumb/d/de/Hikone-Castle-canal-cherry-blossom-2018-Luka-Peternel.jpg/1920px-Hikone-Castle-canal-cherry-blossom-2018-Luka-Peternel.jpg')">
+    <div class="season-hero-inner">
+      <div class="season-kanji">春</div>
+      <div class="season-roman">Spring</div>
+      <div class="season-period"><span data-ja>3月下旬 〜 4月</span><span data-en>Late March – April</span></div>
+    </div>
+  </div>
+  <div class="season-body fade-in">
+    <h3 class="season-lead-title">
+      <span data-ja>桜と水の近江。<br>湖岸が薄紅に染まる季節。</span>
+      <span data-en>Cherry blossoms and water —<br>when the lakeshore turns pale pink.</span>
+    </h3>
+    <p class="season-lead">
+      <span data-ja>八幡堀の柳が芽吹き、水郷に春の光が満ちる頃。近江の春は「水辺の桜」が主役です。町なかの堀端から、湖岸4kmにわたる海津大崎の桜並木まで、淡い花の色が水面に映り込みます。芽吹きはじめのメタセコイア並木も、この季節ならではのやわらかな緑です。</span>
+      <span data-en>As the willows of Hachiman-bori bud and spring light fills the canal district, Omi's spring belongs to "cherry blossoms by the water." From the moats in town to the four-kilometre cherry avenue of Kaizu-Osaki along the lake, soft petals mirror on the surface. The Metasequoia avenue, just coming into leaf, shows a tender green found only now.</span>
+    </p>
+    <div class="season-tags">
+      <span class="season-tag"><span data-ja>🌸 海津大崎の桜</span><span data-en>🌸 Kaizu-Osaki cherry blossoms</span></span>
+      <span class="season-tag"><span data-ja>⛵ 八幡堀の水郷めぐり</span><span data-en>⛵ Hachiman-bori canal cruise</span></span>
+      <span class="season-tag"><span data-ja>🌱 メタセコイア並木の新緑</span><span data-en>🌱 New-green Metasequoia avenue</span></span>
+    </div>
+
+    <div class="itin-head">
+      <span class="itin-badge"><span data-ja>1泊2日</span><span data-en>1N2D</span></span>
+      <span class="itin-label" data-ja>モデルルート</span>
+      <span class="itin-label" data-en>Model Route</span>
+    </div>
+    <div class="itin-grid">
+      <div class="day-card">
+        <div class="day-title"><span data-ja>1日目 ― 近江八幡の春さんぽ</span><span data-en>Day 1 — Spring strolling in Omihachiman</span></div>
+        <div class="day-sub">Day One</div>
+        <ul class="timeline">
+          <li class="stop"><div class="stop-time">10:30</div><div class="stop-title"><span data-ja>八幡堀 さんぽ</span><span data-en>Hachiman-bori walk</span></div><div class="stop-desc"><span data-ja>白壁の蔵と柳並木が水面に映る運河沿いを散策。桜の時期は堀端がほんのり薄紅に。</span><span data-en>Stroll the canal where white storehouses and willows reflect on the water — its banks blushed pink in blossom season.</span></div></li>
+          <li class="stop"><div class="stop-time">12:00</div><div class="stop-title"><span data-ja>近江牛ランチ</span><span data-en>Omi beef lunch</span></div><div class="stop-desc"><span data-ja>城下町の老舗で近江牛を。食後はラ コリーナ近江八幡で名物バウムクーヘンも。</span><span data-en>Savour Omi beef at a long-established restaurant, then enjoy baumkuchen at La Collina Omihachiman.</span></div></li>
+          <li class="stop"><div class="stop-time">14:00</div><div class="stop-title"><span data-ja>八幡山ロープウェー</span><span data-en>Hachimanyama Ropeway</span></div><div class="stop-desc"><span data-ja>山上から桜と琵琶湖を一望。城跡の村雲御所も春の彩りに包まれます。</span><span data-en>Ride to the summit for sweeping views of cherry blossoms and Lake Biwa.</span></div></li>
+          <li class="stop"><div class="stop-time">16:00</div><div class="stop-title"><span data-ja>SHUKUBA チェックイン</span><span data-en>Check in at SHUKUBA</span></div><div class="stop-desc"><span data-ja>町家を一棟貸しで。荷を解いて、夕暮れの町をもう一度ゆっくりと。</span><span data-en>Settle into your private machiya, then wander the town again at dusk.</span></div></li>
+          <li class="stop"><div class="stop-time">18:30</div><div class="stop-title"><span data-ja>町家で夕食</span><span data-en>Dinner at the house</span></div><div class="stop-desc"><span data-ja>地元食材を使った夕食を、静かな町家の灯りのもとで。</span><span data-en>A dinner of local ingredients under the quiet lamplight of the house.</span></div></li>
+        </ul>
+      </div>
+      <div class="day-card">
+        <div class="day-title"><span data-ja>2日目 ― 湖岸の桜トンネルへ</span><span data-en>Day 2 — Into the lakeside cherry tunnel</span></div>
+        <div class="day-sub">Day Two</div>
+        <ul class="timeline">
+          <li class="stop"><div class="stop-time">09:00</div><div class="stop-title"><span data-ja>湖周ドライブ出発</span><span data-en>Depart along the lake</span></div><div class="stop-desc"><span data-ja>朝の澄んだ空気の中、琵琶湖の北西・高島方面へ車を走らせます。</span><span data-en>Drive northwest toward Takashima in the crisp morning air.</span></div></li>
+          <li class="stop"><div class="stop-time">10:30</div><div class="stop-title"><span data-ja>海津大崎の桜</span><span data-en>Kaizu-Osaki cherry avenue</span></div><div class="stop-desc"><span data-ja>湖岸約4kmに続く桜のトンネル。遊覧船から湖上越しに眺めるのも格別です。</span><span data-en>A four-kilometre cherry tunnel along the shore — or view it from the lake by sightseeing boat.</span></div></li>
+          <li class="stop"><div class="stop-time">12:30</div><div class="stop-title"><span data-ja>マキノでランチ</span><span data-en>Lunch in Makino</span></div><div class="stop-desc"><span data-ja>湖畔のカフェで一息。地元の野菜やパンが並びます。</span><span data-en>Pause at a lakeside café with local vegetables and bread.</span></div></li>
+          <li class="stop"><div class="stop-time">14:00</div><div class="stop-title"><span data-ja>メタセコイア並木</span><span data-en>Metasequoia avenue</span></div><div class="stop-desc"><span data-ja>約2.4kmまっすぐ続く並木道。春は芽吹きのやわらかな新緑に包まれます。</span><span data-en>A 2.4 km arrow-straight avenue, wrapped in tender new green in spring.</span></div></li>
+          <li class="stop"><div class="stop-time">15:30</div><div class="stop-title"><span data-ja>道の駅で土産・帰路</span><span data-en>Local market &amp; return</span></div><div class="stop-desc"><span data-ja>道の駅マキノ追坂峠などで湖国の味覚を。余韻とともに帰路へ。</span><span data-en>Pick up regional treats at a roadside station before heading home.</span></div></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== SUMMER ===== -->
+<section id="summer" class="season summer alt">
+  <div class="season-hero" style="background-image:url('https://upload.wikimedia.org/wikipedia/commons/3/33/Shirahige_Shrine_%E7%99%BD%E9%AC%9A%E7%A5%9E%E7%A4%BE5_-_panoramio.jpg')">
+    <div class="season-hero-inner">
+      <div class="season-kanji">夏</div>
+      <div class="season-roman">Summer</div>
+      <div class="season-period"><span data-ja>6月 〜 8月</span><span data-en>June – August</span></div>
+    </div>
+  </div>
+  <div class="season-body fade-in"><div class="inner">
+    <h3 class="season-lead-title">
+      <span data-ja>湖と、祈りの島。<br>青く澄んだ近江の夏。</span>
+      <span data-en>The lake and a sacred island —<br>Omi's clear blue summer.</span>
+    </h3>
+    <p class="season-lead">
+      <span data-ja>夏の琵琶湖は、空の青を映してどこまでも開放的。神が棲むと伝わる竹生島へ船で渡り、湖西では朝の白鬚神社の湖中鳥居が静かに佇みます。水辺でSUPやカヤックを楽しんだあとは、町家で涼をとる——湖国ならではの夏の過ごし方です。</span>
+      <span data-en>Summer on Lake Biwa is wide open, mirroring the blue of the sky. Cross by boat to Chikubu Island, said to be home to the gods; on the western shore, the lake-standing torii of Shirahige Shrine rests quietly in the morning. Try SUP or kayaking by the water, then cool off in your machiya — a summer only the lake country offers.</span>
+    </p>
+    <div class="season-tags">
+      <span class="season-tag"><span data-ja>⛩️ 白鬚神社の湖中鳥居</span><span data-en>⛩️ Shirahige lake torii</span></span>
+      <span class="season-tag"><span data-ja>🚢 竹生島クルーズ</span><span data-en>🚢 Chikubu Island cruise</span></span>
+      <span class="season-tag"><span data-ja>🏄 SUP・カヤック</span><span data-en>🏄 SUP &amp; kayak</span></span>
+    </div>
+
+    <div class="itin-head">
+      <span class="itin-badge"><span data-ja>1泊2日</span><span data-en>1N2D</span></span>
+      <span class="itin-label" data-ja>モデルルート</span>
+      <span class="itin-label" data-en>Model Route</span>
+    </div>
+    <div class="itin-grid">
+      <div class="day-card">
+        <div class="day-title"><span data-ja>1日目 ― 長浜と、神の棲む島</span><span data-en>Day 1 — Nagahama &amp; the island of the gods</span></div>
+        <div class="day-sub">Day One</div>
+        <ul class="timeline">
+          <li class="stop"><div class="stop-time">11:00</div><div class="stop-title"><span data-ja>黒壁スクエア散策</span><span data-en>Kurokabe Square</span></div><div class="stop-desc"><span data-ja>黒漆喰の町並みにガラス工房やギャラリーが軒を連ねる、長浜のシンボルエリア。</span><span data-en>Glass studios and galleries line Nagahama's signature black-plaster streetscape.</span></div></li>
+          <li class="stop"><div class="stop-time">12:30</div><div class="stop-title"><span data-ja>郷土料理ランチ</span><span data-en>Local-style lunch</span></div><div class="stop-desc"><span data-ja>のっぺいうどんなど、近江の郷土の味でお腹を満たして。</span><span data-en>Fill up on Omi home cooking such as noppei udon.</span></div></li>
+          <li class="stop"><div class="stop-time">14:00</div><div class="stop-title"><span data-ja>竹生島クルーズ</span><span data-en>Chikubu Island cruise</span></div><div class="stop-desc"><span data-ja>長浜港から船で約30分。宝厳寺・都久夫須麻神社が鎮まる神秘の島へ。</span><span data-en>About 30 minutes by boat to the mystical island of Hogon-ji temple and Tsukubusuma Shrine.</span></div></li>
+          <li class="stop"><div class="stop-time">16:30</div><div class="stop-title"><span data-ja>SHUKUBA チェックイン</span><span data-en>Check in at SHUKUBA</span></div><div class="stop-desc"><span data-ja>町家に到着。風の通る土間や縁側で、夏の夕暮れを過ごします。</span><span data-en>Arrive at the house and enjoy the summer evening on the airy doma and veranda.</span></div></li>
+          <li class="stop"><div class="stop-time">19:00</div><div class="stop-title"><span data-ja>町家で涼の夕べ</span><span data-en>A cool machiya evening</span></div><div class="stop-desc"><span data-ja>夕食のあとは灯りを落として、静かな夏の夜を。</span><span data-en>After dinner, dim the lights and savour the quiet summer night.</span></div></li>
+        </ul>
+      </div>
+      <div class="day-card">
+        <div class="day-title"><span data-ja>2日目 ― 朝の鳥居と、湖あそび</span><span data-en>Day 2 — Morning torii &amp; lake play</span></div>
+        <div class="day-sub">Day Two</div>
+        <ul class="timeline">
+          <li class="stop"><div class="stop-time">08:30</div><div class="stop-title"><span data-ja>早めに湖西へ出発</span><span data-en>Early start to the west shore</span></div><div class="stop-desc"><span data-ja>暑くなる前に。朝の光の中、湖沿いを高島方面へ。</span><span data-en>Set off before the heat, toward Takashima in the morning light.</span></div></li>
+          <li class="stop"><div class="stop-time">10:00</div><div class="stop-title"><span data-ja>白鬚神社の湖中鳥居</span><span data-en>Shirahige lake torii</span></div><div class="stop-desc"><span data-ja>琵琶湖に浮かぶ朱の鳥居。「近江の厳島」とも呼ばれる絶景です。</span><span data-en>A vermilion torii floating on the lake — the "Itsukushima of Omi."</span></div></li>
+          <li class="stop"><div class="stop-time">11:30</div><div class="stop-title"><span data-ja>SUP・湖水浴</span><span data-en>SUP &amp; swimming</span></div><div class="stop-desc"><span data-ja>マキノサニービーチなどでSUPやカヤック、湖水浴を。透明度の高い湖で遊びます。</span><span data-en>Enjoy SUP, kayaking or a swim at clear-water beaches like Makino Sunny Beach.</span></div></li>
+          <li class="stop"><div class="stop-time">13:30</div><div class="stop-title"><span data-ja>湖畔ランチ</span><span data-en>Lakeside lunch</span></div><div class="stop-desc"><span data-ja>水辺のテラスでひと休み。冷たい近江のごちそうで涼を。</span><span data-en>Rest on a waterside terrace with cool Omi dishes.</span></div></li>
+          <li class="stop"><div class="stop-time">15:00</div><div class="stop-title"><span data-ja>道の駅・帰路</span><span data-en>Market &amp; return</span></div><div class="stop-desc"><span data-ja>夏野菜や湖魚の佃煮を土産に。涼やかな思い出とともに帰路へ。</span><span data-en>Take home summer produce and lake-fish delicacies on the way back.</span></div></li>
+        </ul>
+      </div>
+    </div>
+  </div></div>
+</section>
+
+<!-- ===== AUTUMN ===== -->
+<section id="autumn" class="season autumn">
+  <div class="season-hero" style="background-image:url('https://upload.wikimedia.org/wikipedia/commons/thumb/b/b9/Metasequoia_Road_in_Makino%2C_Takashima_-_Oct_17%2C_2020.jpg/1920px-Metasequoia_Road_in_Makino%2C_Takashima_-_Oct_17%2C_2020.jpg')">
+    <div class="season-hero-inner">
+      <div class="season-kanji">秋</div>
+      <div class="season-roman">Autumn</div>
+      <div class="season-period"><span data-ja>10月下旬 〜 11月</span><span data-en>Late October – November</span></div>
+    </div>
+  </div>
+  <div class="season-body fade-in">
+    <h3 class="season-lead-title">
+      <span data-ja>紅葉と、実りの湖国。<br>黄金に染まる並木道。</span>
+      <span data-en>Autumn leaves and harvest —<br>an avenue turned to gold.</span>
+    </h3>
+    <p class="season-lead">
+      <span data-ja>秋の近江は、山寺のもみじと湖畔の並木が主役。湖東三山の古刹は燃えるような紅葉に包まれ、メタセコイア並木は黄金色のトンネルへと姿を変えます。新米や近江牛、秋の味覚も最高潮。一年でもっとも色彩ゆたかな季節です。</span>
+      <span data-en>Autumn in Omi belongs to mountain-temple maples and lakeside avenues. The ancient temples of the Koto-Sanzan blaze with crimson, while the Metasequoia avenue becomes a tunnel of gold. New-harvest rice and Omi beef are at their peak — the year's most colourful season.</span>
+    </p>
+    <div class="season-tags">
+      <span class="season-tag"><span data-ja>🍁 湖東三山の紅葉</span><span data-en>🍁 Koto-Sanzan maples</span></span>
+      <span class="season-tag"><span data-ja>🌳 メタセコイア並木の黄葉</span><span data-en>🌳 Golden Metasequoia avenue</span></span>
+      <span class="season-tag"><span data-ja>🍂 鶏足寺の散りもみじ</span><span data-en>🍂 Keisoku-ji fallen leaves</span></span>
+    </div>
+
+    <div class="itin-head">
+      <span class="itin-badge"><span data-ja>1泊2日</span><span data-en>1N2D</span></span>
+      <span class="itin-label" data-ja>モデルルート</span>
+      <span class="itin-label" data-en>Model Route</span>
+    </div>
+    <div class="itin-grid">
+      <div class="day-card">
+        <div class="day-title"><span data-ja>1日目 ― 山寺のもみじ</span><span data-en>Day 1 — Maples of the mountain temples</span></div>
+        <div class="day-sub">Day One</div>
+        <ul class="timeline">
+          <li class="stop"><div class="stop-time">10:00</div><div class="stop-title"><span data-ja>湖東三山・西明寺</span><span data-en>Saimyo-ji, Koto-Sanzan</span></div><div class="stop-desc"><span data-ja>国宝の本堂と三重塔を彩る紅葉。金剛輪寺・百済寺と合わせて巡るのも。</span><span data-en>Maples framing a National Treasure hall and pagoda — pair it with Kongorin-ji and Hyakusai-ji.</span></div></li>
+          <li class="stop"><div class="stop-time">12:30</div><div class="stop-title"><span data-ja>秋の味覚ランチ</span><span data-en>Autumn-flavour lunch</span></div><div class="stop-desc"><span data-ja>新米や旬の野菜を使った和食で、実りの季節を味わいます。</span><span data-en>A Japanese lunch of new rice and seasonal vegetables.</span></div></li>
+          <li class="stop"><div class="stop-time">14:30</div><div class="stop-title"><span data-ja>八幡堀・新町通り</span><span data-en>Hachiman-bori &amp; Shinmachi-dori</span></div><div class="stop-desc"><span data-ja>近江八幡へ移動。秋の柔らかな光のなか、近江商人の町並みを散策。</span><span data-en>Move to Omihachiman and stroll the merchant streets in soft autumn light.</span></div></li>
+          <li class="stop"><div class="stop-time">16:00</div><div class="stop-title"><span data-ja>SHUKUBA チェックイン</span><span data-en>Check in at SHUKUBA</span></div><div class="stop-desc"><span data-ja>暮れゆく町家で、ひと息。秋の夜長をゆっくりと。</span><span data-en>Settle into the house as evening falls, into the long autumn night.</span></div></li>
+          <li class="stop"><div class="stop-time">18:30</div><div class="stop-title"><span data-ja>近江牛すき焼き</span><span data-en>Omi beef sukiyaki</span></div><div class="stop-desc"><span data-ja>夕食は名物・近江牛のすき焼きを。秋の夜にぴったりの一献とともに。</span><span data-en>Dinner of famed Omi beef sukiyaki, with a cup of local sake.</span></div></li>
+        </ul>
+      </div>
+      <div class="day-card">
+        <div class="day-title"><span data-ja>2日目 ― 黄金の並木と散りもみじ</span><span data-en>Day 2 — Golden avenue &amp; fallen maples</span></div>
+        <div class="day-sub">Day Two</div>
+        <ul class="timeline">
+          <li class="stop"><div class="stop-time">09:00</div><div class="stop-title"><span data-ja>湖北へ出発</span><span data-en>Head to the northern shore</span></div><div class="stop-desc"><span data-ja>朝のうちに。色づく山々を眺めながら高島・湖北方面へ。</span><span data-en>Set off early toward Takashima and the north, hills aglow.</span></div></li>
+          <li class="stop"><div class="stop-time">10:30</div><div class="stop-title"><span data-ja>メタセコイア並木の黄葉</span><span data-en>Golden Metasequoia avenue</span></div><div class="stop-desc"><span data-ja>約500本が黄金色に染まる並木道。滋賀屈指の秋の絶景です。</span><span data-en>Some 500 trees turned gold — one of Shiga's finest autumn sights.</span></div></li>
+          <li class="stop"><div class="stop-time">12:00</div><div class="stop-title"><span data-ja>マキノピックランド</span><span data-en>Makino Pick Land</span></div><div class="stop-desc"><span data-ja>並木の起点で果物狩りやランチ。地元の秋の恵みを味わって。</span><span data-en>Fruit picking and lunch at the avenue's gateway.</span></div></li>
+          <li class="stop"><div class="stop-time">14:00</div><div class="stop-title"><span data-ja>鶏足寺の紅葉</span><span data-en>Keisoku-ji maples</span></div><div class="stop-desc"><span data-ja>石段の参道を埋める散りもみじ。湖北を代表する紅葉の名所です。</span><span data-en>A stone-step approach carpeted in fallen maple leaves — the north shore's iconic spot.</span></div></li>
+          <li class="stop"><div class="stop-time">15:30</div><div class="stop-title"><span data-ja>帰路</span><span data-en>Return</span></div><div class="stop-desc"><span data-ja>夕暮れの湖を横目に、紅葉の余韻とともに帰路へ。</span><span data-en>Drive home past the lake at dusk, the colours lingering.</span></div></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== WINTER ===== -->
+<section id="winter" class="season winter alt">
+  <div class="season-hero" style="background-image:url('https://upload.wikimedia.org/wikipedia/commons/thumb/7/77/Lake_Yogo_in_winter_-_Q11385251.jpg/1920px-Lake_Yogo_in_winter_-_Q11385251.jpg')">
+    <div class="season-hero-inner">
+      <div class="season-kanji">冬</div>
+      <div class="season-roman">Winter</div>
+      <div class="season-period"><span data-ja>12月 〜 2月</span><span data-en>December – February</span></div>
+    </div>
+  </div>
+  <div class="season-body fade-in"><div class="inner">
+    <h3 class="season-lead-title">
+      <span data-ja>静寂と、滋味の冬。<br>雪化粧の城下町。</span>
+      <span data-en>Stillness and deep flavour —<br>a castle town under snow.</span>
+    </h3>
+    <p class="season-lead">
+      <span data-ja>人もまばらな冬の近江は、一年でもっとも静かで、もっとも美味しい季節かもしれません。長浜の盆梅展が早春の香りを運び、彦根城は雪化粧をまといます。近江牛のしゃぶしゃぶや鴨鍋で体を温め、湖北には伊吹山や余呉湖の雪景色が広がります。</span>
+      <span data-en>Quiet and uncrowded, winter in Omi may be the year's most peaceful — and most delicious — season. Nagahama's potted-plum exhibition carries the scent of early spring, while Hikone Castle dresses in snow. Warm yourself with Omi beef shabu-shabu and duck hot pot, as snowscapes spread across Mount Ibuki and Lake Yogo.</span>
+    </p>
+    <div class="season-tags">
+      <span class="season-tag"><span data-ja>🌸 長浜・盆梅展</span><span data-en>🌸 Nagahama bonsai-plum show</span></span>
+      <span class="season-tag"><span data-ja>🏯 彦根城の雪化粧</span><span data-en>🏯 Snow-clad Hikone Castle</span></span>
+      <span class="season-tag"><span data-ja>🍲 近江牛しゃぶしゃぶ</span><span data-en>🍲 Omi beef shabu-shabu</span></span>
+    </div>
+
+    <div class="itin-head">
+      <span class="itin-badge"><span data-ja>1泊2日</span><span data-en>1N2D</span></span>
+      <span class="itin-label" data-ja>モデルルート</span>
+      <span class="itin-label" data-en>Model Route</span>
+    </div>
+    <div class="itin-grid">
+      <div class="day-card">
+        <div class="day-title"><span data-ja>1日目 ― 盆梅とガラスのきらめき</span><span data-en>Day 1 — Plum blossoms &amp; glass</span></div>
+        <div class="day-sub">Day One</div>
+        <ul class="timeline">
+          <li class="stop"><div class="stop-time">11:00</div><div class="stop-title"><span data-ja>長浜・盆梅展</span><span data-en>Nagahama Bonbai Exhibition</span></div><div class="stop-desc"><span data-ja>慶雲館で開かれる日本最大級の盆梅展。寒さのなかに早春の香りが満ちます。</span><span data-en>One of Japan's largest potted-plum shows at Keiunkan — early-spring fragrance amid the cold.</span></div></li>
+          <li class="stop"><div class="stop-time">12:30</div><div class="stop-title"><span data-ja>鴨鍋ランチ</span><span data-en>Duck hot-pot lunch</span></div><div class="stop-desc"><span data-ja>湖北名物の鴨鍋やのっぺいうどんで、芯から温まります。</span><span data-en>Warm to the core with the north shore's duck hot pot or noppei udon.</span></div></li>
+          <li class="stop"><div class="stop-time">14:00</div><div class="stop-title"><span data-ja>黒壁スクエア</span><span data-en>Kurokabe Square</span></div><div class="stop-desc"><span data-ja>ガラス工芸のきらめきを楽しみ、レトロなカフェで温かいひと休み。</span><span data-en>Admire the glass crafts, then warm up at a retro café.</span></div></li>
+          <li class="stop"><div class="stop-time">16:00</div><div class="stop-title"><span data-ja>SHUKUBA チェックイン</span><span data-en>Check in at SHUKUBA</span></div><div class="stop-desc"><span data-ja>町家で暖をとりながら、静かな冬の夜の始まりを。</span><span data-en>Take warmth in the machiya as a still winter night begins.</span></div></li>
+          <li class="stop"><div class="stop-time">18:30</div><div class="stop-title"><span data-ja>近江牛しゃぶしゃぶ</span><span data-en>Omi beef shabu-shabu</span></div><div class="stop-desc"><span data-ja>とろける近江牛のしゃぶしゃぶを地酒とともに。冬ならではのごちそう。</span><span data-en>Melt-in-the-mouth Omi beef shabu-shabu with local sake — a winter feast.</span></div></li>
+        </ul>
+      </div>
+      <div class="day-card">
+        <div class="day-title"><span data-ja>2日目 ― 雪化粧の名城</span><span data-en>Day 2 — A castle in snow</span></div>
+        <div class="day-sub">Day Two</div>
+        <ul class="timeline">
+          <li class="stop"><div class="stop-time">09:30</div><div class="stop-title"><span data-ja>ゆっくり出発</span><span data-en>A slow start</span></div><div class="stop-desc"><span data-ja>冷える朝はゆっくりと。町家であたたかい朝を過ごしてから出発。</span><span data-en>Take a leisurely warm morning in the house before setting out.</span></div></li>
+          <li class="stop"><div class="stop-time">10:30</div><div class="stop-title"><span data-ja>彦根城・玄宮園</span><span data-en>Hikone Castle &amp; Genkyu-en</span></div><div class="stop-desc"><span data-ja>国宝天守と大名庭園。運がよければ雪化粧の名城に出会えます。</span><span data-en>A National Treasure keep and lordly garden — snow-clad if you're lucky.</span></div></li>
+          <li class="stop"><div class="stop-time">12:30</div><div class="stop-title"><span data-ja>近江ちゃんぽん</span><span data-en>Omi champon</span></div><div class="stop-desc"><span data-ja>彦根発祥のあっさり和風ちゃんぽんで、もう一度温まって。</span><span data-en>Warm up again with Hikone's light, Japanese-style champon.</span></div></li>
+          <li class="stop"><div class="stop-time">14:00</div><div class="stop-title"><span data-ja>湖北の雪景色ドライブ</span><span data-en>Snowscape drive</span></div><div class="stop-desc"><span data-ja>余呉湖や伊吹山の雪景色を望むドライブ。鏡のような湖面に冬の山が映ります。</span><span data-en>Drive past the snowscapes of Lake Yogo and Mount Ibuki, mirrored on still water.</span></div></li>
+          <li class="stop"><div class="stop-time">15:30</div><div class="stop-title"><span data-ja>帰路</span><span data-en>Return</span></div><div class="stop-desc"><span data-ja>静けさに満ちた冬の近江を後に、帰路へ。</span><span data-en>Leave the deep quiet of winter Omi behind, and head home.</span></div></li>
+        </ul>
+      </div>
+    </div>
+  </div></div>
+</section>
+
+<!-- CTA -->
+<section class="season-cta fade-in">
+  <div class="section-label" data-ja>ご予約</div>
+  <div class="section-label" data-en>Reserve</div>
+  <h2>
+    <span data-ja>季節を決めたら、<br>あとは町家に帰るだけ。</span>
+    <span data-en>Once you've chosen your season,<br>just come home to the machiya.</span>
+  </h2>
+  <p>
+    <span data-ja>どの季節も、夜は一棟貸しの古民家でゆっくりと。近江八幡・長浜の中心に位置するSHUKUBAは、四季の旅の拠点に最適です。</span>
+    <span data-en>Whatever the season, spend your nights in a private machiya. Set in the heart of Omihachiman and Nagahama, SHUKUBA is the ideal base for a journey through the seasons.</span>
+  </p>
+  <a class="hero-cta" href="index.html#booking"><span data-ja>空室を確認する</span><span data-en>Check Availability</span></a>
+</section>
+
+<!-- Footer -->
+<footer>
+  <div class="footer-logo">SHUKUBA</div>
+  <div class="footer-sub" data-ja>古民家を、もう一度この街の誇りへ。</div>
+  <div class="footer-sub" data-en>Breathing new life into century-old machiya townhouses.</div>
+  <div class="footer-links">
+    <a href="index.html#concept"><span data-ja>コンセプト</span><span data-en>Concept</span></a>
+    <a href="rooms.html"><span data-ja>客室紹介</span><span data-en>Rooms</span></a>
+    <a href="area.html"><span data-ja>地域紹介</span><span data-en>The Area</span></a>
+    <a href="seasons.html"><span data-ja>四季の旅</span><span data-en>Seasons</span></a>
+    <a href="index.html#booking"><span data-ja>ご予約</span><span data-en>Reserve</span></a>
+  </div>
+  <div class="footer-copy">
+    <span data-ja>© 2026 SPICEWORKS HD / SHUKUBA. 滋賀県古民家再生宿泊プロジェクト</span>
+    <span data-en>© 2026 SPICEWORKS HD / SHUKUBA. Machiya Revitalization Project, Shiga Prefecture</span>
+    <br><span style="opacity:.7;font-size:10px" data-ja>写真：Wikimedia Commons（竹生島・彦根城の桜・白鬚神社・メタセコイア並木・余呉湖 ／ CCライセンス）※サンプル用。掲載スポット・所要時間は目安です。</span>
+    <span style="opacity:.7;font-size:10px" data-en>Photos: Wikimedia Commons (Chikubushima, Hikone Castle, Shirahige Shrine, Metasequoia Avenue, Lake Yogo / CC-licensed) — sample use. Spots and times are approximate.</span>
+  </div>
+</footer>
+
+<script src="common.js"></script>
+</body>
+</html>

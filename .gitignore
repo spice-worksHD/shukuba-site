@@ -2,3 +2,18 @@ shukuba-deploy.zip
 
 # Local Netlify folder
 .netlify
+
+# Dependencies (regenerable)
+node_modules/
+
+# Heavy media — deployed via Netlify, kept out of git to stay lean
+video/
+images/
+
+# Local tooling / agent state
+.claude/
+.playwright-mcp/
+
+# Temp screenshots
+_*.jpeg
+_*.png

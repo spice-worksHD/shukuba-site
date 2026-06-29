@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ご予約完了 | SHUKUBA</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;700&family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+<style>
+.success-wrap {
+  min-height: 80vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 60px 24px;
+}
+.success-icon {
+  font-size: 56px;
+  margin-bottom: 24px;
+}
+.success-title {
+  font-family: 'Shippori Mincho', serif;
+  font-size: clamp(22px, 5vw, 32px);
+  color: var(--ink);
+  margin-bottom: 16px;
+}
+.success-body {
+  font-size: 15px;
+  line-height: 2;
+  color: var(--muted);
+  max-width: 480px;
+  margin-bottom: 40px;
+}
+.success-btn {
+  display: inline-block;
+  padding: 14px 40px;
+  background: var(--bengara);
+  color: #fff;
+  font-size: 15px;
+  letter-spacing: 1px;
+  border-radius: 2px;
+  text-decoration: none;
+}
+</style>
+</head>
+<body class="lang-ja">
+
+<!-- Nav -->
+<nav id="nav">
+  <a class="nav-logo" href="index.html">SHUKUBA</a>
+  <div class="nav-links">
+    <a href="index.html#concept"><span data-ja>コンセプト</span><span data-en>Concept</span></a>
+    <a href="rooms.html"><span data-ja>客室紹介</span><span data-en>Rooms</span></a>
+    <a href="area.html"><span data-ja>地域紹介</span><span data-en>The Area</span></a>
+    <a href="seasons.html"><span data-ja>四季の旅</span><span data-en>Seasons</span></a>
+    <a href="index.html#booking"><span data-ja>ご予約</span><span data-en>Reserve</span></a>
+  </div>
+</nav>
+
+<div class="success-wrap">
+  <div class="success-icon">✅</div>
+  <h1 class="success-title">ご予約・お支払いが完了しました</h1>
+  <p class="success-body">
+    ご登録のメールアドレスに確認メールをお送りしました。<br>
+    当日お会いできることを楽しみにしております。<br><br>
+    ご不明な点はメールにてお気軽にお問い合わせください。
+  </p>
+  <a href="index.html" class="success-btn">トップページへ戻る</a>
+</div>
+
+<script src="common.js"></script>
+</body>
+</html>

@@ -57,7 +57,7 @@
   .card h3 { font-size: 15px; margin-bottom: 14px; letter-spacing: 1px; }
 
   table { width: 100%; border-collapse: collapse; font-size: 13px; }
-  th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  th, td { text-align: left; padding: 4px 8px; border-bottom: 1px solid var(--border); vertical-align: middle; }
   th { color: var(--muted); font-weight: normal; font-size: 12px; }
   tr:last-child td { border-bottom: none; }
 
@@ -89,10 +89,33 @@
   .mini-btn.gold-btn { background: var(--gold); }
   .danger-btn { background: var(--danger); }
   .danger-btn:hover { background: #a3463a; }
-  #bookings-table th, #bookings-table td { padding: 5px 7px; vertical-align: middle; font-size: 12px; }
+  .op-btn { border: none; border-radius: 3px; padding: 2px 6px; font-size: 11px; cursor: pointer; white-space: nowrap; line-height: 1.6; }
+  .op-btn:disabled { cursor: default; opacity: 0.7; }
+  .op-btn:not(:disabled):hover { opacity: .85; }
+  .op-teal { background: #4a8a80; color: #fff; }
+  .op-green { background: #2e7d5e; color: #fff; }
+  .op-gray { background: #e0e0e0; color: #999; border: 1px solid #ccc; }
+  .op-gold { background: var(--gold); color: #fff; }
+  .op-gold-dim { background: #e0d8c0; color: #9a8a6a; }
+  .op-red { background: #c0584f; color: #fff; }
+  .booking-cb { cursor: pointer; width: 14px; height: 14px; }
+  /* LINE Chat Drawer */
+  #chat-overlay { display:none;position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:1800; }
+  #chat-drawer { display:none;position:fixed;top:0;right:0;width:360px;height:100vh;background:#fff;box-shadow:-4px 0 24px rgba(0,0,0,.18);z-index:1900;flex-direction:column; }
+  #chat-header { padding:14px 16px;background:#3D5A52;color:#fff;display:flex;align-items:center;gap:10px;flex-shrink:0; }
+  #chat-messages { flex:1;overflow-y:auto;padding:14px 12px;background:#f0ede8;display:flex;flex-direction:column;gap:10px; }
+  #chat-footer { padding:10px 12px;border-top:1px solid var(--border);display:flex;gap:8px;align-items:flex-end;flex-shrink:0; }
+  .chat-bw { display:flex;flex-direction:column; }
+  .chat-bw.out { align-items:flex-end; }
+  .chat-bw.in { align-items:flex-start; }
+  .chat-b { max-width:80%;padding:9px 13px;font-size:13px;line-height:1.65;white-space:pre-wrap;word-break:break-word; }
+  .chat-b.out { background:#3D5A52;color:#fff;border-radius:14px 14px 3px 14px; }
+  .chat-b.in { background:#fff;color:var(--ink);border-radius:14px 14px 14px 3px;box-shadow:0 1px 3px rgba(0,0,0,.08); }
+  .chat-t { font-size:10px;color:var(--muted);margin-top:3px; }
+  #bookings-table th, #bookings-table td { padding: 3px 5px; vertical-align: middle; font-size: 12px; }
   #bookings-table th { font-size: 11px; }
   .save-row { text-align: right; }
-  .badge { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 11px; }
+  .badge { display: inline-block; padding: 1px 6px; border-radius: 10px; font-size: 10px; white-space:nowrap; }
   .badge.future { background: #e2f0ec; color: #2e7d5e; }
   .badge.staying { background: #fff3cd; color: #856404; font-weight: bold; }
   .badge.past { background: #eee; color: var(--muted); }
@@ -200,7 +223,10 @@
     <div class="card">
       <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:12px">
         <h3>予約一覧</h3>
-        <button class="btn" onclick="exportCSV()">CSVダウンロード</button>
+        <div style="display:flex;gap:6px">
+          <button onclick="bulkCancelBookings()" style="padding:5px 12px;font-size:12px;background:var(--danger);color:#fff;border:none;border-radius:4px;cursor:pointer">選択キャンセル</button>
+          <button class="btn" onclick="exportCSV()">CSVダウンロード</button>
+        </div>
       </div>
       <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px;padding:10px 12px;background:var(--paper);border-radius:6px">
         <input type="text" id="filter-search" placeholder="氏名・メール検索" oninput="renderBookings()"
@@ -230,8 +256,9 @@
         <table id="bookings-table">
           <thead>
             <tr>
-              <th>予約日時</th><th>物件</th><th>IN</th><th>OUT</th>
-              <th>名</th><th>氏名</th><th>連絡先</th><th>金額</th><th>状態</th><th>状況</th><th>操作</th>
+              <th style="width:18px;padding:3px"><input type="checkbox" id="cb-all" onchange="toggleAllCb()"></th>
+              <th>予約日時</th><th>物件</th><th>期間</th>
+              <th>名</th><th>氏名</th><th>メール</th><th>金額</th><th>状態</th><th>操作</th>
             </tr>
           </thead>
           <tbody></tbody>
@@ -246,8 +273,15 @@
     <div class="card">
       <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:6px">
         <h3 style="margin:0">宿泊者名簿（旅館業法対応）</h3>
-        <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
-          <button class="btn" onclick="exportLedgerCSV()" style="font-size:12px;padding:6px 12px">台帳CSVダウンロード</button>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+          <input type="date" id="ledger-from" onchange="renderLedger()"
+            style="padding:6px 10px;border:1px solid var(--border);border-radius:4px;font-size:13px;background:#fff;color:var(--ink)">
+          <span style="font-size:12px;color:var(--muted)">〜</span>
+          <input type="date" id="ledger-to" onchange="renderLedger()"
+            style="padding:6px 10px;border:1px solid var(--border);border-radius:4px;font-size:13px;background:#fff;color:var(--ink)">
+          <button onclick="document.getElementById('ledger-from').value='';document.getElementById('ledger-to').value='';renderLedger()"
+            style="padding:5px 10px;border:1px solid var(--border);border-radius:4px;font-size:12px;background:#fff;cursor:pointer;color:var(--muted)">全期間</button>
+          <button class="btn" onclick="exportLedgerCSV()" style="font-size:12px;padding:6px 12px">台帳CSV</button>
           <div id="ledger-filter-group" style="display:flex;gap:6px">
             <button class="small-btn active" data-filter="all" onclick="setLedgerFilter('all')">すべて</button>
             <button class="small-btn" data-filter="pending" onclick="setLedgerFilter('pending')">未記入</button>
@@ -585,7 +619,7 @@ function clearBookingFilters() {
 
 function renderBookings() {
   const today = new Date(); today.setHours(0,0,0,0);
-  const todayStr = today.toISOString().slice(0, 10);
+  const todayStr = fmtDateAdmin(today);
   const search = (document.getElementById('filter-search')?.value || '').toLowerCase();
   const roomFilter = document.getElementById('filter-room')?.value || '';
   const statusFilter = document.getElementById('filter-status')?.value || '';
@@ -609,11 +643,12 @@ function renderBookings() {
     .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 
   tbody.innerHTML = sorted.map(b => {
-    const isFuture = new Date(b.checkin) >= today;
     const isCancelled = b.status === 'cancelled';
     let statusLabel, statusClass;
     if (isCancelled) {
       statusLabel = 'キャンセル'; statusClass = 'cancelled';
+    } else if (b.checkedOut) {
+      statusLabel = '退出済'; statusClass = 'past';
     } else if (b.checkin > todayStr) {
       statusLabel = '宿泊前'; statusClass = 'future';
     } else if (b.checkout > todayStr) {
@@ -626,53 +661,61 @@ function renderBookings() {
     const photos = b.ledger?.passportPhotos || [];
     const nonJpRequired = b.ledger?.nonJapaneseCount ?? 0;
     const photoOk = nonJpRequired === 0 || photos.length >= nonJpRequired;
-    const photoLabel = nonJpRequired > 0
-      ? `<span class="badge ${photoOk ? 'future' : 'cancelled'}" style="display:block;margin-bottom:2px" title="パスポート写真 ${photos.length}/${nonJpRequired}枚">📷 ${photos.length}/${nonJpRequired}</span>`
+
+    // ── ボタン色でステータスを表現 ──────────────────────────
+    // C・I送信: LINE連携済 + 未退出 + 未キャンセルのみ表示
+    let ciBtn = '';
+    if (b.lineUserId && !b.checkedOut && !isCancelled) {
+      ciBtn = b.ciLineSent
+        ? `<button class="op-btn op-gray" title="C・I案内送信済" disabled>C・I済</button>`
+        : `<button class="op-btn op-teal" onclick="sendLineTest(${b._idx})" title="チェックイン案内をLINE送信">C・I送信</button>`;
+    }
+
+    // 📷: 外国人がいる場合のみ表示 / 緑=OK, 赤=不足
+    const photoBtn = nonJpRequired > 0
+      ? `<button class="op-btn ${photoOk ? 'op-green' : 'op-red'}" onclick="viewPassportPhotos(${b._idx})" title="📷 ${photos.length}/${nonJpRequired}枚">📷</button>`
       : '';
 
-    const statusCell = `
-      <span class="badge ${b.checkedIn ? 'future' : 'past'}" style="display:block;margin-bottom:2px">${b.checkedIn ? '台帳済' : '台帳未'}</span>
-      ${photoLabel}
-      <span class="badge ${b.lineUserId ? 'future' : 'past'}" style="display:block;margin-bottom:2px">${b.lineUserId ? 'LINE済' : 'LINE未'}</span>
-      ${b.doorCodeSent ? '<span class="badge future" style="display:block;margin-bottom:2px">鍵送信済</span>' : ''}
-      ${b.checkedOut ? '<span class="badge past" style="display:block;background:var(--muted)">退出済</span>' : ''}
-    `;
+    // 🔑: 送信可能=金, 送信済=薄金(disabled)
+    let keyBtn = '';
+    if (b.checkedIn && b.lineUserId) {
+      keyBtn = b.doorCodeSent
+        ? `<button class="op-btn op-gold-dim" title="ドアコード送信済" disabled>🔑</button>`
+        : `<button class="op-btn op-gold" onclick="${photoOk ? `confirmCheckin(${b._idx})` : "alert('パスポート写真が人数分揃っていません')"}" title="${photoOk ? 'ドアコード送信' : 'パスポート写真不足'}">🔑</button>`;
+    }
 
-    const passportBlockMsg = !photoOk
-      ? `title="パスポート写真が不足しています (${photos.length}/${nonJpRequired}枚)" style="opacity:0.4;cursor:not-allowed"`
-      : `title="パスポート確認済・ドアコード送信"`;
+    // 退出/✉: 状況依存の単一アクションボタン
+    let ctxBtn = '';
+    if (canCheckout) {
+      ctxBtn = `<button class="op-btn op-teal" onclick="adminCheckout(${b._idx})" title="退出確認">退出</button>`;
+    } else if (b.checkedOut && b.lineUserId && !b.checkoutThanksSent) {
+      ctxBtn = `<button class="op-btn op-teal" onclick="sendCheckoutThanks(${b._idx})" title="✉サンクス送信">✉</button>`;
+    }
+
+    // 💬 チャット: LINE連携済なら常に表示
+    const chatBtn = b.lineUserId
+      ? `<button class="op-btn" style="background:#06c755;color:#fff" onclick="openChat(${b._idx})" title="LINEチャット">💬</button>`
+      : '';
 
     const actionBtns = isCancelled
-      ? `<span style="font-size:10px;color:var(--muted)">${b.cancelledAt ? new Date(b.cancelledAt).toLocaleString('ja-JP') : 'キャンセル済'}</span>`
-      : `<div style="display:flex;gap:3px;flex-wrap:wrap;justify-content:flex-end">
-          <button class="mini-btn danger-btn" onclick="cancelBooking(${b._idx})">取消</button>
-          ${b.lineUserId ? `<button class="mini-btn" onclick="sendLineTest(${b._idx})" title="LINEテスト送信">LINE</button>` : ''}
-          ${photos.length > 0 ? `<button class="mini-btn" style="background:#5a7a9a" onclick="viewPassportPhotos(${b._idx})" title="パスポート写真を確認">📷確認</button>` : ''}
-          ${b.checkedIn && b.lineUserId && !b.doorCodeSent
-            ? `<button class="mini-btn gold-btn" onclick="${photoOk ? `confirmCheckin(${b._idx})` : "alert('パスポート写真が人数分揃っていません。写真を確認してください。')"}" ${passportBlockMsg}>🔑送信</button>`
-            : ''}
-          ${canCheckout
-            ? `<button class="mini-btn" style="background:#3a6b8a" onclick="adminCheckout(${b._idx})" title="チェックアウト確認（LINE連携ありの場合サンクスも同時送信）">退出確認</button>`
-            : ''}
-          ${b.checkedOut && b.lineUserId && !b.checkoutThanksSent
-            ? `<button class="mini-btn" style="background:#5a5a8a" onclick="sendCheckoutThanks(${b._idx})" title="サンクスメッセージのみ送信">✉サンクス</button>`
-            : ''}
-        </div>`;
+      ? `<div style="display:flex;gap:2px;align-items:center;justify-content:flex-end">${chatBtn}<span style="font-size:10px;color:var(--muted);margin-left:2px">${b.cancelledAt ? new Date(b.cancelledAt).toLocaleDateString('ja-JP') : 'キャンセル'}</span></div>`
+      : `<div style="display:flex;gap:2px;align-items:center;justify-content:flex-end">${ciBtn}${photoBtn}${keyBtn}${ctxBtn}${chatBtn}</div>`;
+
+    const period = `${parseInt(b.checkin.slice(5,7))}/${parseInt(b.checkin.slice(8))}〜${parseInt(b.checkout.slice(5,7))}/${parseInt(b.checkout.slice(8))}`;
 
     return `<tr class="${isCancelled ? 'cancelled-row' : ''}">
+      <td style="padding:3px;text-align:center"><input type="checkbox" class="booking-cb" data-idx="${b._idx}"${isCancelled ? ' disabled' : ''}></td>
       <td style="font-size:11px;white-space:nowrap">${new Date(b.createdAt).toLocaleString('ja-JP',{month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'})}</td>
-      <td style="font-size:11px">${roomLabels[String(b.room)] || b.roomName || b.room}</td>
-      <td style="white-space:nowrap">${b.checkin}</td>
-      <td style="white-space:nowrap">${b.checkout}</td>
+      <td style="font-size:11px;white-space:nowrap">${roomLabels[String(b.room)] || b.roomName || b.room}</td>
+      <td style="font-size:11px;white-space:nowrap">${period}</td>
       <td style="text-align:center">${b.guests || '-'}</td>
-      <td>${b.name}</td>
-      <td style="font-size:11px">${b.email}<br><span style="color:var(--muted)">${b.phone || ''}</span></td>
+      <td style="white-space:nowrap">${b.name}</td>
+      <td style="font-size:11px;white-space:nowrap;max-width:150px;overflow:hidden;text-overflow:ellipsis">${b.email}</td>
       <td style="white-space:nowrap">¥${(b.total || 0).toLocaleString()}</td>
       <td><span class="badge ${statusClass}">${statusLabel}</span></td>
-      <td style="min-width:64px">${statusCell}</td>
-      <td style="text-align:right">${actionBtns}</td>
+      <td style="white-space:nowrap">${actionBtns}</td>
     </tr>`;
-  }).join('') || '<tr><td colspan="11" style="color:var(--muted)">予約はまだありません</td></tr>';
+  }).join('') || '<tr><td colspan="10" style="color:var(--muted)">予約はまだありません</td></tr>';
 }
 
 function renderMonthlySales() {
@@ -715,19 +758,46 @@ function filterByMonth(start, end) {
 async function viewPassportPhotos(idx) {
   const b = state.bookings[idx];
   const photos = b?.ledger?.passportPhotos || [];
-  if (photos.length === 0) { alert('パスポート写真はありません。'); return; }
-  for (const p of photos) {
-    const r = await fetch(`/.netlify/functions/passport-photo?key=${encodeURIComponent(p.key)}`, {
-      headers: { 'x-admin-key': adminKey },
-    });
-    if (r.ok) {
-      const blob = await r.blob();
-      const objectUrl = URL.createObjectURL(blob);
-      window.open(objectUrl, '_blank');
-    } else {
-      alert('写真の取得に失敗しました: ' + p.name);
-    }
+  if (!photos.length) { alert('パスポート写真はありません。'); return; }
+
+  const OVERLAY_ID = 'passport-photo-overlay';
+  let overlay = document.getElementById(OVERLAY_ID);
+  if (overlay) overlay.remove();
+
+  overlay = document.createElement('div');
+  overlay.id = OVERLAY_ID;
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px';
+  overlay.onclick = () => overlay.remove();
+  overlay.innerHTML = '<div style="color:#fff;font-size:15px">読み込み中...</div>';
+  document.body.appendChild(overlay);
+
+  const r = await apiPost({ action: 'get-passport-photos', index: idx });
+  if (!r.ok || !r.photos?.length) {
+    overlay.remove();
+    alert('写真の取得に失敗しました。');
+    return;
   }
+
+  const inner = document.createElement('div');
+  inner.style.cssText = 'background:#1a1a1a;border-radius:12px;padding:20px;max-width:95vw;max-height:90vh;overflow-y:auto';
+  inner.onclick = e => e.stopPropagation();
+  inner.innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+      <span style="color:#fff;font-weight:bold;font-size:14px">${b.name}様 — パスポート写真 ${r.photos.length}枚</span>
+      <button id="passport-close-btn"
+        style="background:none;border:1px solid #888;color:#fff;padding:4px 16px;border-radius:4px;cursor:pointer;margin-left:16px;font-size:14px">✕ 閉じる</button>
+    </div>
+    <div style="display:flex;flex-wrap:wrap;gap:16px;justify-content:center">
+      ${r.photos.map((p, i) => `
+        <div style="text-align:center">
+          <img src="${p.dataUrl}" style="max-width:260px;max-height:380px;object-fit:contain;border-radius:6px;display:block;border:1px solid #444">
+          <div style="color:#aaa;font-size:11px;margin-top:6px">${i+1}枚目${p.name ? ` (${p.name})` : ''}</div>
+        </div>`).join('')}
+    </div>`;
+
+  overlay.innerHTML = '';
+  overlay.appendChild(inner);
+  document.getElementById('passport-close-btn').onclick = () => overlay.remove();
 }
 
 async function adminCheckout(idx) {
@@ -757,6 +827,22 @@ async function cancelBooking(idx) {
   if (!confirm('この予約を取り消しますか？日程は再度予約可能になります。予約履歴には「キャンセル」として残ります。')) return;
   const r = await apiPost({ action: 'cancel-booking', index: idx });
   if (r.ok) { state.bookings = r.bookings; renderStats(); renderBookings(); renderGrid(); }
+}
+
+function toggleAllCb() {
+  const all = document.getElementById('cb-all');
+  document.querySelectorAll('.booking-cb:not([disabled])').forEach(cb => cb.checked = all.checked);
+}
+
+async function bulkCancelBookings() {
+  const selected = [...document.querySelectorAll('.booking-cb:checked')].map(cb => parseInt(cb.dataset.idx));
+  if (selected.length === 0) { alert('キャンセルする予約を選択してください'); return; }
+  if (!confirm(selected.length + '件の予約をキャンセルしますか？')) return;
+  for (const idx of selected) {
+    const r = await apiPost({ action: 'cancel-booking', index: idx });
+    if (r.ok) state.bookings = r.bookings;
+  }
+  renderStats(); renderBookings(); renderGrid();
 }
 
 function exportCSV() {
@@ -837,9 +923,13 @@ function renderLedger() {
     </div>
   `;
 
+  const fromFilter = document.getElementById('ledger-from')?.value || '';
+  const toFilter = document.getElementById('ledger-to')?.value || '';
   const sorted = state.bookings.map((b, i) => ({...b, _idx: i}))
     .filter(b => b.status !== 'cancelled')
     .filter(b => {
+      if (fromFilter && b.checkin < fromFilter) return false;
+      if (toFilter && b.checkin > toFilter) return false;
       if (ledgerFilter === 'done') return !!b.checkedIn;
       if (ledgerFilter === 'pending') return !b.checkedIn;
       return true;
@@ -915,14 +1005,22 @@ async function confirmCheckin(idx) {
     state.bookings = r.bookings;
     renderStats();
     renderBookings();
-    alert('ドアロック番号を送信しました。');
+    showToast(`✓ ドアロック番号（${r.doorCode || '—'}）をLINEで送信しました`);
   } else {
     alert('送信に失敗しました: ' + (r.error || '不明なエラー'));
   }
 }
 
+function showToast(msg) {
+  const t = document.createElement('div');
+  t.textContent = msg;
+  t.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#3D5A52;color:#fff;padding:12px 24px;border-radius:8px;font-size:14px;z-index:9998;white-space:nowrap;box-shadow:0 4px 12px rgba(0,0,0,0.3)';
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 4000);
+}
+
 function exportLedgerCSV() {
-  const headers = ['チェックイン','チェックアウト','物件','予約者','代表者氏名','フリガナ','住所','電話番号','職業','国籍','旅券番号','到着予定','人数','同行者氏名','同行者住所','同行者旅券番号','同行者備考','記入日時'];
+  const headers = ['チェックイン','チェックアウト','物件','予約者','代表者氏名','フリガナ','住所','電話番号','職業','国籍','旅券番号','到着予定','人数','同行者氏名','同行者住所','同行者旅券番号','記入日時'];
   const rows = [];
   state.bookings.forEach(b => {
     if (b.status === 'cancelled' || !b.checkedIn || !b.ledger) return;
@@ -931,7 +1029,7 @@ function exportLedgerCSV() {
     if (companions.length === 0) {
       rows.push([b.checkin, b.checkout, roomLabels[String(b.room)]||b.roomName||b.room, b.name,
         l.name, l.nameKana, l.address, l.phone||'', l.occupation, l.nationality||'日本', l.passportNumber||'',
-        l.arrivalTime||'', b.guests||'', '', '', '', '',
+        l.arrivalTime||'', b.guests||'', '', '', '',
         b.checkedInAt ? new Date(b.checkedInAt).toLocaleString('ja-JP') : '']);
     } else {
       companions.forEach((c, ci) => {
@@ -940,7 +1038,7 @@ function exportLedgerCSV() {
           ci === 0 ? (l.phone||'') : '', ci === 0 ? l.occupation : '', ci === 0 ? (l.nationality||'日本') : '',
           ci === 0 ? (l.passportNumber||'') : '', ci === 0 ? (l.arrivalTime||'') : '',
           ci === 0 ? (b.guests||'') : '',
-          c.name||'', c.address||'', c.passportNumber||'', c.note||'',
+          c.name||'', c.address||'', c.passportNumber||'',
           ci === 0 ? (b.checkedInAt ? new Date(b.checkedInAt).toLocaleString('ja-JP') : '') : '']);
       });
     }
@@ -1002,7 +1100,8 @@ async function saveLineTemplate() {
 async function sendLineTest(idx) {
   const r = await apiPost({ action: 'send-line-test', index: idx });
   if (r.ok) {
-    alert('LINEを送信しました');
+    if (r.bookings) state.bookings = r.bookings;
+    renderBookings();
   } else {
     alert('送信に失敗しました: ' + (r.error || '不明なエラー'));
   }
@@ -1035,30 +1134,24 @@ async function printLedgerEntry(idx) {
   if (!b || !b.ledger) return;
   const l = b.ledger;
 
+  // Open window synchronously first (before any await, to avoid popup blocker)
+  const win = window.open('', '_blank');
+  if (!win) { alert('ポップアップブロックを解除してください。'); return; }
+  win.document.write('<html><body style="font-family:sans-serif;padding:32px;color:#333"><p>読み込み中...</p></body></html>');
+
   // 非日本人の名前リスト（写真ラベル用）
   const nonJPNames = [];
   if (!isJPNat(l.nationality)) nonJPNames.push(l.name);
   (l.companions || []).forEach(c => { if (!isJPNat(c.nationality || '')) nonJPNames.push(c.name); });
 
-  // パスポート写真をfetchしてbase64化
+  // バッチAPIで全写真を一括取得
   const photoImgs = [];
-  for (let i = 0; i < (l.passportPhotos || []).length; i++) {
-    const p = l.passportPhotos[i];
-    try {
-      const r = await fetch(`/.netlify/functions/passport-photo?key=${encodeURIComponent(p.key)}`, {
-        headers: { 'x-admin-key': adminKey },
-      });
-      if (r.ok) {
-        const blob = await r.blob();
-        const src = await new Promise(res => {
-          const reader = new FileReader();
-          reader.onload = e => res(e.target.result);
-          reader.readAsDataURL(blob);
-        });
-        const label = nonJPNames[i] ? `${nonJPNames[i]}のパスポート写真` : `写真 ${i + 1}枚目`;
-        photoImgs.push({ src, label });
-      }
-    } catch (_) {}
+  const pr = await apiPost({ action: 'get-passport-photos', index: idx });
+  if (pr.ok && pr.photos?.length) {
+    pr.photos.forEach((p, i) => {
+      const label = nonJPNames[i] ? `${nonJPNames[i]}のパスポート写真` : `写真 ${i + 1}枚目`;
+      photoImgs.push({ src: p.dataUrl, label });
+    });
   }
 
   const esc = s => String(s || '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -1069,7 +1162,6 @@ async function printLedgerEntry(idx) {
       <td>${esc(c.nationality || '')}</td>
       <td>${esc(c.passportNumber || '')}</td>
       <td>${esc(c.address || '')}</td>
-      <td>${esc(c.note || '')}</td>
     </tr>`).join('');
 
   const photosSection = photoImgs.length ? `
@@ -1120,7 +1212,7 @@ async function printLedgerEntry(idx) {
   ${(l.companions || []).length ? `
     <h2>同行者</h2>
     <table class="companions">
-      <thead><tr><th>氏名</th><th>国籍</th><th>旅券番号</th><th>住所（代表者と同一の場合は空欄）</th><th>備考</th></tr></thead>
+      <thead><tr><th>氏名</th><th>国籍</th><th>旅券番号</th><th>住所（代表者と同一の場合は空欄）</th></tr></thead>
       <tbody>${companionRows}</tbody>
     </table>
   ` : ''}
@@ -1128,7 +1220,7 @@ async function printLedgerEntry(idx) {
   <script>window.onload = () => window.print();<\/script>
 </body></html>`;
 
-  const win = window.open('', '_blank');
+  win.document.open();
   win.document.write(docHtml);
   win.document.close();
 }
@@ -1408,6 +1500,94 @@ async function deleteBookingHard(idx) {
   if (r.ok) { state.bookings = r.bookings; renderAll(); }
 }
 
+// ── LINE Chat ────────────────────────────────────────────
+let currentChat = { lineUserId: null };
+let chatPollTimer = null;
+
+async function openChat(idx) {
+  const b = state.bookings[idx];
+  if (!b?.lineUserId) return;
+  currentChat.lineUserId = b.lineUserId;
+
+  const roomName = roomLabels[String(b.room)] || b.roomName || '';
+  document.getElementById('chat-guest-name').textContent = b.name + ' 様';
+  document.getElementById('chat-booking-info').textContent = roomName + '　' + b.checkin + '〜' + b.checkout;
+
+  document.getElementById('chat-drawer').style.display = 'flex';
+  document.getElementById('chat-overlay').style.display = 'block';
+
+  await refreshChatMessages();
+  chatPollTimer = setInterval(refreshChatMessages, 10000);
+  document.getElementById('chat-input').focus();
+}
+
+function closeChat() {
+  document.getElementById('chat-drawer').style.display = 'none';
+  document.getElementById('chat-overlay').style.display = 'none';
+  clearInterval(chatPollTimer);
+  chatPollTimer = null;
+  currentChat.lineUserId = null;
+}
+
+async function refreshChatMessages() {
+  if (!currentChat.lineUserId) return;
+  const r = await apiPost({ action: 'get-chat', lineUserId: currentChat.lineUserId });
+  if (r.ok) renderChatMessages(r.messages || []);
+}
+
+function renderChatMessages(messages) {
+  const el = document.getElementById('chat-messages');
+  const atBottom = el.scrollTop + el.clientHeight >= el.scrollHeight - 30;
+  const chatEsc = s => String(s||'').replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+  if (!messages.length) {
+    el.innerHTML = '<div style="text-align:center;color:var(--muted);font-size:12px;padding:40px 16px">メッセージはまだありません<br><span style="font-size:11px">ゲストがLINEでメッセージを送ると表示されます</span></div>';
+    return;
+  }
+  el.innerHTML = messages.map(m => {
+    const dir = m.direction === 'out' ? 'out' : 'in';
+    const time = m.at ? new Date(m.at).toLocaleString('ja-JP',{month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'}) : '';
+    return `<div class="chat-bw ${dir}"><div class="chat-b ${dir}">${chatEsc(m.text)}</div><div class="chat-t">${dir === 'out' ? '管理者 ' : ''}${time}</div></div>`;
+  }).join('');
+  if (atBottom) el.scrollTop = el.scrollHeight;
+}
+
+async function sendChatMessage() {
+  const input = document.getElementById('chat-input');
+  const text = input.value.trim();
+  if (!text || !currentChat.lineUserId) return;
+  input.value = '';
+  input.disabled = true;
+  const r = await apiPost({ action: 'send-chat', lineUserId: currentChat.lineUserId, text });
+  input.disabled = false;
+  input.focus();
+  if (r.ok) {
+    renderChatMessages(r.messages || []);
+  } else {
+    alert('送信に失敗しました: ' + (r.error || '不明なエラー'));
+    input.value = text;
+  }
+}
+
 </script>
+
+<!-- LINE Chat Drawer -->
+<div id="chat-overlay" onclick="closeChat()"></div>
+<div id="chat-drawer">
+  <div id="chat-header">
+    <div style="flex:1;min-width:0">
+      <div id="chat-guest-name" style="font-weight:700;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"></div>
+      <div id="chat-booking-info" style="font-size:11px;opacity:.75;margin-top:2px"></div>
+    </div>
+    <button onclick="closeChat()" style="background:none;border:none;color:#fff;font-size:22px;cursor:pointer;line-height:1;padding:2px 4px;flex-shrink:0">✕</button>
+  </div>
+  <div id="chat-messages"></div>
+  <div id="chat-footer">
+    <textarea id="chat-input" placeholder="メッセージを入力… (Enterで送信、Shift+Enterで改行)" rows="2"
+      style="flex:1;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;font-family:inherit;resize:none;line-height:1.5"
+      onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendChatMessage();}"></textarea>
+    <button onclick="sendChatMessage()" class="btn" style="padding:0 16px;align-self:stretch;white-space:nowrap">送信</button>
+  </div>
+</div>
 </body>
 </html>

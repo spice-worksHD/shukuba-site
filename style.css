@@ -72,15 +72,22 @@ nav.menu-open .nav-toggle span:nth-child(3) { transform: translateY(-8px) rotate
 /* ===== HERO ===== */
 #hero {
   height: 100vh; position: relative; display: flex; align-items: center; justify-content: center;
-  background: linear-gradient(180deg, rgba(33,26,20,0.62) 0%, rgba(33,26,20,0.30) 40%, rgba(33,26,20,0.80) 100%),
-              url('https://upload.wikimedia.org/wikipedia/commons/c/cb/Shirahige_Shrine_%E7%99%BD%E9%AC%9A%E7%A5%9E%E7%A4%BE6_-_panoramio.jpg') center 40% / cover no-repeat;
+  background: #1a1410;
   overflow: hidden;
 }
-.hero-bg { position: absolute; inset: 0; }
+.hero-video {
+  position: absolute; inset: 0; width: 100%; height: 100%;
+  object-fit: cover; z-index: 0;
+}
+.hero-bg {
+  position: absolute; inset: 0; z-index: 1;
+  background: linear-gradient(180deg, rgba(33,26,20,0.55) 0%, rgba(33,26,20,0.20) 40%, rgba(33,26,20,0.75) 100%);
+}
 /* Yoshizu reed-screen motif replaces generic blur orbs */
 .lantern { position: absolute; }
 .lantern-1, .lantern-2, .lantern-3, .lantern-4, .lantern-5 { display: none; }
-.hero-content { position: relative; text-align: center; color: #F4EEE2; padding: 0 20px; z-index: 2; }
+.hero-content { position: relative; text-align: center; color: #F4EEE2; padding: 0 20px; z-index: 2; pointer-events: none; }
+.hero-content a { pointer-events: auto; }
 .hero-sub { font-size: 13px; letter-spacing: 4px; color: var(--susuki); margin-bottom: 20px; opacity: 0.95; }
 .hero-title { font-size: clamp(48px, 9vw, 88px); letter-spacing: 10px; font-weight: 500; line-height: 1.15; margin-bottom: 24px; }
 .hero-tagline { font-size: 16px; letter-spacing: 2px; color: rgba(244,238,226,0.78); margin-bottom: 44px; line-height: 2; font-family: 'Zen Kaku Gothic New', sans-serif; }
@@ -308,6 +315,25 @@ footer { background: var(--dark); color: rgba(244,238,226,0.55); padding: 0 40px
 .footer-links a { color: rgba(244,238,226,0.55); text-decoration: none; font-size: 12px; letter-spacing: 2px; transition: color .2s; }
 .footer-links a:hover { color: var(--susuki); }
 .footer-copy { font-size: 11px; letter-spacing: 1px; border-top: 1px solid rgba(244,238,226,0.10); padding-top: 24px; }
+
+/* ===== BACK TO TOP ===== */
+#to-top {
+  position: fixed; right: 24px; bottom: calc(24px + env(safe-area-inset-bottom, 0px));
+  z-index: 900; width: 50px; height: 50px; padding: 0;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(33,26,20,0.88); color: #F4EEE2; border: 1px solid var(--susuki);
+  border-radius: 50%; cursor: pointer; backdrop-filter: blur(6px);
+  opacity: 0; visibility: hidden; transform: translateY(12px);
+  transition: opacity .3s, transform .3s, background .25s, border-color .25s;
+  box-shadow: 0 4px 16px rgba(33,26,20,0.28);
+}
+#to-top.show { opacity: 1; visibility: visible; transform: translateY(0); }
+#to-top:hover { background: var(--bengara); border-color: var(--bengara); }
+#to-top svg { width: 20px; height: 20px; stroke: currentColor; stroke-width: 1.6; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+@media print { #to-top { display: none !important; } }
+@media (max-width: 768px) {
+  #to-top { right: 16px; bottom: calc(76px + env(safe-area-inset-bottom, 0px)); width: 46px; height: 46px; }
+}
 
 /* ===== GALLERY / FEATURE GRIDS (sub pages) ===== */
 .gallery-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-top: 40px; }

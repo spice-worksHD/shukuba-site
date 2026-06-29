@@ -20,6 +20,8 @@ const THEME = `
   .btn{display:block;width:100%;padding:15px;background:var(--reed);color:#fff;border:none;border-radius:8px;font-size:15px;letter-spacing:2px;cursor:pointer;margin-top:28px;-webkit-appearance:none;}
   .btn:active{background:var(--dark);}
   .error{background:#fbe9e7;color:#b8584f;font-size:13px;padding:12px 14px;border-radius:6px;margin-bottom:16px;}
+  .field-error{color:#b8584f;font-size:12px;margin-top:4px;display:none;}
+  .field-err input,.field-err textarea{border-color:#b8584f;}
   .done-mark p{font-size:14px;line-height:1.9;color:var(--muted);text-align:center;}
   .card{border:1px solid var(--border);border-radius:8px;padding:14px;margin-top:10px;background:#fafafa;}
   .card h4{margin:0 0 8px;font-size:13px;font-weight:700;color:var(--dark);}
@@ -137,19 +139,19 @@ function renderForm({ booking, error, values:v={}, lang, checkinUrl }) {
     const cIsJP = isJP(cNat);
     compHtml += `<div class="card" id="c-card-${i}">
       <h4>${T.roleComp(i)}</h4>
-      <label>${esc(T.cName)} <span class="req">*</span></label>
-      <input type="text" name="c_name_${i}" value="${esc(cv.name||'')}" autocomplete="name">
-      <label>${esc(T.cNat)}</label>
-      <input type="text" name="c_nationality_${i}" value="${esc(cNat)}" placeholder="${esc(T.cNatP)}"
+      <label class="field-label">${esc(T.cName)}<span class="req"> ※必須</span></label>
+      <input type="text" name="c_name_${i}" id="c-name-${i}" value="${esc(cv.name||'')}" autocomplete="name" oninput="onCName(${i},this.value)">
+      <div class="field-error" id="c-name-err-${i}"></div>
+      <label class="field-label">${esc(T.cNat)}<span class="req"> ※必須</span></label>
+      <input type="text" name="c_nationality_${i}" id="c-nat-${i}" value="${esc(cNat)}" placeholder="${esc(T.cNatP)}"
         autocomplete="country-name" oninput="onCNat(${i},this.value)">
+      <div class="field-error" id="c-nat-err-${i}"></div>
       <div id="c-pp-${i}" style="display:${cIsJP?'none':'block'}">
-        <label>${esc(T.cPPNum)} <span class="req">*</span></label>
+        <label>${esc(T.cPPNum)}<span class="req"> ※必須</span></label>
         <input type="text" name="c_passport_${i}" value="${esc(cv.passportNumber||'')}" placeholder="${esc(T.fPPNumP)}" autocomplete="off">
       </div>
       <label>${esc(T.cAddr)}</label>
       <input type="text" name="c_address_${i}" value="${esc(cv.address||'')}" autocomplete="street-address">
-      <label>${esc(T.cNote)}</label>
-      <input type="text" name="c_note_${i}" value="${esc(cv.note||'')}">
     </div>`;
   }
 
@@ -200,32 +202,38 @@ function renderForm({ booking, error, values:v={}, lang, checkinUrl }) {
     <input type="hidden" name="lang" value="${esc(lang)}">
     <input type="hidden" name="cc" value="${cc}">
 
-    <label>${esc(T.fName)} <span class="req">*</span></label>
+    <label class="field-label">${esc(T.fName)}<span class="req"> ※必須</span></label>
     <input type="text" name="name" id="main-name" value="${esc(v.name??booking.name??'')}" autocomplete="name" oninput="onMainName(this.value)">
+    <div class="field-error" id="err-name"></div>
 
-    ${lang==='ja'?`<label>${esc(T.fKana)} <span class="req">*</span></label>
-    <input type="text" name="nameKana" value="${esc(v.nameKana??'')}" autocomplete="off">`:'<input type="hidden" name="nameKana" value="">'}
+    ${lang==='ja'?`<label class="field-label">${esc(T.fKana)}<span class="req"> ※必須</span></label>
+    <input type="text" name="nameKana" id="main-kana" value="${esc(v.nameKana??'')}" autocomplete="off">
+    <div class="field-error" id="err-kana"></div>`:'<input type="hidden" name="nameKana" value="">'}
 
-    <label>${esc(T.fAddr)} <span class="req">*</span></label>
-    <input type="text" name="address" placeholder="${esc(T.fAddrP)}" value="${esc(v.address??'')}" autocomplete="street-address">
+    <label class="field-label">${esc(T.fAddr)}<span class="req"> ※必須</span></label>
+    <input type="text" name="address" id="main-addr" placeholder="${esc(T.fAddrP)}" value="${esc(v.address??'')}" autocomplete="street-address">
+    <div class="field-error" id="err-addr"></div>
 
     <label>${esc(T.fPhone)}</label>
     <input type="tel" name="phone" value="${esc(v.phone??booking.phone??'')}" autocomplete="tel">
 
-    <label>${esc(T.fJob)} <span class="req">*</span></label>
-    <input type="text" name="occupation" value="${esc(v.occupation??'')}" autocomplete="organization-title">
+    <label class="field-label">${esc(T.fJob)}<span class="req"> ※必須</span></label>
+    <input type="text" name="occupation" id="main-job" value="${esc(v.occupation??'')}" autocomplete="organization-title">
+    <div class="field-error" id="err-job"></div>
 
-    <label>${esc(T.fNat)}</label>
+    <label class="field-label">${esc(T.fNat)}<span class="req"> ※必須</span></label>
     <input type="text" name="nationality" id="main-nat" value="${esc(mainNat)}" placeholder="${esc(T.fNatP)}"
       autocomplete="country-name" oninput="onMainNat(this.value)">
+    <div class="field-error" id="err-nat"></div>
     <div class="hint">${T.fPPHint}</div>
     <div id="main-pp-field" style="display:${mainIsJP?'none':'block'}">
-      <label>${esc(T.fPPNum)} <span class="req">*</span></label>
+      <label>${esc(T.fPPNum)}<span class="req"> ※必須</span></label>
       <input type="text" name="passportNumber" value="${esc(v.passportNumber??'')}" placeholder="${esc(T.fPPNumP)}" autocomplete="off">
     </div>
 
     <label>${esc(T.fArrival)}</label>
     <input type="time" name="arrivalTime" value="${esc(v.arrivalTime??'')}">
+    <div class="field-error" id="err-form" style="display:none;background:#fbe9e7;padding:10px 12px;border-radius:6px;margin-top:16px;font-size:13px;color:#b8584f;"></div>
 
     ${cc>0?`<hr class="divider"><p class="section-title">${esc(T.secComp)}</p>${compHtml}`:''}
 
@@ -262,25 +270,41 @@ function renderForm({ booking, error, values:v={}, lang, checkinUrl }) {
     document.getElementById('pp-none').style.display=any?'none':'block';
   }
 
+  function showFieldError(id,msg){
+    var el=document.getElementById(id);
+    if(!el) return;
+    if(msg){el.textContent=msg;el.style.display='block';}
+    else{el.textContent='';el.style.display='none';}
+  }
+
   function onMainName(val){setLabel('main',(val||'').trim()||ROLE_MAIN);}
   function onMainNat(val){
     document.getElementById('main-pp-field').style.display=isJP(val)?'none':'block';
     showSlot('main',!isJP(val));
+    // 同行者の国籍を代表者と同じ値に自動入力
+    for(var j=0;j<CC;j++){
+      var cNatInp=document.getElementById('c-nat-'+j);
+      if(cNatInp&&(cNatInp.value||'').trim()===''){
+        cNatInp.value=val;
+        onCNat(j,val);
+      }
+    }
     updateNone();
   }
   function onCNat(i,val){
     document.getElementById('c-pp-'+i).style.display=isJP(val)?'none':'block';
-    var nameInp=document.querySelector('[name="c_name_'+i+'"]');
+    var nameInp=document.getElementById('c-name-'+i);
     var name=nameInp?(nameInp.value||'').trim():'';
     setLabel('c'+i, name||(ROLE_COMP[i]||('Guest '+(i+1))));
     showSlot('c'+i,!isJP(val));
     updateNone();
   }
   function onCName(i,val){
-    var natInp=document.querySelector('[name="c_nationality_'+i+'"]');
+    var natInp=document.getElementById('c-nat-'+i);
     if(natInp&&!isJP(natInp.value)){
       setLabel('c'+i,(val||'').trim()||(ROLE_COMP[i]||('Guest '+(i+1))));
     }
+    showFieldError('c-name-err-'+i,'');
   }
   function onPPFile(input,slotId){
     var thumb=document.getElementById('pp-thumb-'+slotId);
@@ -290,26 +314,68 @@ function renderForm({ booking, error, values:v={}, lang, checkinUrl }) {
     r.readAsDataURL(input.files[0]);
   }
 
-  // Add name→label sync for companions
-  for(var _i=0;_i<CC;_i++){
-    (function(i){
-      var inp=document.querySelector('[name="c_name_'+i+'"]');
-      if(inp) inp.addEventListener('input',function(){onCName(i,this.value);});
-    })(_i);
-  }
-
-  document.getElementById('checkin-form').addEventListener('submit',function(e){
-    // Companion names required
-    for(var i=0;i<CC;i++){
-      var inp=document.querySelector('[name="c_name_'+i+'"]');
-      if(!inp||(inp.value||'').trim()===''){
-        e.preventDefault();
-        alert(ERR_CNAME[i]||(i+1)+'番目の同行者の氏名を入力してください。');
-        if(inp) inp.focus();
-        return;
+  // ページ読み込み時に代表者国籍を同行者へ初期コピー
+  (function(){
+    var mainNat=document.getElementById('main-nat');
+    if(mainNat&&mainNat.value){
+      for(var j=0;j<CC;j++){
+        var cNatInp=document.getElementById('c-nat-'+j);
+        if(cNatInp&&(cNatInp.value||'').trim()===''){
+          cNatInp.value=mainNat.value;
+          onCNat(j,mainNat.value);
+        }
       }
     }
-    // Passport photos
+  })();
+
+  document.getElementById('checkin-form').addEventListener('submit',function(e){
+    e.preventDefault();
+    var form=this;
+    var lang2=form.querySelector('[name="lang"]').value||'ja';
+    var isEn=lang2==='en';
+    var hasErr=false;
+
+    // 代表者バリデーション
+    var nameVal=(document.getElementById('main-name').value||'').trim();
+    if(!nameVal){showFieldError('err-name',isEn?'Please enter the lead guest name.':'代表者氏名を入力してください。');hasErr=true;}
+    else{showFieldError('err-name','');}
+
+    var kanaInp=document.getElementById('main-kana');
+    if(kanaInp&&!(kanaInp.value||'').trim()){showFieldError('err-kana','フリガナを入力してください。');hasErr=true;}
+    else{showFieldError('err-kana','');}
+
+    var addrVal=(document.getElementById('main-addr').value||'').trim();
+    if(!addrVal){showFieldError('err-addr',isEn?'Please enter your home address.':'住所を入力してください。');hasErr=true;}
+    else{showFieldError('err-addr','');}
+
+    var jobVal=(document.getElementById('main-job').value||'').trim();
+    if(!jobVal){showFieldError('err-job',isEn?'Please enter your occupation.':'ご職業を入力してください。');hasErr=true;}
+    else{showFieldError('err-job','');}
+
+    var natVal=(document.getElementById('main-nat').value||'').trim();
+    if(!natVal){showFieldError('err-nat',isEn?'Please enter your nationality.':'国籍を入力してください。');hasErr=true;}
+    else{showFieldError('err-nat','');}
+
+    // 同行者バリデーション
+    for(var i=0;i<CC;i++){
+      var inp=document.getElementById('c-name-'+i);
+      if(!inp||(inp.value||'').trim()===''){
+        showFieldError('c-name-err-'+i, ERR_CNAME[i]||((i+1)+'番目の同行者の氏名を入力してください。'));
+        if(!hasErr&&inp) inp.focus();
+        hasErr=true;
+      } else {
+        showFieldError('c-name-err-'+i,'');
+      }
+      var cNatInp2=document.getElementById('c-nat-'+i);
+      if(!cNatInp2||(cNatInp2.value||'').trim()===''){
+        showFieldError('c-nat-err-'+i,isEn?'Please enter nationality.':'国籍を入力してください。');
+        hasErr=true;
+      } else {
+        showFieldError('c-nat-err-'+i,'');
+      }
+    }
+
+    // パスポート写真
     var needed=0,filled=0;
     document.querySelectorAll('[id^="pp-slot-"]').forEach(function(slot){
       if(slot.style.display==='none') return;
@@ -319,12 +385,54 @@ function renderForm({ booking, error, values:v={}, lang, checkinUrl }) {
       if(f&&f.files&&f.files.length>0) filled++;
     });
     if(needed>0&&filled<needed){
-      e.preventDefault();
-      var msg=lang==='en'
+      var msg2=isEn
         ?'Passport photos required for '+needed+' non-Japanese guest(s). Uploaded: '+filled+'.'
         :'外国籍'+needed+'名分のパスポート写真が必要です（現在'+filled+'枚）。';
-      alert(msg);
+      showFieldError('err-form',msg2);
+      document.getElementById('err-form').style.display='block';
+      hasErr=true;
+    } else {
+      showFieldError('err-form','');
     }
+
+    if(hasErr){
+      var firstErr=form.querySelector('.field-error[style*="block"]');
+      if(firstErr) firstErr.scrollIntoView({behavior:'smooth',block:'center'});
+      return;
+    }
+
+    var btn=form.querySelector('[type="submit"]');
+    if(btn){btn.disabled=true;btn.textContent=isEn?'Sending...':'送信中...';}
+    function compressPhoto(file){
+      return new Promise(function(resolve){
+        var img=new Image(),url=URL.createObjectURL(file);
+        img.onload=function(){
+          var MAX=1200,w=img.width,h=img.height;
+          if(w>MAX||h>MAX){if(w>h){h=Math.round(h*MAX/w);w=MAX;}else{w=Math.round(w*MAX/h);h=MAX;}}
+          var cv=document.createElement('canvas');cv.width=w;cv.height=h;
+          cv.getContext('2d').drawImage(img,0,0,w,h);
+          URL.revokeObjectURL(url);
+          cv.toBlob(function(blob){
+            resolve(new File([blob],file.name.replace(/.[^.]+$/,'.jpg'),{type:'image/jpeg'}));
+          },'image/jpeg',0.75);
+        };
+        img.onerror=function(){URL.revokeObjectURL(url);resolve(file);};
+        img.src=url;
+      });
+    }
+    var fd=new FormData(form),photoKeys=[];
+    fd.forEach(function(v,k){if(k.startsWith('passport_photo_')&&v&&v.size>0)photoKeys.push(k);});
+    Promise.all(photoKeys.map(function(k){return compressPhoto(fd.get(k)).then(function(compressed){return{k:k,c:compressed};});}))
+    .then(function(results){
+      results.forEach(function(r){fd.set(r.k,r.c,r.c.name);});
+      return fetch(window.location.href,{method:'POST',body:fd});
+    })
+    .then(function(res){return res.text();})
+    .then(function(html){document.open();document.write(html);document.close();})
+    .catch(function(){
+      if(btn){btn.disabled=false;btn.textContent=lang==='en'?'Submit':'送信する';}
+      alert(lang==='en'?'An error occurred.':'エラーが発生しました。再度お試しください。');
+    });
   });
   </script>`;
 }
@@ -353,7 +461,6 @@ export default async (req) => {
         nationality:(fd.get(`c_nationality_${i}`)||'').trim(),
         passportNumber:(fd.get(`c_passport_${i}`)||'').trim(),
         address:(fd.get(`c_address_${i}`)||'').trim(),
-        note:(fd.get(`c_note_${i}`)||'').trim(),
       });
     }
     fields={
@@ -400,8 +507,12 @@ export default async (req) => {
   if(eLang==='ja'&&!f.nameKana.trim()) errors.push(T.errKana);
   if(!f.address.trim()) errors.push(T.errAddr);
   if(!f.occupation.trim()) errors.push(T.errJob);
+  if(!f.nationality.trim()) errors.push(eLang==='ja'?'国籍を入力してください。':'Please enter your nationality.');
   if(!isJP(f.nationality)&&!f.passportNumber.trim()) errors.push(T.errPPNum);
-  f.companions.forEach((c,i)=>{if(!c.name) errors.push(T.errCName(i));});
+  f.companions.forEach((c,i)=>{
+    if(!c.name) errors.push(T.errCName(i));
+    if(!c.nationality) errors.push(eLang==='ja'?`同行者${i+1}の国籍を入力してください。`:`Please enter nationality for Guest ${i+1}.`);
+  });
 
   let nonJP=isJP(f.nationality)?0:1;
   f.companions.forEach(c=>{if(!isJP(c.nationality)) nonJP++;});

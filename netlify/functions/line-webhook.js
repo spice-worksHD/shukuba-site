@@ -64,9 +64,24 @@ export default async (req) => {
       continue;
     }
 
-    if (event.type === 'message' && event.message?.type === 'text' && event.replyToken) {
+    if (event.type === 'message' && event.message?.type === 'text') {
       const rawText = event.message.text.trim();
       const text = rawText.toLowerCase();
+
+      // 全受信テキストをチャット履歴に保存
+      if (userId) {
+        const chatKey = `chat-${userId}.json`;
+        const chatHistory = (await store.get(chatKey, { type: 'json' })) || [];
+        chatHistory.push({
+          id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
+          direction: 'in',
+          text: rawText,
+          at: new Date().toISOString(),
+        });
+        await store.setJSON(chatKey, chatHistory);
+      }
+
+      if (!event.replyToken) continue;
 
       // チェックアウトキーワード検知
       const CHECKOUT_KEYWORDS = ['チェックアウト', 'checkout', '退出しました', '退出'];

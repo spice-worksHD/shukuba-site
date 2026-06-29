@@ -8,6 +8,12 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;700&family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
+<style>
+.feature-card { padding: 0 !important; overflow: hidden; }
+.f-img { display: block; width: 100%; height: 175px; object-fit: cover; object-position: center; transition: transform .4s ease; }
+.feature-card:hover .f-img { transform: scale(1.04); }
+.f-content { padding: 22px 28px 26px; }
+</style>
 </head>
 <body class="lang-ja">
 
@@ -24,6 +30,7 @@
     <a href="index.html#concept"><span data-ja>コンセプト</span><span data-en>Concept</span></a>
     <a href="rooms.html"><span data-ja>客室紹介</span><span data-en>Rooms</span></a>
     <a href="area.html" style="color:#fff"><span data-ja>地域紹介</span><span data-en>The Area</span></a>
+    <a href="seasons.html"><span data-ja>四季の旅</span><span data-en>Seasons</span></a>
     <a href="index.html#booking"><span data-ja>ご予約</span><span data-en>Reserve</span></a>
   </div>
   <button class="nav-toggle" aria-label="メニュー" onclick="toggleNavMenu()"><span></span><span></span><span></span></button>
@@ -121,35 +128,47 @@
   </p>
   <div class="feature-grid">
     <div class="feature-card">
-      <div class="f-icon">雇</div>
-      <div class="f-title"><span data-ja>障がいのある方の雇用</span><span data-en>Employment for People with Disabilities</span></div>
-      <div class="f-body">
-        <span data-ja>地域とともに歩む宿として、障がいのある方の雇用にも積極的に取り組んでいます。</span>
-        <span data-en>As an inn rooted in its community, we actively work to employ people with disabilities.</span>
+      <img src="images/features/hosp_hire.jpg" class="f-img" alt="スタッフの笑顔">
+      <div class="f-content">
+        <div class="f-icon">雇</div>
+        <div class="f-title"><span data-ja>障がいのある方の雇用</span><span data-en>Employment for People with Disabilities</span></div>
+        <div class="f-body">
+          <span data-ja>地域とともに歩む宿として、障がいのある方の雇用にも積極的に取り組んでいます。</span>
+          <span data-en>As an inn rooted in its community, we actively work to employ people with disabilities.</span>
+        </div>
       </div>
     </div>
     <div class="feature-card">
-      <div class="f-icon">EN</div>
-      <div class="f-title"><span data-ja>英語で対応できるスタッフ</span><span data-en>English-Speaking Staff</span></div>
-      <div class="f-body">
-        <span data-ja>海外からのお客様にも安心してご利用いただけるよう、英語対応が可能なスタッフがご案内します。</span>
-        <span data-en>English-speaking staff are available, so guests visiting from overseas can stay with peace of mind.</span>
+      <img src="images/features/hosp_en.jpg" class="f-img" alt="英語対応スタッフ">
+      <div class="f-content">
+        <div class="f-icon">EN</div>
+        <div class="f-title"><span data-ja>英語で対応できるスタッフ</span><span data-en>English-Speaking Staff</span></div>
+        <div class="f-body">
+          <span data-ja>海外からのお客様にも安心してご利用いただけるよう、英語対応が可能なスタッフがご案内します。</span>
+          <span data-en>English-speaking staff are available, so guests visiting from overseas can stay with peace of mind.</span>
+        </div>
       </div>
     </div>
     <div class="feature-card">
-      <div class="f-icon">道</div>
-      <div class="f-title"><span data-ja>街の案内もできる思いやり</span><span data-en>Local Guidance, with Care</span></div>
-      <div class="f-body">
-        <span data-ja>近江八幡・長浜の見どころやお店のご案内など、地元ならではの情報をスタッフが直接お伝えします。</span>
-        <span data-en>Our staff can personally introduce the best spots and shops in Omihachiman and Nagahama — local knowledge you won't find in a guidebook.</span>
+      <img src="images/features/hosp_map.jpg" class="f-img" alt="観光案内マップ">
+      <div class="f-content">
+        <div class="f-icon">道</div>
+        <div class="f-title"><span data-ja>街の案内もできる思いやり</span><span data-en>Local Guidance, with Care</span></div>
+        <div class="f-body">
+          <span data-ja>近江八幡・長浜の見どころやお店のご案内など、地元ならではの情報をスタッフが直接お伝えします。</span>
+          <span data-en>Our staff can personally introduce the best spots and shops in Omihachiman and Nagahama — local knowledge you won't find in a guidebook.</span>
+        </div>
       </div>
     </div>
     <div class="feature-card">
-      <div class="f-icon">iPad</div>
-      <div class="f-title"><span data-ja>iPadを使った設備案内</span><span data-en>iPad-Based House Guide</span></div>
-      <div class="f-body">
+      <img src="images/features/hosp_ipad.jpg" class="f-img" alt="iPad設備案内">
+      <div class="f-content">
+        <div class="f-icon">iPad</div>
+        <div class="f-title"><span data-ja>iPadを使った設備案内</span><span data-en>iPad-Based House Guide</span></div>
+        <div class="f-body">
         <span data-ja>各棟にはiPadを設置し、館内設備の使い方や周辺情報を、いつでもご自身のペースで確認いただけます。</span>
         <span data-en>Each house is equipped with an iPad, so guests can check how to use the facilities and find local information at their own pace.</span>
+        </div>
       </div>
     </div>
   </div>
@@ -164,6 +183,7 @@
     <a href="index.html#concept"><span data-ja>コンセプト</span><span data-en>Concept</span></a>
     <a href="rooms.html"><span data-ja>客室紹介</span><span data-en>Rooms</span></a>
     <a href="area.html"><span data-ja>地域紹介</span><span data-en>The Area</span></a>
+    <a href="seasons.html"><span data-ja>四季の旅</span><span data-en>Seasons</span></a>
     <a href="index.html#booking"><span data-ja>ご予約</span><span data-en>Reserve</span></a>
   </div>
   <div class="footer-copy">

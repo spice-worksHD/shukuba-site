@@ -112,6 +112,44 @@
   .chat-b.out { background:#3D5A52;color:#fff;border-radius:14px 14px 3px 14px; }
   .chat-b.in { background:#fff;color:var(--ink);border-radius:14px 14px 14px 3px;box-shadow:0 1px 3px rgba(0,0,0,.08); }
   .chat-t { font-size:10px;color:var(--muted);margin-top:3px; }
+  /* Chat media bubbles */
+  .chat-img { max-width:210px;max-height:260px;border-radius:12px;cursor:pointer;display:block;background:#e7e2d8; }
+  .chat-sticker { width:120px;height:120px;object-fit:contain; }
+  .chat-file a { color:#9fe7c4; }
+  .chat-b.in .chat-file a { color:#2e7d5e; }
+  /* Chat tab unread badge */
+  .tab-badge { display:none;background:var(--danger);color:#fff;border-radius:10px;font-size:10px;font-weight:700;padding:1px 6px;margin-left:5px;vertical-align:middle; }
+  .tab-badge.show { display:inline-block; }
+  /* Inbox list */
+  #inbox-list { display:flex;flex-direction:column; }
+  .inbox-row { display:flex;gap:12px;align-items:center;padding:12px 14px;border-bottom:1px solid var(--border);cursor:pointer;transition:background .15s; }
+  .inbox-row:last-child { border-bottom:none; }
+  .inbox-row:hover { background:var(--paper); }
+  .inbox-ava { width:46px;height:46px;border-radius:50%;flex-shrink:0;background:#06c755 center/cover no-repeat;display:flex;align-items:center;justify-content:center;color:#fff;font-size:18px;font-weight:700; }
+  .inbox-main { flex:1;min-width:0; }
+  .inbox-top { display:flex;align-items:baseline;gap:8px; }
+  .inbox-name { font-weight:700;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis; }
+  .inbox-time { font-size:11px;color:var(--muted);margin-left:auto;flex-shrink:0;white-space:nowrap; }
+  .inbox-prev { font-size:12.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px; }
+  .inbox-row.unread .inbox-prev { color:var(--ink);font-weight:600; }
+  .inbox-meta { font-size:11px;color:var(--gold);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis; }
+  .inbox-unread { background:#06c755;color:#fff;border-radius:11px;font-size:11px;font-weight:700;min-width:20px;height:20px;display:inline-flex;align-items:center;justify-content:center;padding:0 6px;flex-shrink:0; }
+  /* Chat header avatar + back */
+  #chat-ava { width:38px;height:38px;border-radius:50%;background:#06c755 center/cover no-repeat;display:flex;align-items:center;justify-content:center;color:#fff;font-size:15px;font-weight:700;flex-shrink:0; }
+  .chat-back { display:none;background:none;border:none;color:#fff;font-size:30px;line-height:1;cursor:pointer;padding:0 4px 0 0;flex-shrink:0; }
+  /* Image lightbox */
+  #img-lightbox { display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:2200;align-items:center;justify-content:center;padding:20px;cursor:zoom-out; }
+  #img-lightbox.show { display:flex; }
+  #img-lightbox img { max-width:100%;max-height:100%;border-radius:6px; }
+  /* Mobile: full-screen LINE-like chat */
+  @media (max-width:640px) {
+    body { padding:12px; }
+    .tabs { overflow-x:auto;flex-wrap:nowrap;-webkit-overflow-scrolling:touch; }
+    .tab-btn { white-space:nowrap; }
+    #chat-drawer { width:100vw; }
+    .chat-back { display:block; }
+    .chat-b { max-width:78%; }
+  }
   #bookings-table th, #bookings-table td { padding: 3px 5px; vertical-align: middle; font-size: 12px; }
   #bookings-table th { font-size: 11px; }
   .save-row { text-align: right; }
@@ -210,6 +248,7 @@
 
   <div class="tabs">
     <button class="tab-btn active" onclick="showTab('reservations')">予約履歴・サマリー</button>
+    <button class="tab-btn" onclick="showTab('chat')">💬 チャット<span id="chat-tab-badge" class="tab-badge"></span></button>
     <button class="tab-btn" onclick="showTab('ledger')">宿泊台帳</button>
     <button class="tab-btn" onclick="showTab('calendar')">料金・在庫カレンダー</button>
     <button class="tab-btn" onclick="showTab('payment')">決済設定</button>
@@ -264,6 +303,20 @@
           <tbody></tbody>
         </table>
       </div>
+    </div>
+  </div>
+
+  <!-- LINE Chat inbox -->
+  <div class="panel" id="panel-chat">
+    <div class="card" style="padding:0;overflow:hidden">
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid var(--border)">
+        <h3 style="margin:0">LINEチャット</h3>
+        <button class="small-btn" onclick="loadInbox()">↻ 更新</button>
+      </div>
+      <div id="inbox-list"></div>
+    </div>
+    <div style="font-size:11px;color:var(--muted);margin-top:8px;line-height:1.7">
+      ※ 送受信はこの管理画面に集約され、公式LINEアプリにも反映されます。なお、公式LINEアプリ側で手打ちした返信はLINEの仕様上この履歴には取り込めません。送信はこの画面から行うのがおすすめです。
     </div>
   </div>
 
@@ -535,6 +588,13 @@ function showTab(name) {
   document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
   document.querySelector(`.tab-btn[onclick="showTab('${name}')"]`).classList.add('active');
   document.getElementById('panel-' + name).classList.add('active');
+
+  // チャットタブを開いている間だけインボックスを定期更新
+  clearInterval(inboxPollTimer); inboxPollTimer = null;
+  if (name === 'chat') {
+    loadInbox();
+    inboxPollTimer = setInterval(loadInbox, 15000);
+  }
 }
 
 function renderAll() {
@@ -547,6 +607,7 @@ function renderAll() {
   renderTestPanel();
   loadLineTemplate();
   loadCheckoutTemplate();
+  loadInbox();
 }
 
 // ===== RESERVATIONS =====
@@ -1500,24 +1561,97 @@ async function deleteBookingHard(idx) {
   if (r.ok) { state.bookings = r.bookings; renderAll(); }
 }
 
-// ── LINE Chat ────────────────────────────────────────────
+// ── LINE Chat / Inbox ────────────────────────────────────
 let currentChat = { lineUserId: null };
 let chatPollTimer = null;
+let inboxPollTimer = null;
+const mediaCache = {};
 
-async function openChat(idx) {
+const chatEsc = s => String(s||'').replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const avaInitial = name => (String(name||'?').trim().charAt(0) || '?');
+
+// ===== Inbox =====
+async function loadInbox() {
+  const r = await apiPost({ action: 'list-chats' });
+  if (!r.ok) return;
+  renderInbox(r.chats || []);
+  updateChatBadge(r.totalUnread || 0);
+}
+
+function updateChatBadge(n) {
+  const badge = document.getElementById('chat-tab-badge');
+  if (!badge) return;
+  if (n > 0) { badge.textContent = n > 99 ? '99+' : n; badge.classList.add('show'); }
+  else badge.classList.remove('show');
+}
+
+function fmtInboxTime(at) {
+  if (!at) return '';
+  const d = new Date(at), now = new Date();
+  if (d.toDateString() === now.toDateString()) return d.toLocaleTimeString('ja-JP',{hour:'2-digit',minute:'2-digit'});
+  return d.toLocaleDateString('ja-JP',{month:'2-digit',day:'2-digit'});
+}
+
+function renderInbox(chats) {
+  const el = document.getElementById('inbox-list');
+  if (!el) return;
+  if (!chats.length) {
+    el.innerHTML = '<div style="text-align:center;color:var(--muted);font-size:13px;padding:48px 16px">LINE連携済みのゲストとのチャットがここに表示されます。<br><span style="font-size:11px">ゲストが公式LINEに友だち追加し、予約メールを送ると連携されます。</span></div>';
+    return;
+  }
+  el.innerHTML = chats.map(c => {
+    const ava = c.pictureUrl ? `style="background-image:url('${chatEsc(c.pictureUrl)}')"` : '';
+    const avaInner = c.pictureUrl ? '' : chatEsc(avaInitial(c.displayName));
+    const unread = c.unread > 0 ? `<span class="inbox-unread">${c.unread > 99 ? '99+' : c.unread}</span>` : '';
+    const prevPrefix = c.lastDirection === 'out' ? '↩ ' : '';
+    const roomTxt = roomLabels[String(c.room)] || c.roomName || '';
+    const metaTxt = [roomTxt, c.checkin ? (c.checkin + '〜' + c.checkout) : '', c.status === 'cancelled' ? '(キャンセル)' : ''].filter(Boolean).join('　');
+    const meta = metaTxt ? `<div class="inbox-meta">${chatEsc(metaTxt)}</div>` : '';
+    const info = encodeURIComponent(JSON.stringify({ lineUserId: c.lineUserId, displayName: c.displayName, pictureUrl: c.pictureUrl, name: c.name, room: c.room, roomName: c.roomName, checkin: c.checkin, checkout: c.checkout }));
+    return `<div class="inbox-row ${c.unread > 0 ? 'unread' : ''}" onclick="openChatFromInbox('${info}')">
+      <div class="inbox-ava" ${ava}>${avaInner}</div>
+      <div class="inbox-main">
+        <div class="inbox-top"><span class="inbox-name">${chatEsc(c.displayName)}</span><span class="inbox-time">${fmtInboxTime(c.lastAt)}</span></div>
+        <div class="inbox-prev">${chatEsc(prevPrefix + (c.lastText || '（メッセージなし）'))}</div>
+        ${meta}
+      </div>
+      ${unread}
+    </div>`;
+  }).join('');
+}
+
+function openChatFromInbox(info) {
+  openChatUser(JSON.parse(decodeURIComponent(info)));
+}
+
+// 予約一覧の💬ボタンからの起点
+function openChat(idx) {
   const b = state.bookings[idx];
   if (!b?.lineUserId) return;
-  currentChat.lineUserId = b.lineUserId;
+  openChatUser({ lineUserId: b.lineUserId, displayName: b.name, name: b.name, room: b.room, roomName: b.roomName, checkin: b.checkin, checkout: b.checkout });
+}
 
-  const roomName = roomLabels[String(b.room)] || b.roomName || '';
-  document.getElementById('chat-guest-name').textContent = b.name + ' 様';
-  document.getElementById('chat-booking-info').textContent = roomName + '　' + b.checkin + '〜' + b.checkout;
+// ===== Chat room =====
+async function openChatUser(info) {
+  if (!info?.lineUserId) return;
+  currentChat.lineUserId = info.lineUserId;
+
+  const roomName = roomLabels[String(info.room)] || info.roomName || '';
+  document.getElementById('chat-guest-name').textContent = (info.displayName || info.name || 'ゲスト');
+  document.getElementById('chat-booking-info').textContent = [roomName, info.checkin ? (info.checkin + '〜' + info.checkout) : ''].filter(Boolean).join('　');
+  const ava = document.getElementById('chat-ava');
+  if (info.pictureUrl) { ava.style.backgroundImage = `url('${info.pictureUrl}')`; ava.textContent = ''; }
+  else { ava.style.backgroundImage = ''; ava.textContent = avaInitial(info.displayName || info.name); }
 
   document.getElementById('chat-drawer').style.display = 'flex';
   document.getElementById('chat-overlay').style.display = 'block';
+  document.getElementById('chat-messages').innerHTML = '<div style="text-align:center;color:var(--muted);font-size:12px;padding:30px">読み込み中…</div>';
 
   await refreshChatMessages();
-  chatPollTimer = setInterval(refreshChatMessages, 10000);
+  await apiPost({ action: 'mark-chat-read', lineUserId: currentChat.lineUserId });
+  loadInbox();
+  clearInterval(chatPollTimer);
+  chatPollTimer = setInterval(refreshChatMessages, 8000);
   document.getElementById('chat-input').focus();
 }
 
@@ -1527,6 +1661,7 @@ function closeChat() {
   clearInterval(chatPollTimer);
   chatPollTimer = null;
   currentChat.lineUserId = null;
+  loadInbox();
 }
 
 async function refreshChatMessages() {
@@ -1535,10 +1670,28 @@ async function refreshChatMessages() {
   if (r.ok) renderChatMessages(r.messages || []);
 }
 
+async function getMediaUrl(key) {
+  if (!key) return null;
+  if (mediaCache[key]) return mediaCache[key];
+  const r = await apiPost({ action: 'get-chat-media', mediaKey: key });
+  if (r.ok) { mediaCache[key] = r.dataUrl; return r.dataUrl; }
+  return null;
+}
+
+async function loadMediaInto(img) {
+  const url = await getMediaUrl(img.dataset.media);
+  if (url) { img.src = url; img.style.opacity = '1'; img.style.cursor = 'zoom-in'; img.onclick = () => openLightbox(url); }
+}
+
+function openLightbox(url) {
+  const lb = document.getElementById('img-lightbox');
+  lb.querySelector('img').src = url;
+  lb.classList.add('show');
+}
+
 function renderChatMessages(messages) {
   const el = document.getElementById('chat-messages');
   const atBottom = el.scrollTop + el.clientHeight >= el.scrollHeight - 30;
-  const chatEsc = s => String(s||'').replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 
   if (!messages.length) {
     el.innerHTML = '<div style="text-align:center;color:var(--muted);font-size:12px;padding:40px 16px">メッセージはまだありません<br><span style="font-size:11px">ゲストがLINEでメッセージを送ると表示されます</span></div>';
@@ -1547,8 +1700,37 @@ function renderChatMessages(messages) {
   el.innerHTML = messages.map(m => {
     const dir = m.direction === 'out' ? 'out' : 'in';
     const time = m.at ? new Date(m.at).toLocaleString('ja-JP',{month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'}) : '';
-    return `<div class="chat-bw ${dir}"><div class="chat-b ${dir}">${chatEsc(m.text)}</div><div class="chat-t">${dir === 'out' ? '管理者 ' : ''}${time}</div></div>`;
+    const type = m.type || 'text';
+    let body;
+    if (type === 'sticker') {
+      const url = `https://stickershop.line-scdn.net/stickershop/v1/sticker/${m.stickerId}/android/sticker.png`;
+      body = `<img class="chat-sticker" src="${url}" alt="スタンプ" loading="lazy">`;
+    } else if (type === 'image') {
+      body = `<div class="chat-b ${dir}" style="padding:4px"><img class="chat-img" data-media="${chatEsc(m.mediaKey||'')}" alt="写真" style="opacity:.4"></div>`;
+    } else if (type === 'video') {
+      body = `<div class="chat-b ${dir}"><span class="chat-file">🎞 動画 <a href="#" data-media="${chatEsc(m.mediaKey||'')}">表示する</a></span></div>`;
+    } else if (type === 'audio') {
+      body = `<div class="chat-b ${dir}"><span class="chat-file">🎤 音声 <a href="#" data-media="${chatEsc(m.mediaKey||'')}">再生する</a></span></div>`;
+    } else if (type === 'file') {
+      body = `<div class="chat-b ${dir}"><span class="chat-file">📎 ${chatEsc(m.fileName||'ファイル')} <a href="#" data-media="${chatEsc(m.mediaKey||'')}">開く</a></span></div>`;
+    } else if (type === 'location') {
+      const q = encodeURIComponent((m.lat && m.lng) ? `${m.lat},${m.lng}` : (m.address || m.title || ''));
+      body = `<div class="chat-b ${dir}">📍 ${chatEsc(m.title||'位置情報')}${m.address ? '<br><span style="font-size:11px;opacity:.85">'+chatEsc(m.address)+'</span>' : ''}<br><a href="https://maps.google.com/?q=${q}" target="_blank" style="font-size:11px">地図で開く</a></div>`;
+    } else {
+      body = `<div class="chat-b ${dir}">${chatEsc(m.text || '(未対応のメッセージ)')}</div>`;
+    }
+    return `<div class="chat-bw ${dir}">${body}<div class="chat-t">${dir === 'out' ? '管理者 ' : ''}${time}</div></div>`;
   }).join('');
+
+  el.querySelectorAll('img.chat-img[data-media]').forEach(img => { if (img.dataset.media) loadMediaInto(img); });
+  el.querySelectorAll('a[data-media]').forEach(a => {
+    a.addEventListener('click', async e => {
+      e.preventDefault();
+      if (!a.dataset.media) return;
+      const url = await getMediaUrl(a.dataset.media);
+      if (url) window.open(url, '_blank');
+    });
+  });
   if (atBottom) el.scrollTop = el.scrollHeight;
 }
 
@@ -1563,6 +1745,7 @@ async function sendChatMessage() {
   input.focus();
   if (r.ok) {
     renderChatMessages(r.messages || []);
+    loadInbox();
   } else {
     alert('送信に失敗しました: ' + (r.error || '不明なエラー'));
     input.value = text;
@@ -1575,9 +1758,11 @@ async function sendChatMessage() {
 <div id="chat-overlay" onclick="closeChat()"></div>
 <div id="chat-drawer">
   <div id="chat-header">
+    <button class="chat-back" onclick="closeChat()" title="一覧へ戻る">‹</button>
+    <div id="chat-ava"></div>
     <div style="flex:1;min-width:0">
       <div id="chat-guest-name" style="font-weight:700;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"></div>
-      <div id="chat-booking-info" style="font-size:11px;opacity:.75;margin-top:2px"></div>
+      <div id="chat-booking-info" style="font-size:11px;opacity:.75;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"></div>
     </div>
     <button onclick="closeChat()" style="background:none;border:none;color:#fff;font-size:22px;cursor:pointer;line-height:1;padding:2px 4px;flex-shrink:0">✕</button>
   </div>
@@ -1589,5 +1774,8 @@ async function sendChatMessage() {
     <button onclick="sendChatMessage()" class="btn" style="padding:0 16px;align-self:stretch;white-space:nowrap">送信</button>
   </div>
 </div>
+
+<!-- Image lightbox -->
+<div id="img-lightbox" onclick="this.classList.remove('show')"><img alt="拡大表示"></div>
 </body>
 </html>

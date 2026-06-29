@@ -17,6 +17,21 @@ function checkAuth(req) {
   return Boolean(process.env.ADMIN_KEY) && key === process.env.ADMIN_KEY;
 }
 
+// インボックス一覧用の「最新メッセージ」プレビュー文（webhook側と揃える）
+function previewOf(entry) {
+  if (!entry) return '';
+  switch (entry.type) {
+    case 'text': return entry.text || '';
+    case 'image': return '📷 写真';
+    case 'video': return '🎞 動画';
+    case 'audio': return '🎤 音声メッセージ';
+    case 'file': return '📎 ' + (entry.fileName || 'ファイル');
+    case 'sticker': return '😊 スタンプ';
+    case 'location': return '📍 ' + (entry.title || '位置情報');
+    default: return entry.text || 'メッセージ';
+  }
+}
+
 export default async (req) => {
   if (!checkAuth(req)) {
     return new Response(JSON.stringify({ ok: false, error: 'unauthorized' }), {
@@ -411,16 +426,114 @@ export default async (req) => {
       }
       const chatKey = `chat-${lineUserId}.json`;
       const chatHistory = (await store.get(chatKey, { type: 'json' })) || [];
+      const at = new Date().toISOString();
       chatHistory.push({
         id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
         direction: 'out',
+        type: 'text',
         text,
-        at: new Date().toISOString(),
+        at,
       });
       await store.setJSON(chatKey, chatHistory);
+
+      // インボックス用インデックスを更新（最新メッセージ・送信なので未読は増やさない）
+      const sendIndex = (await store.get('chat-index.json', { type: 'json' })) || {};
+      const six = sendIndex[lineUserId] || {};
+      six.lastAt = at;
+      six.lastType = 'text';
+      six.lastDirection = 'out';
+      six.lastText = text;
+      sendIndex[lineUserId] = six;
+      await store.setJSON('chat-index.json', sendIndex);
+
       return new Response(JSON.stringify({ ok: true, messages: chatHistory }), {
         status: 200, headers: { 'Content-Type': 'application/json' },
       });
+    }
+
+    if (data.action === 'list-chats') {
+      const allBookings = (await store.get('bookings.json', { type: 'json' })) || [];
+      const index = (await store.get('chat-index.json', { type: 'json' })) || {};
+      // userId -> 代表予約（キャンセルでない・チェックインが新しいものを優先）
+      const bookingByUser = {};
+      for (const b of allBookings) {
+        if (!b.lineUserId) continue;
+        const cur = bookingByUser[b.lineUserId];
+        if (!cur) { bookingByUser[b.lineUserId] = b; continue; }
+        const score = (x) => (x.status === 'cancelled' ? 0 : 1);
+        if (score(b) > score(cur) || (score(b) === score(cur) && (b.checkin || '') > (cur.checkin || ''))) {
+          bookingByUser[b.lineUserId] = b;
+        }
+      }
+      const userIds = new Set([...Object.keys(index), ...Object.keys(bookingByUser)]);
+      const chats = [];
+      for (const uid of userIds) {
+        const ix = index[uid] || {};
+        let { lastText, lastAt, lastType, lastDirection } = ix;
+        const unread = ix.unread || 0;
+        if (lastAt == null) {
+          const hist = (await store.get(`chat-${uid}.json`, { type: 'json' })) || [];
+          if (hist.length) {
+            const m = hist[hist.length - 1];
+            lastAt = m.at; lastType = m.type || 'text'; lastDirection = m.direction;
+            lastText = previewOf(m);
+          }
+        }
+        const b = bookingByUser[uid];
+        chats.push({
+          lineUserId: uid,
+          displayName: ix.displayName || (b ? b.name : '') || 'LINEゲスト',
+          pictureUrl: ix.pictureUrl || '',
+          unread,
+          lastText: lastText || '',
+          lastAt: lastAt || null,
+          lastType: lastType || null,
+          lastDirection: lastDirection || null,
+          bookingId: (b && b.id) || ix.bookingId || null,
+          name: b ? b.name : '',
+          room: b ? b.room : null,
+          roomName: b ? b.roomName : '',
+          checkin: b ? b.checkin : '',
+          checkout: b ? b.checkout : '',
+          status: b ? b.status : null,
+        });
+      }
+      chats.sort((a, c) => (c.lastAt || '').localeCompare(a.lastAt || ''));
+      const totalUnread = chats.reduce((s, x) => s + (x.unread || 0), 0);
+      return new Response(JSON.stringify({ ok: true, chats, totalUnread }), {
+        status: 200, headers: { 'Content-Type': 'application/json' },
+      });
+    }
+
+    if (data.action === 'mark-chat-read') {
+      const { lineUserId } = data;
+      if (!lineUserId) return new Response(JSON.stringify({ ok: false, error: 'no_lineUserId' }), { status: 400 });
+      const index = (await store.get('chat-index.json', { type: 'json' })) || {};
+      if (index[lineUserId]) {
+        index[lineUserId].unread = 0;
+        await store.setJSON('chat-index.json', index);
+      }
+      return new Response(JSON.stringify({ ok: true }), {
+        status: 200, headers: { 'Content-Type': 'application/json' },
+      });
+    }
+
+    if (data.action === 'get-chat-media') {
+      const { mediaKey } = data;
+      if (!mediaKey || !/^chatmedia-/.test(mediaKey)) {
+        return new Response(JSON.stringify({ ok: false, error: 'bad_key' }), { status: 400 });
+      }
+      try {
+        const entry = await store.getWithMetadata(mediaKey, { type: 'arrayBuffer' });
+        if (!entry?.data) return new Response(JSON.stringify({ ok: false, error: 'not_found' }), { status: 404 });
+        const base64 = Buffer.from(entry.data).toString('base64');
+        const contentType = entry.metadata?.type || 'application/octet-stream';
+        return new Response(JSON.stringify({ ok: true, dataUrl: `data:${contentType};base64,${base64}`, mime: contentType }), {
+          status: 200, headers: { 'Content-Type': 'application/json' },
+        });
+      } catch {
+        return new Response(JSON.stringify({ ok: false, error: 'not_found' }), { status: 404 });
+      }
     }
 
     return new Response(JSON.stringify({ ok: false, error: 'unknown_action' }), { status: 400 });

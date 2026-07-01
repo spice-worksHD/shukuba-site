@@ -25,5 +25,5 @@ export default async () => {
 };
 
 export const config = {
-  schedule: '*/5 * * * *', // 5分ごと
+  schedule: '*/15 * * * *', // 15分ごと（クレジット節約のため。予約投稿は最大15分の誤差で送信）
 };

@@ -146,6 +146,24 @@
   .inbox-row.unread .inbox-prev { color:var(--ink);font-weight:600; }
   .inbox-meta { font-size:11px;color:var(--gold);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis; }
   .inbox-unread { background:#06c755;color:#fff;border-radius:11px;font-size:11px;font-weight:700;min-width:20px;height:20px;display:inline-flex;align-items:center;justify-content:center;padding:0 6px;flex-shrink:0; }
+  /* Followers list + labels */
+  #follower-list { display:flex;flex-direction:column; }
+  .follower-row { display:flex;gap:12px;align-items:center;padding:12px 14px;border-bottom:1px solid var(--border); }
+  .follower-row:last-child { border-bottom:none; }
+  .follower-main { flex:1;min-width:0; }
+  .follower-name { font-weight:700;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis; }
+  .follower-meta { font-size:11px;color:var(--gold);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis; }
+  .follower-labels { display:flex;gap:4px;flex-wrap:wrap;margin-top:5px; }
+  .follower-actions { display:flex;gap:6px;flex-shrink:0; }
+  .lb-chip { display:inline-flex;align-items:center;gap:4px;font-size:10px;font-weight:700;color:#fff;border-radius:10px;padding:2px 8px;white-space:nowrap;line-height:1.5; }
+  .icon-btn { background:#fff;border:1px solid var(--border);border-radius:6px;padding:6px 9px;font-size:13px;cursor:pointer;color:var(--ink);line-height:1; }
+  .icon-btn:hover { background:var(--paper); }
+  /* Label edit modal */
+  #label-modal-overlay { display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:2000; }
+  #label-modal { display:none;position:fixed;z-index:2100;left:50%;top:50%;transform:translate(-50%,-50%);width:min(340px,90vw);max-height:80vh;overflow-y:auto;background:#fff;border-radius:12px;padding:20px;box-shadow:0 12px 40px rgba(0,0,0,.28); }
+  .lb-toggle { display:flex;align-items:center;gap:10px;padding:9px 10px;border:1px solid var(--border);border-radius:8px;cursor:pointer;font-size:14px; }
+  .lb-toggle input { width:18px;height:18px;flex-shrink:0; }
+  .lb-dot { width:14px;height:14px;border-radius:50%;flex-shrink:0; }
   /* Chat header avatar + back */
   #chat-ava { width:38px;height:38px;border-radius:50%;background:#06c755 center/cover no-repeat;display:flex;align-items:center;justify-content:center;color:#fff;font-size:15px;font-weight:700;flex-shrink:0; }
   .chat-back { display:none;background:none;border:none;color:#fff;font-size:30px;line-height:1;cursor:pointer;padding:0 4px 0 0;flex-shrink:0; }
@@ -261,6 +279,7 @@
   <div class="tabs">
     <button class="tab-btn active" onclick="showTab('reservations')">予約履歴・サマリー</button>
     <button class="tab-btn" onclick="showTab('chat')">💬 チャット<span id="chat-tab-badge" class="tab-badge"></span></button>
+    <button class="tab-btn" onclick="showTab('followers')">👥 フォロワー</button>
     <button class="tab-btn" onclick="showTab('ledger')">宿泊台帳</button>
     <button class="tab-btn" onclick="showTab('calendar')">料金・在庫カレンダー</button>
     <button class="tab-btn" onclick="showTab('payment')">決済設定</button>
@@ -329,6 +348,66 @@
     </div>
     <div style="font-size:11px;color:var(--muted);margin-top:8px;line-height:1.7">
       ※ 送受信はこの管理画面に集約され、公式LINEアプリにも反映されます。なお、公式LINEアプリ側で手打ちした返信はLINEの仕様上この履歴には取り込めません。送信はこの画面から行うのがおすすめです。
+    </div>
+  </div>
+
+  <!-- Followers (フォロワー管理・ラベル・一斉送信) -->
+  <div class="panel" id="panel-followers">
+    <!-- 一斉送信 -->
+    <div class="card">
+      <h3 style="margin-bottom:12px">📢 一斉送信</h3>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:10px">
+        <label style="font-size:13px;color:var(--muted)">送信先</label>
+        <select id="bc-target" onchange="updateBroadcastCount()"
+          style="padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:16px;background:#fff;color:var(--ink)"></select>
+        <span id="bc-count" style="font-size:12px;color:var(--gold);font-weight:600"></span>
+      </div>
+      <textarea id="bc-text" rows="4" placeholder="フォロワーへ一斉送信するメッセージを入力…"
+        style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:8px;font-size:16px;font-family:inherit;resize:vertical;line-height:1.6"></textarea>
+      <div style="display:flex;align-items:center;gap:12px;margin-top:10px;flex-wrap:wrap">
+        <button class="btn" onclick="sendBroadcast()">この内容で一斉送信</button>
+        <span style="font-size:11px;color:var(--muted)">送信内容は各ゲストのチャット履歴にも記録されます。</span>
+      </div>
+      <div class="msg" id="bc-msg"></div>
+    </div>
+
+    <!-- ラベル管理 -->
+    <div class="card accordion-card">
+      <div class="accordion-header" onclick="toggleAccordion(this)">
+        <h3 style="margin:0">🏷 ラベル管理</h3>
+        <span class="accordion-arrow">▶</span>
+      </div>
+      <div class="accordion-body" style="display:none;padding-top:14px">
+        <p style="font-size:12px;color:var(--muted);margin-bottom:10px">フォロワーを分類するラベルを作成します（例：VIP・リピーター・要フォロー）。一斉送信の絞り込みに使えます。</p>
+        <div id="label-admin-list" style="display:flex;flex-direction:column;gap:8px;margin-bottom:14px"></div>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+          <input type="text" id="new-label-name" placeholder="ラベル名"
+            style="flex:1;min-width:120px;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:16px">
+          <input type="color" id="new-label-color" value="#3D5A52"
+            style="width:42px;height:38px;border:1px solid var(--border);border-radius:6px;padding:2px;cursor:pointer;background:#fff">
+          <button class="small-btn" onclick="addLabel()">追加</button>
+        </div>
+        <div class="msg" id="label-msg"></div>
+      </div>
+    </div>
+
+    <!-- フォロワー一覧 -->
+    <div class="card" style="padding:0;overflow:hidden">
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid var(--border);gap:8px;flex-wrap:wrap">
+        <h3 style="margin:0">フォロワー一覧 <span id="follower-total" style="font-size:12px;color:var(--muted);font-weight:normal"></span></h3>
+        <div style="display:flex;gap:6px">
+          <button class="small-btn" onclick="syncFollowers()" title="LINEの友だち一覧をこの画面に取り込みます">⟳ LINEと同期</button>
+          <button class="small-btn" onclick="loadFollowers()">↻ 更新</button>
+        </div>
+      </div>
+      <div style="padding:10px 14px;border-bottom:1px solid var(--border)">
+        <input type="text" id="follower-search" placeholder="名前で検索" oninput="renderFollowers()"
+          style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:16px">
+      </div>
+      <div id="follower-list"></div>
+    </div>
+    <div style="font-size:11px;color:var(--muted);margin-top:8px;line-height:1.7">
+      ※「LINEと同期」で公式アカウントの友だち全員を取り込めます（認証済みアカウントのみ利用可）。取り込めない場合も、ゲストがメッセージを送れば自動で一覧に追加されます。
     </div>
   </div>
 
@@ -607,6 +686,7 @@ function showTab(name) {
     loadInbox();
     inboxPollTimer = setInterval(loadInbox, 15000);
   }
+  if (name === 'followers') loadFollowers();
 }
 
 function renderAll() {
@@ -1764,6 +1844,234 @@ async function sendChatMessage() {
   }
 }
 
+// 開いているチャットの履歴を削除
+async function deleteCurrentChat() {
+  const uid = currentChat.lineUserId;
+  if (!uid) return;
+  const name = document.getElementById('chat-guest-name').textContent || 'このゲスト';
+  if (!confirm(`${name}とのチャット履歴をすべて削除します。\nこの操作は取り消せません。よろしいですか？\n\n（フォロワー登録・ラベルは残ります）`)) return;
+  const r = await apiPost({ action: 'delete-chat', lineUserId: uid });
+  if (r.ok) {
+    closeChat();
+    loadInbox();
+    if (document.getElementById('panel-followers').classList.contains('active')) loadFollowers();
+  } else {
+    alert('削除に失敗しました: ' + (r.error || '不明なエラー'));
+  }
+}
+
+// ===== フォロワー・ラベル・一斉送信 =====
+let followerState = { followers: [], labels: [], editingUid: null };
+
+async function loadFollowers() {
+  const r = await apiPost({ action: 'list-followers' });
+  if (!r.ok) return;
+  followerState.followers = r.followers || [];
+  followerState.labels = r.labels || [];
+  renderLabelAdmin();
+  renderBroadcastTargets();
+  renderFollowers();
+}
+
+const labelById = id => followerState.labels.find(l => l.id === id);
+
+function labelChipsHtml(ids) {
+  return (ids || []).map(id => {
+    const l = labelById(id);
+    if (!l) return '';
+    return `<span class="lb-chip" style="background:${chatEsc(l.color)}">${chatEsc(l.name)}</span>`;
+  }).join('');
+}
+
+function renderFollowers() {
+  const el = document.getElementById('follower-list');
+  if (!el) return;
+  const q = (document.getElementById('follower-search').value || '').trim().toLowerCase();
+  document.getElementById('follower-total').textContent = `（${followerState.followers.length}人）`;
+  let list = followerState.followers;
+  if (q) list = list.filter(f => (f.displayName || '').toLowerCase().includes(q) || (f.bookingName || '').toLowerCase().includes(q));
+  if (!list.length) {
+    el.innerHTML = '<div style="text-align:center;color:var(--muted);font-size:13px;padding:40px 16px">フォロワーがいません。<br><span style="font-size:11px">ゲストが公式LINEに友だち追加すると表示されます。</span></div>';
+    return;
+  }
+  el.innerHTML = list.map(f => {
+    const ava = f.pictureUrl ? `style="background-image:url('${chatEsc(f.pictureUrl)}')"` : '';
+    const avaInner = f.pictureUrl ? '' : chatEsc(avaInitial(f.displayName));
+    const roomTxt = roomLabels[String(f.room)] || f.roomName || '';
+    const metaTxt = f.linked
+      ? [roomTxt, f.checkin ? (f.checkin + '〜' + f.checkout) : '', f.status === 'cancelled' ? '(キャンセル)' : ''].filter(Boolean).join('　')
+      : '未連携（予約紐付けなし）';
+    const chips = labelChipsHtml(f.labels);
+    const chipsHtml = chips ? `<div class="follower-labels">${chips}</div>` : '';
+    const info = encodeURIComponent(JSON.stringify({ lineUserId: f.lineUserId, displayName: f.displayName, pictureUrl: f.pictureUrl, name: f.bookingName, room: f.room, roomName: f.roomName, checkin: f.checkin, checkout: f.checkout }));
+    return `<div class="follower-row">
+      <div class="inbox-ava" ${ava}>${avaInner}</div>
+      <div class="follower-main">
+        <div class="follower-name">${chatEsc(f.displayName)}</div>
+        <div class="follower-meta">${chatEsc(metaTxt)}</div>
+        ${chipsHtml}
+      </div>
+      <div class="follower-actions">
+        <button class="icon-btn" title="ラベル" onclick="openLabelModal('${chatEsc(f.lineUserId)}')">🏷</button>
+        <button class="icon-btn" title="チャット" onclick="openChatFromInbox('${info}')">💬</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// --- 一斉送信 ---
+function renderBroadcastTargets() {
+  const sel = document.getElementById('bc-target');
+  if (!sel) return;
+  const prev = sel.value;
+  const opts = ['<option value="all">全フォロワー</option>']
+    .concat(followerState.labels.map(l => `<option value="label:${chatEsc(l.id)}">🏷 ${chatEsc(l.name)}</option>`));
+  sel.innerHTML = opts.join('');
+  if (prev && [...sel.options].some(o => o.value === prev)) sel.value = prev;
+  updateBroadcastCount();
+}
+
+function broadcastRecipientCount() {
+  const v = document.getElementById('bc-target').value;
+  if (v === 'all') return followerState.followers.length;
+  const id = v.replace(/^label:/, '');
+  return followerState.followers.filter(f => (f.labels || []).includes(id)).length;
+}
+
+function updateBroadcastCount() {
+  const n = broadcastRecipientCount();
+  document.getElementById('bc-count').textContent = `対象 ${n}人`;
+}
+
+async function sendBroadcast() {
+  const text = document.getElementById('bc-text').value.trim();
+  const msg = document.getElementById('bc-msg');
+  if (!text) { msg.textContent = 'メッセージを入力してください。'; return; }
+  const v = document.getElementById('bc-target').value;
+  const labelId = v === 'all' ? null : v.replace(/^label:/, '');
+  const n = broadcastRecipientCount();
+  if (!n) { msg.textContent = '対象のフォロワーがいません。'; return; }
+  const targetName = v === 'all' ? '全フォロワー' : ('ラベル「' + (labelById(labelId)?.name || '') + '」');
+  if (!confirm(`${targetName}（${n}人）に一斉送信します。よろしいですか？`)) return;
+  msg.style.color = 'var(--gold)';
+  msg.textContent = '送信中…';
+  const r = await apiPost({ action: 'broadcast', text, labelId });
+  if (r.ok) {
+    msg.style.color = 'var(--green)';
+    msg.textContent = `送信しました（${r.sent}人）${r.failed ? ' / 失敗 ' + r.failed + '人' : ''}`;
+    document.getElementById('bc-text').value = '';
+    loadInbox();
+  } else {
+    msg.style.color = 'var(--danger)';
+    msg.textContent = '送信に失敗しました: ' + (r.error || '不明なエラー');
+  }
+}
+
+// --- ラベル定義の管理 ---
+function renderLabelAdmin() {
+  const el = document.getElementById('label-admin-list');
+  if (!el) return;
+  if (!followerState.labels.length) {
+    el.innerHTML = '<div style="font-size:12px;color:var(--muted)">ラベルはまだありません。下から追加してください。</div>';
+    return;
+  }
+  el.innerHTML = followerState.labels.map(l => `
+    <div style="display:flex;align-items:center;gap:10px">
+      <span class="lb-dot" style="background:${chatEsc(l.color)}"></span>
+      <span style="flex:1;font-size:14px">${chatEsc(l.name)}</span>
+      <button class="icon-btn" style="color:var(--danger)" title="削除" onclick="deleteLabelDef('${chatEsc(l.id)}')">削除</button>
+    </div>`).join('');
+}
+
+async function addLabel() {
+  const nameEl = document.getElementById('new-label-name');
+  const name = nameEl.value.trim();
+  const color = document.getElementById('new-label-color').value || '#3D5A52';
+  const msg = document.getElementById('label-msg');
+  if (!name) { msg.textContent = 'ラベル名を入力してください。'; return; }
+  const labels = followerState.labels.concat([{ id: '', name, color }]);
+  const r = await apiPost({ action: 'save-labels', labels });
+  if (r.ok) {
+    followerState.labels = r.labels || [];
+    nameEl.value = '';
+    msg.style.color = 'var(--green)'; msg.textContent = '追加しました';
+    renderLabelAdmin(); renderBroadcastTargets(); renderFollowers();
+  } else {
+    msg.style.color = 'var(--danger)'; msg.textContent = '保存に失敗しました';
+  }
+}
+
+async function deleteLabelDef(id) {
+  const l = labelById(id);
+  if (!confirm(`ラベル「${l ? l.name : ''}」を削除します。付与済みのフォロワーからも外れます。よろしいですか？`)) return;
+  const labels = followerState.labels.filter(x => x.id !== id);
+  const r = await apiPost({ action: 'save-labels', labels });
+  if (r.ok) {
+    followerState.labels = r.labels || [];
+    renderLabelAdmin(); renderBroadcastTargets(); renderFollowers();
+  } else {
+    alert('削除に失敗しました');
+  }
+}
+
+// --- フォロワーへのラベル付与モーダル ---
+function openLabelModal(uid) {
+  const f = followerState.followers.find(x => x.lineUserId === uid);
+  if (!f) return;
+  followerState.editingUid = uid;
+  document.getElementById('label-modal-name').textContent = f.displayName || 'フォロワー';
+  const listEl = document.getElementById('label-modal-list');
+  if (!followerState.labels.length) {
+    listEl.innerHTML = '<div style="font-size:12px;color:var(--muted)">先に「ラベル管理」からラベルを作成してください。</div>';
+  } else {
+    listEl.innerHTML = followerState.labels.map(l => {
+      const checked = (f.labels || []).includes(l.id) ? 'checked' : '';
+      return `<label class="lb-toggle">
+        <input type="checkbox" value="${chatEsc(l.id)}" ${checked}>
+        <span class="lb-dot" style="background:${chatEsc(l.color)}"></span>
+        <span>${chatEsc(l.name)}</span>
+      </label>`;
+    }).join('');
+  }
+  document.getElementById('label-modal-overlay').style.display = 'block';
+  document.getElementById('label-modal').style.display = 'block';
+}
+
+function closeLabelModal() {
+  document.getElementById('label-modal-overlay').style.display = 'none';
+  document.getElementById('label-modal').style.display = 'none';
+  followerState.editingUid = null;
+}
+
+async function saveFollowerLabels() {
+  const uid = followerState.editingUid;
+  if (!uid) return;
+  const ids = [...document.querySelectorAll('#label-modal-list input[type=checkbox]:checked')].map(c => c.value);
+  const r = await apiPost({ action: 'set-follower-labels', lineUserId: uid, labels: ids });
+  if (r.ok) {
+    const f = followerState.followers.find(x => x.lineUserId === uid);
+    if (f) f.labels = ids;
+    closeLabelModal();
+    renderFollowers();
+    updateBroadcastCount();
+  } else {
+    alert('保存に失敗しました');
+  }
+}
+
+// --- LINE友だち同期 ---
+async function syncFollowers() {
+  const msg = document.getElementById('bc-msg');
+  if (!confirm('LINE公式アカウントの友だち一覧をこの画面に取り込みます。よろしいですか？')) return;
+  const r = await apiPost({ action: 'sync-followers' });
+  if (r.ok) {
+    alert(`同期しました。友だち ${r.total}人（新規 ${r.added}人）`);
+    loadFollowers();
+  } else {
+    alert('同期できませんでした: ' + (r.error || '不明なエラー') + '\n\n※ この機能はLINE認証済みアカウントのみ利用できます。未認証の場合は、ゲストがメッセージを送ると自動で一覧に追加されます。');
+  }
+}
+
 </script>
 
 <!-- LINE Chat Drawer -->
@@ -1776,6 +2084,7 @@ async function sendChatMessage() {
       <div id="chat-guest-name" style="font-weight:700;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"></div>
       <div id="chat-booking-info" style="font-size:11px;opacity:.75;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"></div>
     </div>
+    <button onclick="deleteCurrentChat()" title="この会話の履歴を削除" style="background:none;border:none;color:#fff;font-size:17px;cursor:pointer;line-height:1;padding:2px 4px;flex-shrink:0;opacity:.85">🗑</button>
     <button onclick="closeChat()" style="background:none;border:none;color:#fff;font-size:22px;cursor:pointer;line-height:1;padding:2px 4px;flex-shrink:0">✕</button>
   </div>
   <div id="chat-messages"></div>
@@ -1791,5 +2100,17 @@ async function sendChatMessage() {
 
 <!-- Image lightbox -->
 <div id="img-lightbox" onclick="this.classList.remove('show')"><img alt="拡大表示"></div>
+
+<!-- Follower label edit modal -->
+<div id="label-modal-overlay" onclick="closeLabelModal()"></div>
+<div id="label-modal">
+  <div id="label-modal-name" style="font-weight:700;font-size:15px;margin-bottom:2px"></div>
+  <div style="font-size:11px;color:var(--muted);margin-bottom:14px">付与するラベルを選択してください</div>
+  <div id="label-modal-list" style="display:flex;flex-direction:column;gap:8px"></div>
+  <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:18px">
+    <button class="icon-btn" style="padding:8px 14px" onclick="closeLabelModal()">閉じる</button>
+    <button class="btn" onclick="saveFollowerLabels()">保存</button>
+  </div>
+</div>
 </body>
 </html>

@@ -32,6 +32,14 @@ function previewOf(entry) {
   }
 }
 
+// 短縮版JSONレスポンス（フォロワー・ラベル・一斉送信系の新規アクションで使用）
+const jsonRes = (obj, status = 200) =>
+  new Response(JSON.stringify(obj), { status, headers: { 'Content-Type': 'application/json' } });
+
+function genId() {
+  return Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+}
+
 export default async (req) => {
   if (!checkAuth(req)) {
     return new Response(JSON.stringify({ ok: false, error: 'unauthorized' }), {
@@ -534,6 +542,175 @@ export default async (req) => {
       } catch {
         return new Response(JSON.stringify({ ok: false, error: 'not_found' }), { status: 404 });
       }
+    }
+
+    // ===== ラベル定義の取得・保存 =====
+    if (data.action === 'get-labels') {
+      const labels = (await store.get('labels.json', { type: 'json' })) || [];
+      return jsonRes({ ok: true, labels });
+    }
+
+    if (data.action === 'save-labels') {
+      const labels = Array.isArray(data.labels) ? data.labels.map((l) => ({
+        id: String(l.id || genId()),
+        name: String(l.name || '').slice(0, 30),
+        color: String(l.color || '#3D5A52'),
+      })).filter((l) => l.name) : [];
+      await store.setJSON('labels.json', labels);
+      return jsonRes({ ok: true, labels });
+    }
+
+    // ===== 特定フォロワーへのラベル付与 =====
+    if (data.action === 'set-follower-labels') {
+      const { lineUserId } = data;
+      if (!lineUserId) return jsonRes({ ok: false, error: 'no_lineUserId' }, 400);
+      const index = (await store.get('chat-index.json', { type: 'json' })) || {};
+      const ix = index[lineUserId] || {};
+      ix.labels = Array.isArray(data.labels) ? data.labels.map(String) : [];
+      index[lineUserId] = ix;
+      await store.setJSON('chat-index.json', index);
+      return jsonRes({ ok: true });
+    }
+
+    // ===== フォロワー一覧（chat-index を基点に予約情報・ラベルを合成）=====
+    if (data.action === 'list-followers') {
+      const allBookings = (await store.get('bookings.json', { type: 'json' })) || [];
+      const index = (await store.get('chat-index.json', { type: 'json' })) || {};
+      const labels = (await store.get('labels.json', { type: 'json' })) || [];
+      const bookingByUser = {};
+      for (const b of allBookings) {
+        if (!b.lineUserId) continue;
+        const cur = bookingByUser[b.lineUserId];
+        if (!cur) { bookingByUser[b.lineUserId] = b; continue; }
+        const score = (x) => (x.status === 'cancelled' ? 0 : 1);
+        if (score(b) > score(cur) || (score(b) === score(cur) && (b.checkin || '') > (cur.checkin || ''))) {
+          bookingByUser[b.lineUserId] = b;
+        }
+      }
+      const userIds = new Set([...Object.keys(index), ...Object.keys(bookingByUser)]);
+      const followers = [];
+      for (const uid of userIds) {
+        const ix = index[uid] || {};
+        const b = bookingByUser[uid];
+        followers.push({
+          lineUserId: uid,
+          displayName: ix.displayName || (b ? b.name : '') || 'LINEゲスト',
+          pictureUrl: ix.pictureUrl || '',
+          labels: Array.isArray(ix.labels) ? ix.labels : [],
+          lastAt: ix.lastAt || null,
+          linked: !!b,
+          bookingName: b ? b.name : '',
+          room: b ? b.room : null,
+          roomName: b ? b.roomName : '',
+          checkin: b ? b.checkin : '',
+          checkout: b ? b.checkout : '',
+          status: b ? b.status : null,
+        });
+      }
+      followers.sort((a, c) => (c.lastAt || '').localeCompare(a.lastAt || ''));
+      return jsonRes({ ok: true, followers, labels, total: followers.length });
+    }
+
+    // ===== チャット履歴の削除（フォロワー自体は残す）=====
+    if (data.action === 'delete-chat') {
+      const { lineUserId } = data;
+      if (!lineUserId) return jsonRes({ ok: false, error: 'no_lineUserId' }, 400);
+      const chatKey = `chat-${lineUserId}.json`;
+      const history = (await store.get(chatKey, { type: 'json' })) || [];
+      // このスレッドが参照するメディア実体も併せて削除
+      for (const m of history) {
+        if (m.mediaKey) { try { await store.delete(m.mediaKey); } catch {} }
+      }
+      try { await store.delete(chatKey); } catch {}
+      const index = (await store.get('chat-index.json', { type: 'json' })) || {};
+      if (index[lineUserId]) {
+        const ix = index[lineUserId];
+        ix.lastText = ''; ix.lastAt = null; ix.lastType = null; ix.lastDirection = null; ix.unread = 0;
+        index[lineUserId] = ix;
+        await store.setJSON('chat-index.json', index);
+      }
+      return jsonRes({ ok: true });
+    }
+
+    // ===== 一斉送信（全員 or ラベル絞り込み、multicastを500件ずつ）=====
+    if (data.action === 'broadcast') {
+      const text = typeof data.text === 'string' ? data.text.trim() : '';
+      if (!text) return jsonRes({ ok: false, error: 'no_text' }, 400);
+      const accessToken = process.env.LINE_CHANNEL_ACCESS_TOKEN;
+      if (!accessToken) return jsonRes({ ok: false, error: 'no_access_token' }, 500);
+      const index = (await store.get('chat-index.json', { type: 'json' })) || {};
+      const labelId = data.labelId ? String(data.labelId) : null;
+      let recipients = Object.keys(index);
+      if (labelId) {
+        recipients = recipients.filter((uid) => Array.isArray(index[uid].labels) && index[uid].labels.includes(labelId));
+      }
+      if (!recipients.length) return jsonRes({ ok: false, error: 'no_recipients' }, 400);
+
+      let sent = 0, failed = 0, lastErr = '';
+      for (let i = 0; i < recipients.length; i += 500) {
+        const chunk = recipients.slice(i, i + 500);
+        const res = await fetch('https://api.line.me/v2/bot/message/multicast', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` },
+          body: JSON.stringify({ to: chunk, messages: [{ type: 'text', text }] }),
+        });
+        if (res.ok) { sent += chunk.length; }
+        else { failed += chunk.length; lastErr = await res.text().catch(() => ''); }
+      }
+
+      // 送信できた場合のみ各スレッドの履歴とインボックスに記録
+      if (sent > 0) {
+        const at = new Date().toISOString();
+        for (const uid of recipients) {
+          const chatKey = `chat-${uid}.json`;
+          const hist = (await store.get(chatKey, { type: 'json' })) || [];
+          hist.push({ id: genId(), direction: 'out', type: 'text', text, at, broadcast: true });
+          await store.setJSON(chatKey, hist);
+          const ix = index[uid] || {};
+          ix.lastAt = at; ix.lastType = 'text'; ix.lastDirection = 'out'; ix.lastText = text;
+          index[uid] = ix;
+        }
+        await store.setJSON('chat-index.json', index);
+      }
+
+      return jsonRes({ ok: sent > 0, sent, failed, total: recipients.length, error: failed ? `LINE API: ${lastErr}` : undefined });
+    }
+
+    // ===== LINE友だち一覧をこの管理画面に同期（プロフィール取得）=====
+    if (data.action === 'sync-followers') {
+      const accessToken = process.env.LINE_CHANNEL_ACCESS_TOKEN;
+      if (!accessToken) return jsonRes({ ok: false, error: 'no_access_token' }, 500);
+      const index = (await store.get('chat-index.json', { type: 'json' })) || {};
+      let ids = [];
+      let next = null, guard = 0;
+      do {
+        const url = 'https://api.line.me/v2/bot/followers/ids?limit=1000' + (next ? `&start=${encodeURIComponent(next)}` : '');
+        const res = await fetch(url, { headers: { Authorization: `Bearer ${accessToken}` } });
+        if (!res.ok) {
+          const t = await res.text().catch(() => '');
+          return jsonRes({ ok: false, error: `LINE API: ${t}` }, 500);
+        }
+        const j = await res.json();
+        ids = ids.concat(j.userIds || []);
+        next = j.next || null;
+        guard++;
+      } while (next && guard < 20);
+
+      let added = 0;
+      for (const uid of ids) {
+        const existed = !!index[uid];
+        const ix = index[uid] || {};
+        if (!ix.displayName) {
+          try {
+            const pr = await fetch(`https://api.line.me/v2/bot/profile/${uid}`, { headers: { Authorization: `Bearer ${accessToken}` } });
+            if (pr.ok) { const p = await pr.json(); ix.displayName = p.displayName || ''; ix.pictureUrl = p.pictureUrl || ''; }
+          } catch {}
+        }
+        if (!existed) added++;
+        index[uid] = ix;
+      }
+      await store.setJSON('chat-index.json', index);
+      return jsonRes({ ok: true, total: ids.length, added });
     }
 
     return new Response(JSON.stringify({ ok: false, error: 'unknown_action' }), { status: 400 });

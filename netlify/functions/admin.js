@@ -1,4 +1,5 @@
 import { getStore } from '@netlify/blobs';
+import { runBroadcast } from './lib/broadcast-core.js';
 
 const DEFAULT_PRICING = {
   '0': { base: 18000, overrides: {}, minGuests: 2, maxGuests: 6, extraGuestFee: 2000 },
@@ -634,46 +635,68 @@ export default async (req) => {
 
     // ===== 一斉送信（全員 or ラベル絞り込み、multicastを500件ずつ）=====
     if (data.action === 'broadcast') {
+      const r = await runBroadcast({ text: data.text, labelId: data.labelId, store });
+      const status = r.ok ? 200 : (r.error === 'no_text' || r.error === 'no_recipients' ? 400 : 500);
+      return jsonRes(r, status);
+    }
+
+    // ===== 一斉送信の下書き・予約投稿の一覧 =====
+    if (data.action === 'list-broadcasts') {
+      const drafts = (await store.get('broadcast-drafts.json', { type: 'json' })) || [];
+      const scheduled = (await store.get('broadcast-scheduled.json', { type: 'json' })) || [];
+      return jsonRes({ ok: true, drafts, scheduled });
+    }
+
+    // ===== 下書きの保存（新規 or 更新）=====
+    if (data.action === 'save-draft') {
       const text = typeof data.text === 'string' ? data.text.trim() : '';
       if (!text) return jsonRes({ ok: false, error: 'no_text' }, 400);
-      const accessToken = process.env.LINE_CHANNEL_ACCESS_TOKEN;
-      if (!accessToken) return jsonRes({ ok: false, error: 'no_access_token' }, 500);
-      const index = (await store.get('chat-index.json', { type: 'json' })) || {};
+      const drafts = (await store.get('broadcast-drafts.json', { type: 'json' })) || [];
       const labelId = data.labelId ? String(data.labelId) : null;
-      let recipients = Object.keys(index);
-      if (labelId) {
-        recipients = recipients.filter((uid) => Array.isArray(index[uid].labels) && index[uid].labels.includes(labelId));
-      }
-      if (!recipients.length) return jsonRes({ ok: false, error: 'no_recipients' }, 400);
+      const now = new Date().toISOString();
+      const id = data.id ? String(data.id) : genId();
+      const existing = drafts.find((d) => d.id === id);
+      if (existing) { existing.text = text; existing.labelId = labelId; existing.savedAt = now; }
+      else { drafts.unshift({ id, text, labelId, savedAt: now }); }
+      await store.setJSON('broadcast-drafts.json', drafts);
+      return jsonRes({ ok: true, drafts });
+    }
 
-      let sent = 0, failed = 0, lastErr = '';
-      for (let i = 0; i < recipients.length; i += 500) {
-        const chunk = recipients.slice(i, i + 500);
-        const res = await fetch('https://api.line.me/v2/bot/message/multicast', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` },
-          body: JSON.stringify({ to: chunk, messages: [{ type: 'text', text }] }),
-        });
-        if (res.ok) { sent += chunk.length; }
-        else { failed += chunk.length; lastErr = await res.text().catch(() => ''); }
-      }
+    if (data.action === 'delete-draft') {
+      const id = data.id ? String(data.id) : '';
+      let drafts = (await store.get('broadcast-drafts.json', { type: 'json' })) || [];
+      drafts = drafts.filter((d) => d.id !== id);
+      await store.setJSON('broadcast-drafts.json', drafts);
+      return jsonRes({ ok: true, drafts });
+    }
 
-      // 送信できた場合のみ各スレッドの履歴とインボックスに記録
-      if (sent > 0) {
-        const at = new Date().toISOString();
-        for (const uid of recipients) {
-          const chatKey = `chat-${uid}.json`;
-          const hist = (await store.get(chatKey, { type: 'json' })) || [];
-          hist.push({ id: genId(), direction: 'out', type: 'text', text, at, broadcast: true });
-          await store.setJSON(chatKey, hist);
-          const ix = index[uid] || {};
-          ix.lastAt = at; ix.lastType = 'text'; ix.lastDirection = 'out'; ix.lastText = text;
-          index[uid] = ix;
-        }
-        await store.setJSON('chat-index.json', index);
-      }
+    // ===== 予約投稿の登録 =====
+    if (data.action === 'schedule-broadcast') {
+      const text = typeof data.text === 'string' ? data.text.trim() : '';
+      if (!text) return jsonRes({ ok: false, error: 'no_text' }, 400);
+      const sendAtRaw = data.sendAt ? new Date(data.sendAt) : null;
+      if (!sendAtRaw || isNaN(sendAtRaw.getTime())) return jsonRes({ ok: false, error: 'bad_date' }, 400);
+      if (sendAtRaw.getTime() < Date.now() - 60 * 1000) return jsonRes({ ok: false, error: 'past_date' }, 400);
+      const scheduled = (await store.get('broadcast-scheduled.json', { type: 'json' })) || [];
+      scheduled.push({
+        id: genId(),
+        text,
+        labelId: data.labelId ? String(data.labelId) : null,
+        sendAt: sendAtRaw.toISOString(),
+        status: 'pending',
+        createdAt: new Date().toISOString(),
+      });
+      await store.setJSON('broadcast-scheduled.json', scheduled);
+      return jsonRes({ ok: true, scheduled });
+    }
 
-      return jsonRes({ ok: sent > 0, sent, failed, total: recipients.length, error: failed ? `LINE API: ${lastErr}` : undefined });
+    // ===== 予約投稿の取り消し（pendingは削除、送信済みは履歴として残す）=====
+    if (data.action === 'cancel-scheduled') {
+      const id = data.id ? String(data.id) : '';
+      let scheduled = (await store.get('broadcast-scheduled.json', { type: 'json' })) || [];
+      scheduled = scheduled.filter((s) => !(s.id === id && s.status === 'pending'));
+      await store.setJSON('broadcast-scheduled.json', scheduled);
+      return jsonRes({ ok: true, scheduled });
     }
 
     // ===== LINE友だち一覧をこの管理画面に同期（プロフィール取得）=====

@@ -364,11 +364,42 @@
       </div>
       <textarea id="bc-text" rows="4" placeholder="フォロワーへ一斉送信するメッセージを入力…"
         style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:8px;font-size:16px;font-family:inherit;resize:vertical;line-height:1.6"></textarea>
-      <div style="display:flex;align-items:center;gap:12px;margin-top:10px;flex-wrap:wrap">
-        <button class="btn" onclick="sendBroadcast()">この内容で一斉送信</button>
-        <span style="font-size:11px;color:var(--muted)">送信内容は各ゲストのチャット履歴にも記録されます。</span>
+      <input type="hidden" id="bc-draft-id" value="">
+      <div style="display:flex;align-items:center;gap:8px;margin-top:10px;flex-wrap:wrap">
+        <button class="btn" onclick="sendBroadcast()">今すぐ一斉送信</button>
+        <button class="small-btn" style="background:var(--gold)" onclick="saveDraft()">下書き保存</button>
+        <button class="small-btn" style="background:#fff;color:var(--muted);border:1px solid var(--border)" onclick="clearComposer()">クリア</button>
       </div>
+      <div style="display:flex;align-items:center;gap:8px;margin-top:10px;flex-wrap:wrap;padding-top:10px;border-top:1px dashed var(--border)">
+        <label style="font-size:13px;color:var(--muted)">⏰ 予約送信</label>
+        <input type="datetime-local" id="bc-schedule-at"
+          style="padding:7px 9px;border:1px solid var(--border);border-radius:6px;font-size:16px;background:#fff;color:var(--ink)">
+        <button class="small-btn" onclick="scheduleBroadcast()">この日時に予約</button>
+      </div>
+      <div style="font-size:11px;color:var(--muted);margin-top:8px">送信内容は各ゲストのチャット履歴にも記録されます。予約送信は5分間隔でチェックして実行されます。</div>
       <div class="msg" id="bc-msg"></div>
+    </div>
+
+    <!-- 下書き -->
+    <div class="card accordion-card">
+      <div class="accordion-header" onclick="toggleAccordion(this)">
+        <h3 style="margin:0">📝 下書き <span id="draft-count" style="font-size:12px;color:var(--muted);font-weight:normal"></span></h3>
+        <span class="accordion-arrow">▶</span>
+      </div>
+      <div class="accordion-body" style="display:none;padding-top:14px">
+        <div id="draft-list" style="display:flex;flex-direction:column;gap:8px"></div>
+      </div>
+    </div>
+
+    <!-- 予約投稿 -->
+    <div class="card accordion-card">
+      <div class="accordion-header" onclick="toggleAccordion(this)">
+        <h3 style="margin:0">⏰ 予約投稿 <span id="scheduled-count" style="font-size:12px;color:var(--muted);font-weight:normal"></span></h3>
+        <span class="accordion-arrow">▶</span>
+      </div>
+      <div class="accordion-body" style="display:none;padding-top:14px">
+        <div id="scheduled-list" style="display:flex;flex-direction:column;gap:8px"></div>
+      </div>
     </div>
 
     <!-- ラベル管理 -->
@@ -1862,6 +1893,7 @@ async function deleteCurrentChat() {
 
 // ===== フォロワー・ラベル・一斉送信 =====
 let followerState = { followers: [], labels: [], editingUid: null };
+let broadcastState = { drafts: [], scheduled: [] };
 
 async function loadFollowers() {
   const r = await apiPost({ action: 'list-followers' });
@@ -1871,6 +1903,17 @@ async function loadFollowers() {
   renderLabelAdmin();
   renderBroadcastTargets();
   renderFollowers();
+  loadBroadcasts();
+}
+
+// 下書き・予約投稿の読み込み
+async function loadBroadcasts() {
+  const r = await apiPost({ action: 'list-broadcasts' });
+  if (!r.ok) return;
+  broadcastState.drafts = r.drafts || [];
+  broadcastState.scheduled = r.scheduled || [];
+  renderDrafts();
+  renderScheduled();
 }
 
 const labelById = id => followerState.labels.find(l => l.id === id);
@@ -1959,12 +2002,159 @@ async function sendBroadcast() {
   if (r.ok) {
     msg.style.color = 'var(--green)';
     msg.textContent = `送信しました（${r.sent}人）${r.failed ? ' / 失敗 ' + r.failed + '人' : ''}`;
-    document.getElementById('bc-text').value = '';
+    clearComposer();
     loadInbox();
   } else {
     msg.style.color = 'var(--danger)';
     msg.textContent = '送信に失敗しました: ' + (r.error || '不明なエラー');
   }
+}
+
+function composerLabelId() {
+  const v = document.getElementById('bc-target').value;
+  return v === 'all' ? null : v.replace(/^label:/, '');
+}
+
+function clearComposer() {
+  document.getElementById('bc-text').value = '';
+  document.getElementById('bc-draft-id').value = '';
+  document.getElementById('bc-schedule-at').value = '';
+  const msg = document.getElementById('bc-msg');
+  if (msg) msg.textContent = '';
+}
+
+// --- 下書き ---
+async function saveDraft() {
+  const text = document.getElementById('bc-text').value.trim();
+  const msg = document.getElementById('bc-msg');
+  if (!text) { msg.style.color = 'var(--danger)'; msg.textContent = '下書きにするメッセージを入力してください。'; return; }
+  const id = document.getElementById('bc-draft-id').value || null;
+  const r = await apiPost({ action: 'save-draft', id, text, labelId: composerLabelId() });
+  if (r.ok) {
+    broadcastState.drafts = r.drafts || [];
+    renderDrafts();
+    msg.style.color = 'var(--green)';
+    msg.textContent = '下書きを保存しました';
+  } else {
+    msg.style.color = 'var(--danger)';
+    msg.textContent = '下書きの保存に失敗しました';
+  }
+}
+
+function labelNameById(id) {
+  const l = labelById(id);
+  return l ? l.name : '';
+}
+
+function targetText(labelId) {
+  return labelId ? ('🏷 ' + (labelNameById(labelId) || 'ラベル')) : '全フォロワー';
+}
+
+function renderDrafts() {
+  const el = document.getElementById('draft-list');
+  document.getElementById('draft-count').textContent = broadcastState.drafts.length ? `（${broadcastState.drafts.length}）` : '';
+  if (!el) return;
+  if (!broadcastState.drafts.length) {
+    el.innerHTML = '<div style="font-size:12px;color:var(--muted)">下書きはありません。作成中のメッセージを「下書き保存」で残せます。</div>';
+    return;
+  }
+  el.innerHTML = broadcastState.drafts.map(d => {
+    const preview = chatEsc((d.text || '').slice(0, 60)) + ((d.text || '').length > 60 ? '…' : '');
+    return `<div style="border:1px solid var(--border);border-radius:8px;padding:10px 12px">
+      <div style="font-size:13px;line-height:1.5;white-space:pre-wrap;word-break:break-word">${preview}</div>
+      <div style="font-size:11px;color:var(--gold);margin-top:4px">送信先: ${chatEsc(targetText(d.labelId))}</div>
+      <div style="display:flex;gap:6px;margin-top:8px">
+        <button class="small-btn" onclick="loadDraft('${chatEsc(d.id)}')">編集欄へ読込</button>
+        <button class="icon-btn" style="color:var(--danger)" onclick="deleteDraft('${chatEsc(d.id)}')">削除</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function loadDraft(id) {
+  const d = broadcastState.drafts.find(x => x.id === id);
+  if (!d) return;
+  document.getElementById('bc-text').value = d.text || '';
+  document.getElementById('bc-draft-id').value = d.id;
+  const sel = document.getElementById('bc-target');
+  const want = d.labelId ? ('label:' + d.labelId) : 'all';
+  if ([...sel.options].some(o => o.value === want)) sel.value = want;
+  updateBroadcastCount();
+  const msg = document.getElementById('bc-msg');
+  msg.style.color = 'var(--gold)';
+  msg.textContent = '下書きを読み込みました。編集後「今すぐ一斉送信」または「予約送信」できます。';
+  document.getElementById('bc-text').scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
+async function deleteDraft(id) {
+  if (!confirm('この下書きを削除しますか？')) return;
+  const r = await apiPost({ action: 'delete-draft', id });
+  if (r.ok) { broadcastState.drafts = r.drafts || []; renderDrafts(); }
+}
+
+// --- 予約投稿 ---
+async function scheduleBroadcast() {
+  const text = document.getElementById('bc-text').value.trim();
+  const msg = document.getElementById('bc-msg');
+  const atVal = document.getElementById('bc-schedule-at').value;
+  if (!text) { msg.style.color = 'var(--danger)'; msg.textContent = 'メッセージを入力してください。'; return; }
+  if (!atVal) { msg.style.color = 'var(--danger)'; msg.textContent = '送信日時を指定してください。'; return; }
+  const when = new Date(atVal);
+  if (isNaN(when.getTime()) || when.getTime() < Date.now()) { msg.style.color = 'var(--danger)'; msg.textContent = '未来の日時を指定してください。'; return; }
+  const labelId = composerLabelId();
+  const n = broadcastRecipientCount();
+  if (!confirm(`${when.toLocaleString('ja-JP')} に ${targetText(labelId)}（${n}人）へ送信を予約します。よろしいですか？`)) return;
+  const r = await apiPost({ action: 'schedule-broadcast', text, labelId, sendAt: when.toISOString() });
+  if (r.ok) {
+    broadcastState.scheduled = r.scheduled || [];
+    renderScheduled();
+    clearComposer();
+    msg.style.color = 'var(--green)';
+    msg.textContent = '予約投稿を登録しました。';
+  } else {
+    msg.style.color = 'var(--danger)';
+    msg.textContent = '予約に失敗しました: ' + (r.error || '不明なエラー');
+  }
+}
+
+function schedStatusBadge(s) {
+  if (s.status === 'sent') return `<span class="badge" style="background:#e2f0ec;color:#2e7d5e">送信済 ${s.sent || 0}人${s.failed ? '/失敗' + s.failed : ''}</span>`;
+  if (s.status === 'failed') return `<span class="badge cancelled">失敗</span>`;
+  return `<span class="badge future">予約中</span>`;
+}
+
+function renderScheduled() {
+  const el = document.getElementById('scheduled-list');
+  const pending = broadcastState.scheduled.filter(s => s.status === 'pending').length;
+  document.getElementById('scheduled-count').textContent = pending ? `（予約中 ${pending}）` : '';
+  if (!el) return;
+  if (!broadcastState.scheduled.length) {
+    el.innerHTML = '<div style="font-size:12px;color:var(--muted)">予約投稿はありません。メッセージを入力し日時を指定して「この日時に予約」で登録できます。</div>';
+    return;
+  }
+  const sorted = [...broadcastState.scheduled].sort((a, b) => (a.sendAt || '').localeCompare(b.sendAt || ''));
+  el.innerHTML = sorted.map(s => {
+    const preview = chatEsc((s.text || '').slice(0, 60)) + ((s.text || '').length > 60 ? '…' : '');
+    const when = s.sendAt ? new Date(s.sendAt).toLocaleString('ja-JP') : '';
+    const cancelBtn = s.status === 'pending' ? `<button class="icon-btn" style="color:var(--danger)" onclick="cancelScheduled('${chatEsc(s.id)}')">取消</button>` : '';
+    const errLine = s.status === 'failed' && s.error ? `<div style="font-size:11px;color:var(--danger);margin-top:3px">${chatEsc(s.error)}</div>` : '';
+    return `<div style="border:1px solid var(--border);border-radius:8px;padding:10px 12px">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
+        <span style="font-size:12px;font-weight:700">🕒 ${chatEsc(when)}</span>
+        ${schedStatusBadge(s)}
+      </div>
+      <div style="font-size:13px;line-height:1.5;white-space:pre-wrap;word-break:break-word;margin-top:6px">${preview}</div>
+      <div style="font-size:11px;color:var(--gold);margin-top:4px">送信先: ${chatEsc(targetText(s.labelId))}</div>
+      ${errLine}
+      ${cancelBtn ? `<div style="display:flex;gap:6px;margin-top:8px">${cancelBtn}</div>` : ''}
+    </div>`;
+  }).join('');
+}
+
+async function cancelScheduled(id) {
+  if (!confirm('この予約投稿を取り消しますか？')) return;
+  const r = await apiPost({ action: 'cancel-scheduled', id });
+  if (r.ok) { broadcastState.scheduled = r.scheduled || []; renderScheduled(); }
 }
 
 // --- ラベル定義の管理 ---

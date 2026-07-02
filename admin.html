@@ -876,6 +876,8 @@ function renderBookings() {
     }
 
     const canCheckout = !isCancelled && !b.checkedOut && b.checkout <= todayStr;
+    // キャンセル可能なのは「宿泊前」（チェックイン日がまだ先）の予約のみ。宿泊中・宿泊済・退出済はロック
+    const canCancel = !isCancelled && !b.checkedOut && b.checkin > todayStr;
     const photos = b.ledger?.passportPhotos || [];
     const nonJpRequired = b.ledger?.nonJapaneseCount ?? 0;
     const photoOk = nonJpRequired === 0 || photos.length >= nonJpRequired;
@@ -922,7 +924,7 @@ function renderBookings() {
     const period = `${parseInt(b.checkin.slice(5,7))}/${parseInt(b.checkin.slice(8))}〜${parseInt(b.checkout.slice(5,7))}/${parseInt(b.checkout.slice(8))}`;
 
     return `<tr class="${isCancelled ? 'cancelled-row' : ''}">
-      <td style="padding:3px;text-align:center"><input type="checkbox" class="booking-cb" data-idx="${b._idx}"${isCancelled ? ' disabled' : ''}></td>
+      <td style="padding:3px;text-align:center"><input type="checkbox" class="booking-cb" data-idx="${b._idx}"${canCancel ? '' : ' disabled title="宿泊前の予約のみキャンセルできます"'}></td>
       <td style="font-size:11px;white-space:nowrap">${new Date(b.createdAt).toLocaleString('ja-JP',{month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'})}</td>
       <td style="font-size:11px;white-space:nowrap">${roomLabels[String(b.room)] || b.roomName || b.room}</td>
       <td style="font-size:11px;white-space:nowrap">${period}</td>
@@ -1055,12 +1057,29 @@ function toggleAllCb() {
 async function bulkCancelBookings() {
   const selected = [...document.querySelectorAll('.booking-cb:checked')].map(cb => parseInt(cb.dataset.idx));
   if (selected.length === 0) { alert('キャンセルする予約を選択してください'); return; }
-  if (!confirm(selected.length + '件の予約をキャンセルしますか？')) return;
+  if (!confirm(`${selected.length}件の予約をキャンセルします。\n\n・ゲストへキャンセル通知メール（LINE連携済みならLINEにも）を送信します\n・カード決済分は自動で返金します\n\nよろしいですか？`)) return;
+  let ok = 0, refunded = 0, refundFail = 0, emailed = 0, blocked = 0, manual = 0;
   for (const idx of selected) {
     const r = await apiPost({ action: 'cancel-booking', index: idx });
-    if (r.ok) state.bookings = r.bookings;
+    if (r.ok) {
+      ok++;
+      state.bookings = r.bookings;
+      if (r.refund?.status === 'ok') refunded++;
+      if (r.refund?.status === 'failed') refundFail++;
+      if (r.refund?.status === 'manual') manual++;
+      if (r.emailSent) emailed++;
+    } else if (r.error === 'not_cancellable_past') {
+      blocked++;
+    }
   }
   renderStats(); renderBookings(); renderGrid();
+  let msg = `${ok}件をキャンセルしました。`;
+  if (emailed) msg += `\n✉ 通知メール送信: ${emailed}件`;
+  if (refunded) msg += `\n💴 返金完了: ${refunded}件`;
+  if (manual) msg += `\n※ ${manual}件は手動返金対象（カード以外/決済情報なし）`;
+  if (refundFail) msg += `\n⚠️ 返金失敗: ${refundFail}件（Stripe管理画面で確認してください）`;
+  if (blocked) msg += `\n🔒 ${blocked}件は宿泊前でないためキャンセルできませんでした。`;
+  alert(msg);
 }
 
 function exportCSV() {

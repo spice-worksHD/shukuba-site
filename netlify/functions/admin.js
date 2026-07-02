@@ -1,4 +1,5 @@
 import { getStore } from '@netlify/blobs';
+import Stripe from 'stripe';
 import { runBroadcast } from './lib/broadcast-core.js';
 
 const DEFAULT_PRICING = {
@@ -39,6 +40,45 @@ const jsonRes = (obj, status = 200) =>
 
 function genId() {
   return Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+}
+
+// キャンセル確定時にゲストへ送るキャンセル通知メール（Resend）
+async function sendCancellationEmail(booking, refund) {
+  const apiKey = process.env.RESEND_API_KEY;
+  if (!apiKey || !booking.email) return false;
+  const roomLabel = booking.roomName || booking.room || '';
+  let refundHtml = '';
+  if (refund?.status === 'ok') {
+    refundHtml = `<p>ご返金（${Number(refund.amount).toLocaleString()}円）の手続きを行いました。ご利用のカード会社を通じて、数日〜2週間程度で反映されます。</p>`;
+  } else if (refund?.status === 'manual') {
+    refundHtml = `<p>ご返金につきましては、追って担当者よりご連絡いたします。</p>`;
+  }
+  const html = `
+    <div style="font-family:sans-serif;line-height:1.8;color:#2B2118">
+      <p>${booking.name || 'ゲスト'} 様</p>
+      <p>この度はご予約のキャンセルを承りました。下記の内容でキャンセルいたしました。</p>
+      <div style="background:#F4EEE2;border-radius:8px;padding:12px 16px;margin:12px 0">
+        <p style="margin:2px 0">部屋: ${roomLabel}</p>
+        <p style="margin:2px 0">ご宿泊: ${booking.checkin} 〜 ${booking.checkout}</p>
+        <p style="margin:2px 0">人数: ${booking.guests || '-'}名</p>
+        <p style="margin:2px 0">金額: ${Number(booking.total || 0).toLocaleString()}円</p>
+      </div>
+      ${refundHtml}
+      <p>またのご利用を心よりお待ちしております。</p>
+      <p style="color:#6B7770">SHUKUBA</p>
+    </div>`;
+  const res = await fetch('https://api.resend.com/emails', {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      from: 'SHUKUBA <reservation@shukuba-shiga.com>',
+      to: [booking.email],
+      subject: '【SHUKUBA】ご予約キャンセルのお知らせ',
+      html,
+    }),
+  });
+  if (!res.ok) console.error(`cancel email Resend error ${res.status}: ${await res.text().catch(() => '')}`);
+  return res.ok;
 }
 
 export default async (req) => {
@@ -148,21 +188,69 @@ export default async (req) => {
       const bookings = (await store.get('bookings.json', { type: 'json' })) || [];
       const idx = Number(data.index);
       if (!(idx >= 0 && idx < bookings.length)) {
-        return new Response(JSON.stringify({ ok: false, error: 'not_found' }), { status: 404 });
+        return jsonRes({ ok: false, error: 'not_found' }, 404);
       }
-      if (bookings[idx].status === 'cancelled') {
-        return new Response(JSON.stringify({ ok: false, error: 'already_cancelled' }), { status: 400 });
+      const booking = bookings[idx];
+      if (booking.status === 'cancelled') {
+        return jsonRes({ ok: false, error: 'already_cancelled' }, 400);
       }
+      // 宿泊前の予約のみキャンセル可（退出済・宿泊中・宿泊済はロック）
+      const jstToday = new Date(Date.now() + 9 * 3600 * 1000).toISOString().slice(0, 10);
+      if (booking.checkedOut || (booking.checkin && booking.checkin <= jstToday)) {
+        return jsonRes({ ok: false, error: 'not_cancellable_past' }, 400);
+      }
+
       const now = new Date().toISOString();
-      bookings[idx].status = 'cancelled';
-      bookings[idx].cancelledAt = now;
-      bookings[idx].history = Array.isArray(bookings[idx].history) ? bookings[idx].history : [];
-      bookings[idx].history.push({ event: 'cancelled', at: now, by: 'admin' });
+      booking.status = 'cancelled';
+      booking.cancelledAt = now;
+      booking.history = Array.isArray(booking.history) ? booking.history : [];
+      booking.history.push({ event: 'cancelled', at: now, by: 'admin' });
+
+      // ── 返金（Stripeカード決済のみ・二重返金防止）──
+      let refund = { status: 'none' };
+      const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
+      if (booking.refundedAt || booking.refundId) {
+        refund = { status: 'already' };
+      } else if (booking.stripePaymentIntentId && Number(booking.total) > 0 && stripeSecretKey) {
+        try {
+          const stripe = new Stripe(stripeSecretKey);
+          const r = await stripe.refunds.create({ payment_intent: booking.stripePaymentIntentId });
+          booking.refundId = r.id;
+          booking.refundedAt = now;
+          booking.refundAmount = r.amount;
+          booking.history.push({ event: 'refunded', at: now, by: 'admin', refundId: r.id, amount: r.amount });
+          refund = { status: 'ok', amount: r.amount, id: r.id };
+        } catch (err) {
+          booking.history.push({ event: 'refund-failed', at: now, by: 'admin', error: String(err.message || err) });
+          refund = { status: 'failed', error: String(err.message || err) };
+        }
+      } else if (Number(booking.total) > 0) {
+        // カード以外（PayPay等）や決済情報なし → 手動返金
+        refund = { status: 'manual' };
+      }
+
+      bookings[idx] = booking;
       await store.setJSON('bookings.json', bookings);
-      return new Response(JSON.stringify({ ok: true, bookings }), {
-        status: 200,
-        headers: { 'Content-Type': 'application/json' },
-      });
+
+      // ── ゲストへキャンセル通知（メール＋LINE）──
+      let emailSent = false;
+      try { emailSent = await sendCancellationEmail(booking, refund); }
+      catch (err) { console.error('cancel email failed:', err); }
+
+      if (booking.lineUserId && process.env.LINE_CHANNEL_ACCESS_TOKEN) {
+        try {
+          const refundLine = refund.status === 'ok'
+            ? `\nご返金（${Number(refund.amount).toLocaleString()}円）の手続きを行いました。カード会社を通じて反映されます。`
+            : '';
+          await fetch('https://api.line.me/v2/bot/message/push', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${process.env.LINE_CHANNEL_ACCESS_TOKEN}` },
+            body: JSON.stringify({ to: booking.lineUserId, messages: [{ type: 'text', text: `【SHUKUBA】ご予約（${booking.checkin}〜${booking.checkout}）をキャンセルいたしました。${refundLine}\nまたのご利用をお待ちしております。` }] }),
+          });
+        } catch (err) { console.error('cancel LINE push failed:', err); }
+      }
+
+      return jsonRes({ ok: true, bookings, refund, emailSent });
     }
 
     // TEST/DEMO TOOL — for creating sample bookings to test reminder emails etc.

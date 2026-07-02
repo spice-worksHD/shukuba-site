@@ -280,6 +280,7 @@
     <button class="tab-btn active" onclick="showTab('reservations')">予約履歴・サマリー</button>
     <button class="tab-btn" onclick="showTab('chat')">💬 チャット<span id="chat-tab-badge" class="tab-badge"></span></button>
     <button class="tab-btn" onclick="showTab('followers')">👥 フォロワー</button>
+    <button class="tab-btn" onclick="showTab('richmenu')">📱 リッチメニュー</button>
     <button class="tab-btn" onclick="showTab('ledger')">宿泊台帳</button>
     <button class="tab-btn" onclick="showTab('calendar')">料金・在庫カレンダー</button>
     <button class="tab-btn" onclick="showTab('payment')">決済設定</button>
@@ -439,6 +440,38 @@
     </div>
     <div style="font-size:11px;color:var(--muted);margin-top:8px;line-height:1.7">
       ※「LINEと同期」で公式アカウントの友だち全員を取り込めます（認証済みアカウントのみ利用可）。取り込めない場合も、ゲストがメッセージを送れば自動で一覧に追加されます。
+    </div>
+  </div>
+
+  <!-- Rich menu (公式LINEのリッチメニュー) -->
+  <div class="panel" id="panel-richmenu">
+    <div class="card">
+      <h3 style="margin-bottom:10px">📱 公式LINEのリッチメニュー</h3>
+      <p style="font-size:12px;color:var(--muted);line-height:1.7;margin-bottom:14px">
+        公式LINEのトーク下部に表示される4マスのメニューです。各マスをタップすると、対応するティザーページ（LP）が開きます。<br>
+        画像やリンク先を変えたときは、下の「設定・更新」を押すと最新の内容で公式LINEに反映されます。
+      </p>
+      <div id="richmenu-status" style="font-size:13px;margin-bottom:12px"></div>
+      <div style="display:flex;gap:16px;flex-wrap:wrap;align-items:flex-start">
+        <div style="flex:0 0 auto">
+          <img id="richmenu-preview" src="/richmenu.jpg" alt="リッチメニュー画像"
+            style="width:260px;max-width:70vw;border:1px solid var(--border);border-radius:8px;display:block;background:#eee">
+          <div style="font-size:11px;color:var(--muted);margin-top:4px">現在のメニュー画像（2500×1686）</div>
+        </div>
+        <div style="flex:1;min-width:200px">
+          <div style="font-size:12px;font-weight:700;margin-bottom:6px">各マスのリンク先</div>
+          <div id="richmenu-areas" style="display:flex;flex-direction:column;gap:6px"></div>
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:16px">
+        <button class="btn" onclick="setRichmenu()">公式LINEに設定・更新（全友だちに表示）</button>
+        <button class="small-btn" style="background:#fff;color:var(--danger);border:1px solid var(--border)" onclick="clearRichmenu()">解除</button>
+        <button class="small-btn" onclick="loadRichmenuStatus()">↻ 状態を確認</button>
+      </div>
+      <div class="msg" id="richmenu-msg"></div>
+      <div style="font-size:11px;color:var(--muted);margin-top:10px;line-height:1.7">
+        ※「設定・更新」を押すと、全友だちのメニューが即座に切り替わります。画像はサイト上の <code>/richmenu.jpg</code> が使われます（画像を差し替えたい場合はデザインを更新して再デプロイ後にこのボタン）。
+      </div>
     </div>
   </div>
 
@@ -718,6 +751,7 @@ function showTab(name) {
     inboxPollTimer = setInterval(loadInbox, 15000);
   }
   if (name === 'followers') loadFollowers();
+  if (name === 'richmenu') loadRichmenuStatus();
 }
 
 function renderAll() {
@@ -2155,6 +2189,70 @@ async function cancelScheduled(id) {
   if (!confirm('この予約投稿を取り消しますか？')) return;
   const r = await apiPost({ action: 'cancel-scheduled', id });
   if (r.ok) { broadcastState.scheduled = r.scheduled || []; renderScheduled(); }
+}
+
+// ===== リッチメニュー =====
+function renderRichmenuAreas(areas) {
+  const el = document.getElementById('richmenu-areas');
+  if (!el) return;
+  if (!areas || !areas.length) { el.innerHTML = ''; return; }
+  el.innerHTML = areas.map((a, i) => `
+    <div style="display:flex;align-items:center;gap:8px;font-size:12px">
+      <span style="flex:0 0 auto;width:20px;height:20px;border-radius:4px;background:var(--green);color:#fff;display:inline-flex;align-items:center;justify-content:center;font-weight:700">${i + 1}</span>
+      <span style="flex:0 0 84px;font-weight:700">${chatEsc(a.label)}</span>
+      <a href="${chatEsc(a.uri)}" target="_blank" style="color:var(--gold);word-break:break-all">${chatEsc(a.uri)}</a>
+    </div>`).join('');
+}
+
+async function loadRichmenuStatus() {
+  const statusEl = document.getElementById('richmenu-status');
+  if (statusEl) statusEl.innerHTML = '<span style="color:var(--muted)">状態を確認中…</span>';
+  const r = await apiPostTo('/.netlify/functions/richmenu', { action: 'status' });
+  if (!r || !r.ok) {
+    if (statusEl) statusEl.innerHTML = `<span style="color:var(--danger)">状態を取得できませんでした（${(r && r.error) || '不明'}）</span>`;
+    return;
+  }
+  renderRichmenuAreas(r.areas);
+  // 画像のキャッシュ回避
+  const img = document.getElementById('richmenu-preview');
+  if (img && r.imageUrl) img.src = r.imageUrl + '?t=' + Date.now();
+  if (statusEl) {
+    statusEl.innerHTML = r.defaultId
+      ? '<span style="color:var(--green);font-weight:700">✓ 設定済み</span> <span style="color:var(--muted)">— 全友だちにこのメニューが表示されています</span>'
+      : '<span style="color:var(--danger);font-weight:700">未設定</span> <span style="color:var(--muted)">— まだ公式LINEにメニューが表示されていません。下のボタンで設定してください</span>';
+  }
+}
+
+async function setRichmenu() {
+  if (!confirm('公式LINEのリッチメニューを設定・更新します。\n全友だちのメニューが即座にこの内容に切り替わります。よろしいですか？')) return;
+  const msg = document.getElementById('richmenu-msg');
+  msg.style.color = 'var(--gold)';
+  msg.textContent = '設定中…（LINEに登録しています）';
+  const r = await apiPostTo('/.netlify/functions/richmenu', { action: 'set' });
+  if (r && r.ok) {
+    msg.style.color = 'var(--green)';
+    msg.textContent = '✓ 公式LINEにリッチメニューを設定しました。トークを開き直すと表示されます。';
+    loadRichmenuStatus();
+  } else {
+    msg.style.color = 'var(--danger)';
+    msg.textContent = '設定に失敗しました: ' + ((r && r.error) || '不明なエラー');
+  }
+}
+
+async function clearRichmenu() {
+  if (!confirm('リッチメニューを解除します。公式LINEからメニューが消えます。よろしいですか？')) return;
+  const msg = document.getElementById('richmenu-msg');
+  msg.style.color = 'var(--gold)';
+  msg.textContent = '解除中…';
+  const r = await apiPostTo('/.netlify/functions/richmenu', { action: 'clear' });
+  if (r && r.ok) {
+    msg.style.color = 'var(--green)';
+    msg.textContent = '✓ リッチメニューを解除しました。';
+    loadRichmenuStatus();
+  } else {
+    msg.style.color = 'var(--danger)';
+    msg.textContent = '解除に失敗しました: ' + ((r && r.error) || '不明なエラー');
+  }
 }
 
 // --- ラベル定義の管理 ---

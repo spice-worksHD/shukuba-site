@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@600;700;800&family=Zen+Kaku+Gothic+New:wght@500;700&display=swap" rel="stylesheet">
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{width:2500px;height:1686px;overflow:hidden;font-family:'Zen Kaku Gothic New',sans-serif}
+  .menu{width:2500px;height:1686px;display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;background:#16463F;gap:6px}
+  .cell{position:relative;background:#16463F center/cover no-repeat;display:flex;flex-direction:column;align-items:center;justify-content:center;overflow:hidden}
+  .cell::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(12,38,34,.32) 0%,rgba(12,38,34,.72) 100%)}
+  .cell .inner{position:relative;z-index:1;text-align:center;color:#fff}
+  .cell .en{font-family:'Shippori Mincho',serif;font-size:44px;letter-spacing:.28em;opacity:.85;font-weight:600;margin-bottom:18px;padding-left:.28em}
+  .cell .ja{font-family:'Shippori Mincho',serif;font-size:120px;font-weight:800;letter-spacing:.10em;text-shadow:0 3px 24px rgba(0,0,0,.4);line-height:1.05}
+  .cell .rule{width:70px;height:3px;background:#fff;margin:26px auto 0;opacity:.75}
+  /* うっすらブランド */
+  .brand{position:absolute;z-index:3;left:50%;top:50%;transform:translate(-50%,-50%);
+    font-family:'Shippori Mincho',serif;color:#fff;font-size:46px;letter-spacing:.4em;
+    background:rgba(22,70,63,.92);padding:20px 40px;border-radius:8px;border:1px solid rgba(255,255,255,.25);
+    box-shadow:0 8px 40px rgba(0,0,0,.35);padding-left:.4em}
+</style>
+</head>
+<body>
+  <div class="menu">
+    <div class="cell" style="background-image:url('https://shukuba-shiga.com/images/features/feat_kaku.jpg')">
+      <div class="inner"><div class="en">FACILITY</div><div class="ja">施設案内</div><div class="rule"></div></div>
+    </div>
+    <div class="cell" style="background-image:url('https://upload.wikimedia.org/wikipedia/commons/thumb/1/19/Omihachiman_Canal_March_2016.jpg/1280px-Omihachiman_Canal_March_2016.jpg')">
+      <div class="inner"><div class="en">AREA GUIDE</div><div class="ja">エリア観光</div><div class="rule"></div></div>
+    </div>
+    <div class="cell" style="background-image:url('https://upload.wikimedia.org/wikipedia/commons/thumb/f/f1/Metasequoia_Road_in_Makino%2C_Takashima_-_Jul_9%2C_2017.jpg/1280px-Metasequoia_Road_in_Makino%2C_Takashima_-_Jul_9%2C_2017.jpg')">
+      <div class="inner"><div class="en">SCENIC SPOTS</div><div class="ja">見どころ</div><div class="rule"></div></div>
+    </div>
+    <div class="cell" style="background-image:url('https://shukuba-shiga.com/images/features/feat_kage.jpg')">
+      <div class="inner"><div class="en">YOUR STAY</div><div class="ja">ご滞在案内</div><div class="rule"></div></div>
+    </div>
+    <div class="brand">SHUKUBA</div>
+  </div>
+</body>
+</html>

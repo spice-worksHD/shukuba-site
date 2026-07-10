@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>お問い合わせ | SHUKUBA 古民家の宿 滋賀</title>
+<meta name="description" content="SHUKUBA（滋賀・古民家の宿）へのお問い合わせフォーム。ご宿泊のご相談・貸切・取材などお気軽にどうぞ。資料の添付も可能です。">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;700&family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+<style>
+/* ===== Contact page (葦簾テーマ準拠) ===== */
+#contact-hero {
+  padding: 150px 24px 60px; text-align: center; background: var(--paper2);
+  border-bottom: 1px solid var(--border);
+}
+#contact-hero .section-label { margin-bottom: 14px; }
+#contact-hero h1 { font-size: clamp(30px, 5vw, 46px); font-weight: 500; letter-spacing: 2px; }
+#contact-hero p { color: var(--muted); font-size: 14px; line-height: 2; margin-top: 18px; }
+#contact-hero .tel { margin-top: 18px; font-size: 13px; color: var(--reed); letter-spacing: 1px; }
+#contact-hero .tel a { color: var(--bengara); text-decoration: none; font-weight: 700; }
+
+.contact-wrap { max-width: 720px; margin: 0 auto; padding: 48px 24px 100px; }
+
+/* Stepper */
+.stepper { display: flex; align-items: center; justify-content: center; gap: 6px; margin-bottom: 48px; }
+.step { display: flex; flex-direction: column; align-items: center; gap: 8px; flex: 0 0 auto; }
+.step-dot {
+  width: 42px; height: 42px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+  border: 1.5px solid var(--border); color: var(--muted); font-size: 16px; background: var(--paper);
+  font-family: 'Shippori Mincho', serif; transition: all .25s;
+}
+.step.active .step-dot { border-color: var(--bengara); color: #fff; background: var(--bengara); }
+.step.done .step-dot { border-color: var(--reed); color: #fff; background: var(--reed); }
+.step-label { font-size: 11px; letter-spacing: 1px; color: var(--muted); }
+.step.active .step-label { color: var(--ink); font-weight: 700; }
+.step-bar { flex: 1 1 40px; height: 1px; background: var(--border); max-width: 80px; margin-bottom: 22px; }
+
+/* Form */
+.field { margin-bottom: 26px; }
+.field label.field-label {
+  display: flex; align-items: center; gap: 10px; font-size: 14px; font-weight: 700;
+  letter-spacing: .5px; margin-bottom: 10px; color: var(--ink);
+}
+.req { font-size: 10px; font-weight: 700; letter-spacing: 1px; color: #fff; background: var(--bengara); padding: 3px 8px; border-radius: 2px; }
+.opt { font-size: 10px; font-weight: 700; letter-spacing: 1px; color: var(--muted); background: var(--paper2); padding: 3px 8px; border-radius: 2px; border: 1px solid var(--border); }
+.field .hint { font-size: 12px; color: var(--muted); line-height: 1.8; margin-top: 8px; }
+
+/* inputs inherit base style.css; enforce mobile-friendly sizing */
+.contact-wrap input, .contact-wrap select, .contact-wrap textarea {
+  width: 100%; font-size: 16px; padding: 15px 16px; border: 1px solid var(--border);
+  background: #fff; border-radius: 4px; font-family: inherit;
+}
+.contact-wrap textarea { min-height: 150px; }
+.name-row { display: flex; gap: 12px; }
+.name-row > div { flex: 1; }
+.char-count { text-align: right; font-size: 12px; color: var(--muted); margin-top: 6px; }
+.char-count.over { color: var(--bengara); font-weight: 700; }
+
+/* File upload */
+.file-drop {
+  border: 1.5px dashed var(--susuki); border-radius: 6px; padding: 26px 18px; text-align: center;
+  background: rgba(138,110,75,0.05); cursor: pointer; transition: background .2s, border-color .2s;
+}
+.file-drop:hover, .file-drop.drag { background: rgba(193,76,50,0.06); border-color: var(--bengara); }
+.file-drop .fd-icon { font-size: 30px; }
+.file-drop .fd-main { font-size: 14px; font-weight: 700; margin-top: 8px; color: var(--ink); }
+.file-drop .fd-sub { font-size: 12px; color: var(--muted); margin-top: 6px; line-height: 1.8; }
+.file-list { margin-top: 14px; display: flex; flex-direction: column; gap: 8px; }
+.file-item {
+  display: flex; align-items: center; gap: 12px; padding: 11px 14px; background: #fff;
+  border: 1px solid var(--border); border-radius: 4px; font-size: 13px;
+}
+.file-item .fi-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.file-item .fi-size { color: var(--muted); font-size: 12px; flex: 0 0 auto; }
+.file-item .fi-del {
+  flex: 0 0 auto; border: none; background: none; color: var(--bengara); cursor: pointer;
+  font-size: 20px; line-height: 1; padding: 4px 6px;
+}
+.file-total { font-size: 12px; color: var(--muted); margin-top: 10px; }
+.file-total.over { color: var(--bengara); font-weight: 700; }
+
+/* consent */
+.consent { display: flex; align-items: flex-start; gap: 12px; font-size: 13px; line-height: 1.8; color: var(--ink); cursor: pointer; }
+.consent input { width: auto; flex: 0 0 auto; margin-top: 3px; transform: scale(1.3); }
+
+/* buttons */
+.btn-row { display: flex; gap: 14px; margin-top: 36px; }
+.btn-row .submit-btn { margin-top: 0; }
+.btn-ghost {
+  flex: 0 0 auto; padding: 18px 26px; background: transparent; color: var(--ink);
+  border: 1px solid var(--border); border-radius: 4px; cursor: pointer; font-size: 14px;
+  letter-spacing: 2px; font-family: inherit;
+}
+.btn-ghost:hover { border-color: var(--susuki); }
+.submit-btn { border-radius: 4px; }
+
+/* confirm view */
+.confirm-table { border-top: 1px solid var(--border); }
+.confirm-row { display: flex; gap: 16px; padding: 16px 4px; border-bottom: 1px solid var(--border); }
+.confirm-row dt { flex: 0 0 130px; font-size: 13px; font-weight: 700; color: var(--muted); letter-spacing: .5px; }
+.confirm-row dd { flex: 1; font-size: 15px; line-height: 1.9; white-space: pre-wrap; word-break: break-word; }
+
+/* complete view */
+.done-box { text-align: center; padding: 30px 10px; }
+.done-box .done-mark {
+  width: 72px; height: 72px; border-radius: 50%; background: var(--reed); color: #fff;
+  display: flex; align-items: center; justify-content: center; font-size: 38px; margin: 0 auto 24px;
+}
+.done-box h2 { font-size: 26px; font-weight: 500; margin-bottom: 16px; letter-spacing: 1px; }
+.done-box p { color: var(--muted); font-size: 14px; line-height: 2; }
+.done-box .home-link {
+  display: inline-block; margin-top: 30px; padding: 15px 34px; background: var(--ink); color: var(--paper);
+  text-decoration: none; letter-spacing: 2px; font-size: 14px; border-radius: 4px;
+}
+
+.err-msg { color: var(--bengara); font-size: 13px; font-weight: 700; margin-top: 16px; text-align: center; display: none; }
+.hidden { display: none !important; }
+
+.btn-spinner {
+  width: 16px; height: 16px; border: 2px solid rgba(244,238,226,0.4); border-top-color: #fff;
+  border-radius: 50%; display: inline-block; animation: spin .7s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+@media (max-width: 640px) {
+  #contact-hero { padding: 120px 20px 44px; }
+  .contact-wrap { padding: 36px 18px 80px; }
+  .stepper { gap: 2px; margin-bottom: 38px; }
+  .step-dot { width: 38px; height: 38px; font-size: 15px; }
+  .step-label { font-size: 10px; }
+  .step-bar { max-width: 40px; }
+  .name-row { flex-direction: column; gap: 12px; }
+  .btn-row { flex-direction: column-reverse; }
+  .btn-row .submit-btn, .btn-ghost { width: 100%; }
+  .confirm-row { flex-direction: column; gap: 4px; }
+  .confirm-row dt { flex: none; }
+}
+</style>
+</head>
+<body class="lang-ja">
+
+<!-- Lang Toggle -->
+<div id="lang-toggle">
+  <button class="lang-btn active" onclick="setLang('ja')">JP</button>
+  <button class="lang-btn" onclick="setLang('en')">EN</button>
+</div>
+
+<!-- Nav -->
+<nav id="nav" class="scrolled">
+  <a class="nav-logo" href="index.html">SHUKUBA</a>
+  <div class="nav-links">
+    <a href="index.html#concept"><span data-ja>コンセプト</span><span data-en>Concept</span></a>
+    <a href="rooms.html"><span data-ja>客室紹介</span><span data-en>Rooms</span></a>
+    <a href="area.html"><span data-ja>地域紹介</span><span data-en>The Area</span></a>
+    <a href="seasons.html"><span data-ja>四季の旅</span><span data-en>Seasons</span></a>
+    <a href="index.html#booking"><span data-ja>ご予約</span><span data-en>Reserve</span></a>
+    <a href="contact.html"><span data-ja>お問い合わせ</span><span data-en>Contact</span></a>
+  </div>
+  <button class="nav-toggle" aria-label="メニュー" onclick="toggleNavMenu()"><span></span><span></span><span></span></button>
+</nav>
+
+<!-- Hero -->
+<header id="contact-hero">
+  <div class="section-label" data-ja>お問い合わせ</div>
+  <div class="section-label" data-en>Contact</div>
+  <h1 data-ja>お問い合わせ</h1>
+  <h1 data-en>Contact Us</h1>
+  <p data-ja>ご宿泊のご相談、貸切・団体でのご利用、取材のご依頼など、お気軽にお問い合わせください。<br>資料の添付も可能です。ご返信までお時間をいただく場合がございます。</p>
+  <p data-en>For reservations, private/group bookings, media inquiries and more — feel free to reach out.<br>You may also attach files. Please allow some time for our reply.</p>
+  <div class="tel">
+    <span data-ja>お急ぎの際はお電話にて</span><span data-en>In a hurry? Call us</span>　TEL：<a href="tel:098-087-7797">098-087-7797</a>
+  </div>
+</header>
+
+<main class="contact-wrap">
+
+  <!-- Stepper -->
+  <div class="stepper" id="stepper">
+    <div class="step active" data-step="1">
+      <div class="step-dot">1</div>
+      <div class="step-label"><span data-ja>入力</span><span data-en>Input</span></div>
+    </div>
+    <div class="step-bar"></div>
+    <div class="step" data-step="2">
+      <div class="step-dot">2</div>
+      <div class="step-label"><span data-ja>確認</span><span data-en>Confirm</span></div>
+    </div>
+    <div class="step-bar"></div>
+    <div class="step" data-step="3">
+      <div class="step-dot">3</div>
+      <div class="step-label"><span data-ja>完了</span><span data-en>Done</span></div>
+    </div>
+  </div>
+
+  <!-- STEP 1: FORM -->
+  <form id="contact-form" novalidate>
+    <div id="pane-1">
+
+      <div class="field">
+        <label class="field-label" for="type"><span data-ja>お問い合わせの種類</span><span data-en>Inquiry type</span> <span class="req">必須</span></label>
+        <select id="type" name="type" required></select>
+      </div>
+
+      <div class="field">
+        <label class="field-label" for="content"><span data-ja>お問い合わせ内容</span><span data-en>Message</span> <span class="req">必須</span></label>
+        <textarea id="content" name="content" maxlength="1000" required></textarea>
+        <div class="char-count"><span id="char-now">0</span> / 1000</div>
+      </div>
+
+      <div class="field">
+        <label class="field-label"><span data-ja>お名前</span><span data-en>Name</span> <span class="req">必須</span></label>
+        <div class="name-row">
+          <div><input type="text" id="lastName" name="lastName" autocomplete="family-name" required></div>
+          <div><input type="text" id="firstName" name="firstName" autocomplete="given-name" required></div>
+        </div>
+      </div>
+
+      <div class="field">
+        <label class="field-label" for="email"><span data-ja>メールアドレス</span><span data-en>Email</span> <span class="req">必須</span></label>
+        <input type="email" id="email" name="email" inputmode="email" autocomplete="email" required>
+        <div class="hint"><span data-ja>ご返信先になります。お間違いのないようご入力ください。</span><span data-en>We will reply to this address. Please double-check it.</span></div>
+      </div>
+
+      <div class="field">
+        <label class="field-label" for="phone"><span data-ja>電話番号</span><span data-en>Phone</span> <span class="opt" data-ja>任意</span><span class="opt" data-en>Optional</span></label>
+        <input type="tel" id="phone" name="phone" inputmode="tel" autocomplete="tel">
+      </div>
+
+      <div class="field">
+        <label class="field-label" for="detail"><span data-ja>ご希望の宿・ご旅行日程など</span><span data-en>Preferred property / travel dates</span> <span class="opt" data-ja>任意</span><span class="opt" data-en>Optional</span></label>
+        <input type="text" id="detail" name="detail" placeholder="">
+      </div>
+
+      <div class="field">
+        <label class="field-label"><span data-ja>資料の添付</span><span data-en>Attachments</span> <span class="opt" data-ja>任意</span><span class="opt" data-en>Optional</span></label>
+        <div class="file-drop" id="file-drop" tabindex="0" role="button">
+          <div class="fd-icon">📎</div>
+          <div class="fd-main"><span data-ja>ファイルを選択 / ここにドロップ</span><span data-en>Choose files / drop here</span></div>
+          <div class="fd-sub">
+            <span data-ja>PDF・画像・Word・Excel など（合計4MBまで・最大5ファイル）</span>
+            <span data-en>PDF, images, Word, Excel, etc. (up to 4MB total, max 5 files)</span>
+          </div>
+        </div>
+        <input type="file" id="file-input" multiple accept=".pdf,.jpg,.jpeg,.png,.gif,.webp,.heic,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt" class="hidden">
+        <div class="file-list" id="file-list"></div>
+        <div class="file-total" id="file-total"></div>
+      </div>
+
+      <div class="field">
+        <label class="consent">
+          <input type="checkbox" id="consent" required>
+          <span>
+            <span data-ja>個人情報の取り扱いに同意のうえ送信します。いただいた情報はお問い合わせへの対応のみに使用します。</span>
+            <span data-en>I agree to the handling of my personal information for the purpose of responding to this inquiry.</span>
+          </span>
+        </label>
+      </div>
+
+      <div class="btn-row">
+        <button type="submit" class="submit-btn" id="to-confirm">
+          <span data-ja>確認画面へ</span><span data-en>Review &amp; continue</span>
+        </button>
+      </div>
+    </div>
+  </form>
+
+  <!-- STEP 2: CONFIRM -->
+  <div id="pane-2" class="hidden">
+    <dl class="confirm-table" id="confirm-table"></dl>
+    <div class="err-msg" id="err-msg"></div>
+    <div class="btn-row">
+      <button type="button" class="btn-ghost" id="back-edit"><span data-ja>修正する</span><span data-en>Back</span></button>
+      <button type="button" class="submit-btn" id="do-send"><span data-ja>この内容で送信する</span><span data-en>Send</span></button>
+    </div>
+  </div>
+
+  <!-- STEP 3: DONE -->
+  <div id="pane-3" class="hidden">
+    <div class="done-box">
+      <div class="done-mark">✓</div>
+      <h2 data-ja>送信が完了しました</h2>
+      <h2 data-en>Your message has been sent</h2>
+      <p data-ja>お問い合わせありがとうございます。<br>担当者より、ご入力いただいたメールアドレス宛にご返信いたします。<br>確認メールもお送りしましたのでご確認ください。</p>
+      <p data-en>Thank you for your inquiry.<br>Our team will reply to the email address you provided.<br>A confirmation email has also been sent to you.</p>
+      <a class="home-link" href="index.html"><span data-ja>トップページへ戻る</span><span data-en>Back to home</span></a>
+    </div>
+  </div>
+
+</main>
+
+<!-- Footer -->
+<footer>
+  <div class="footer-logo">SHUKUBA</div>
+  <div class="footer-sub" data-ja>古民家を、もう一度この街の誇りへ。</div>
+  <div class="footer-sub" data-en>Breathing new life into century-old machiya townhouses.</div>
+  <div class="footer-links">
+    <a href="index.html#concept"><span data-ja>コンセプト</span><span data-en>Concept</span></a>
+    <a href="rooms.html"><span data-ja>客室紹介</span><span data-en>Rooms</span></a>
+    <a href="area.html"><span data-ja>地域紹介</span><span data-en>The Area</span></a>
+    <a href="seasons.html"><span data-ja>四季の旅</span><span data-en>Seasons</span></a>
+    <a href="contact.html"><span data-ja>お問い合わせ</span><span data-en>Contact</span></a>
+  </div>
+  <div class="footer-copy">
+    <span data-ja>© 2026 SPICEWORKS HD / SHUKUBA. 滋賀県古民家再生宿泊プロジェクト</span>
+    <span data-en>© 2026 SPICEWORKS HD / SHUKUBA. Machiya Revitalization Project, Shiga Prefecture</span>
+  </div>
+</footer>
+
+<script src="common.js"></script>
+<script>
+const MAX_FILES = 5;
+const MAX_TOTAL = 4 * 1024 * 1024; // 4MB
+
+// ---- inquiry types (bilingual) ----
+const TYPES = [
+  { v: '', ja: '選択してください', en: 'Please select', disabled: true },
+  { v: '宿泊予約・空室について', ja: 'ご宿泊・空室について', en: 'Reservation / availability' },
+  { v: 'プラン・料金について', ja: 'プラン・料金について', en: 'Plans / pricing' },
+  { v: '貸切・団体・イベント', ja: '貸切・団体・イベントのご相談', en: 'Private / group / event' },
+  { v: '取材・撮影・メディア', ja: '取材・撮影・メディア', en: 'Media / filming' },
+  { v: 'その他', ja: 'その他', en: 'Other' },
+];
+function curLang() { return document.body.classList.contains('lang-ja') ? 'ja' : 'en'; }
+function buildTypeSelect() {
+  const lang = curLang();
+  const sel = document.getElementById('type');
+  const prev = sel.value;
+  sel.innerHTML = '';
+  TYPES.forEach(o => {
+    const op = document.createElement('option');
+    op.value = o.v; op.textContent = o[lang];
+    if (o.disabled) { op.disabled = true; }
+    if (o.v === '') { op.selected = true; }
+    sel.appendChild(op);
+  });
+  if (prev) sel.value = prev;
+}
+
+// ---- placeholders per language ----
+const PH = {
+  content: { ja: '1000文字以内でご入力ください', en: 'Up to 1000 characters' },
+  lastName: { ja: '姓', en: 'Last name' },
+  firstName: { ja: '名', en: 'First name' },
+  email: { ja: 'example@mail.com', en: 'example@mail.com' },
+  phone: { ja: '09012345678（ハイフン不要）', en: 'e.g. 09012345678' },
+  detail: { ja: '例）元浜町に9/20〜1泊、2名で検討中', en: 'e.g. Motohama-cho, 1 night from Sep 20, 2 guests' },
+};
+function applyLang() {
+  const lang = curLang();
+  Object.keys(PH).forEach(id => { const el = document.getElementById(id); if (el) el.placeholder = PH[id][lang]; });
+  buildTypeSelect();
+}
+// react to lang toggle (common.js setLang swaps body class)
+new MutationObserver(applyLang).observe(document.body, { attributes: true, attributeFilter: ['class'] });
+
+// ---- char counter ----
+const contentEl = document.getElementById('content');
+const charNow = document.getElementById('char-now');
+contentEl.addEventListener('input', () => {
+  charNow.textContent = contentEl.value.length;
+  charNow.parentElement.classList.toggle('over', contentEl.value.length >= 1000);
+});
+
+// ---- file handling ----
+let files = [];
+const fileInput = document.getElementById('file-input');
+const fileDrop = document.getElementById('file-drop');
+const fileListEl = document.getElementById('file-list');
+const fileTotalEl = document.getElementById('file-total');
+
+fileDrop.addEventListener('click', () => fileInput.click());
+fileDrop.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); fileInput.click(); } });
+['dragover', 'dragenter'].forEach(ev => fileDrop.addEventListener(ev, e => { e.preventDefault(); fileDrop.classList.add('drag'); }));
+['dragleave', 'drop'].forEach(ev => fileDrop.addEventListener(ev, e => { e.preventDefault(); fileDrop.classList.remove('drag'); }));
+fileDrop.addEventListener('drop', e => addFiles(e.dataTransfer.files));
+fileInput.addEventListener('change', () => { addFiles(fileInput.files); fileInput.value = ''; });
+
+function fmtSize(b) { return b < 1024 * 1024 ? (b / 1024).toFixed(0) + ' KB' : (b / 1024 / 1024).toFixed(2) + ' MB'; }
+function addFiles(list) {
+  const isJa = curLang() === 'ja';
+  for (const f of list) {
+    if (files.length >= MAX_FILES) { alert(isJa ? `添付は最大${MAX_FILES}ファイルまでです。` : `Up to ${MAX_FILES} files.`); break; }
+    if (files.some(x => x.name === f.name && x.size === f.size)) continue;
+    files.push(f);
+  }
+  renderFiles();
+}
+function removeFile(i) { files.splice(i, 1); renderFiles(); }
+function totalSize() { return files.reduce((s, f) => s + f.size, 0); }
+function renderFiles() {
+  const isJa = curLang() === 'ja';
+  fileListEl.innerHTML = '';
+  files.forEach((f, i) => {
+    const row = document.createElement('div');
+    row.className = 'file-item';
+    row.innerHTML = `<span class="fi-name"></span><span class="fi-size">${fmtSize(f.size)}</span>`;
+    row.querySelector('.fi-name').textContent = f.name;
+    const del = document.createElement('button');
+    del.type = 'button'; del.className = 'fi-del'; del.setAttribute('aria-label', 'remove'); del.textContent = '×';
+    del.onclick = () => removeFile(i);
+    row.appendChild(del);
+    fileListEl.appendChild(row);
+  });
+  const total = totalSize();
+  const over = total > MAX_TOTAL;
+  fileTotalEl.className = 'file-total' + (over ? ' over' : '');
+  fileTotalEl.textContent = files.length
+    ? (isJa ? `合計 ${fmtSize(total)} / 4MB` : `Total ${fmtSize(total)} / 4MB`) + (over ? (isJa ? '　※超過しています' : '  — too large') : '')
+    : '';
+}
+
+// ---- step navigation ----
+function goStep(n) {
+  document.querySelectorAll('.step').forEach(s => {
+    const step = Number(s.dataset.step);
+    s.classList.toggle('active', step === n);
+    s.classList.toggle('done', step < n);
+  });
+  document.getElementById('pane-1').classList.toggle('hidden', n !== 1);
+  document.getElementById('pane-2').classList.toggle('hidden', n !== 2);
+  document.getElementById('pane-3').classList.toggle('hidden', n !== 3);
+  document.getElementById('contact-form').classList.toggle('hidden', n === 3);
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// ---- validate + confirm ----
+const form = document.getElementById('contact-form');
+form.addEventListener('submit', (e) => {
+  e.preventDefault();
+  const isJa = curLang() === 'ja';
+  if (!form.checkValidity()) {
+    // trigger native messages
+    form.reportValidity();
+    return;
+  }
+  if (totalSize() > MAX_TOTAL) {
+    alert(isJa ? '添付ファイルの合計が4MBを超えています。ファイルを減らすか圧縮してください。' : 'Attachments exceed 4MB total. Please reduce or compress.');
+    return;
+  }
+  buildConfirm();
+  goStep(2);
+});
+
+function typeLabel(v) { const t = TYPES.find(x => x.v === v); return t ? t[curLang()] : v; }
+function buildConfirm() {
+  const isJa = curLang() === 'ja';
+  const g = id => document.getElementById(id).value.trim();
+  const rows = [
+    [isJa ? 'お問い合わせの種類' : 'Type', typeLabel(g('type'))],
+    [isJa ? 'お問い合わせ内容' : 'Message', g('content')],
+    [isJa ? 'お名前' : 'Name', g('lastName') + ' ' + g('firstName')],
+    [isJa ? 'メールアドレス' : 'Email', g('email')],
+    [isJa ? '電話番号' : 'Phone', g('phone') || '—'],
+    [isJa ? 'ご希望・日程' : 'Preferences', g('detail') || '—'],
+    [isJa ? '添付ファイル' : 'Attachments', files.length ? files.map(f => f.name).join('\n') : '—'],
+  ];
+  const dl = document.getElementById('confirm-table');
+  dl.innerHTML = '';
+  rows.forEach(([k, v]) => {
+    const row = document.createElement('div'); row.className = 'confirm-row';
+    const dt = document.createElement('dt'); dt.textContent = k;
+    const dd = document.createElement('dd'); dd.textContent = v;
+    row.appendChild(dt); row.appendChild(dd); dl.appendChild(row);
+  });
+}
+
+document.getElementById('back-edit').addEventListener('click', () => goStep(1));
+
+// ---- send ----
+function readAsBase64(file) {
+  return new Promise((resolve, reject) => {
+    const r = new FileReader();
+    r.onload = () => resolve(String(r.result).split(',')[1]);
+    r.onerror = reject;
+    r.readAsDataURL(file);
+  });
+}
+document.getElementById('do-send').addEventListener('click', async () => {
+  const isJa = curLang() === 'ja';
+  const btn = document.getElementById('do-send');
+  const err = document.getElementById('err-msg');
+  err.style.display = 'none';
+  const g = id => document.getElementById(id).value.trim();
+  const original = btn.innerHTML;
+  btn.disabled = true; btn.classList.add('is-loading');
+  btn.innerHTML = `<span class="btn-spinner"></span>${isJa ? '送信中…' : 'Sending…'}`;
+  try {
+    const attachments = [];
+    for (const f of files) {
+      attachments.push({ filename: f.name, content: await readAsBase64(f), type: f.type || 'application/octet-stream' });
+    }
+    const payload = {
+      type: g('type'), content: g('content'),
+      name: (g('lastName') + ' ' + g('firstName')).trim(),
+      email: g('email'), phone: g('phone'), detail: g('detail'),
+      lang: curLang(), attachments,
+    };
+    const res = await fetch('/.netlify/functions/contact', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload),
+    });
+    if (!res.ok) throw new Error('send failed ' + res.status);
+    const json = await res.json().catch(() => ({}));
+    if (!json.ok) throw new Error(json.error || 'send failed');
+    goStep(3);
+  } catch (e) {
+    console.error(e);
+    err.textContent = isJa
+      ? '送信中にエラーが発生しました。お手数ですが時間をおいて再度お試しいただくか、お電話（098-087-7797）にてご連絡ください。'
+      : 'Something went wrong. Please try again later, or call us at 098-087-7797.';
+    err.style.display = 'block';
+    btn.disabled = false; btn.classList.remove('is-loading'); btn.innerHTML = original;
+  }
+});
+
+// init
+applyLang();
+</script>
+</body>
+</html>

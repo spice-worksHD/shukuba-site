@@ -38,13 +38,17 @@ export default async (req) => {
     return new Response('ok', { status: 200 });
   }
 
-  const store = getStore('shukuba-bookings');
+  // 強整合性で読む: stripe-checkout が直前に書いた仮予約を確実に読めるようにする
+  // （デフォルトの結果整合性だと古いスナップショットを読み、予約なし扱いで確定・メールが飛ばない競合が起きる）
+  const store = getStore({ name: 'shukuba-bookings', consistency: 'strong' });
   const bookings = (await store.get('bookings.json', { type: 'json' })) || [];
   const idx = bookings.findIndex((b) => b.id === bookingId);
 
   if (idx === -1) {
-    console.error('Booking not found:', bookingId);
-    return new Response('ok', { status: 200 });
+    // 200で握りつぶすとStripeが再送しない。500を返してStripeにリトライさせ、
+    // 反映遅延・一時的な不整合から自動回復できるようにする。
+    console.error('Booking not found (will ask Stripe to retry):', bookingId);
+    return new Response('booking not found', { status: 500 });
   }
 
   const booking = bookings[idx];
